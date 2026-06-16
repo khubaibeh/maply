@@ -29,20 +29,6 @@
 		</div>
 	</div>
 
-	<div class="flex min-h-0 flex-1 flex-col border-b border-border">
-		<div class="flex h-8 shrink-0 items-center px-3">
-			<span class="text-xs font-semibold uppercase tracking-wide text-sidebar-foreground/80"
-				>Layers</span
-			>
-		</div>
-		<Separator />
-		<ScrollArea class="min-h-0 flex-1">
-			<div class="p-2">
-				<p class="text-xs text-muted-foreground">No layers</p>
-			</div>
-		</ScrollArea>
-	</div>
-
 	<div class="flex min-h-0 flex-1 flex-col">
 		<div class="flex h-8 shrink-0 items-center px-3">
 			<span class="text-xs font-semibold uppercase tracking-wide text-sidebar-foreground/80"
