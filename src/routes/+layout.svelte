@@ -1,5 +1,6 @@
 <script lang="ts">
 	import './layout.css';
+	import './selections.css';
 	import favicon from '$lib/assets/favicon.svg';
 	import { getTheme } from '$lib/theme.svelte';
 

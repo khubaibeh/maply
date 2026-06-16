@@ -22,13 +22,13 @@
 </script>
 
 <div class="flex h-12 shrink-0 items-center gap-1 border-t border-border bg-background px-3">
-	<ToggleGroup.Root type="single" bind:value={activeTool} variant="default" size="sm" class="gap-1">
+	<ToggleGroup.Root type="single" bind:value={activeTool} variant="default" size="sm" spacing={1}>
 		{#each tools as tool (tool.id)}
 			{@const Icon = tool.icon}
 			<ToggleGroup.Item
 				value={tool.id}
 				aria-label={tool.label}
-				class="h-8 gap-1.5 rounded-lg px-2 text-xs transition-all duration-300 ease-out hover:bg-primary/60 hover:text-primary-foreground active:scale-[0.98] data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:shadow-sm"
+				class="h-8 gap-1.5 rounded-[0.25rem] px-2 text-xs transition-all duration-300 ease-out hover:bg-primary/60 hover:text-primary-foreground active:scale-[0.98] data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:shadow-sm"
 			>
 				<Icon data-icon="inline-start" />
 				{tool.label}

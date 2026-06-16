@@ -1,0 +1,10 @@
+/* Custom text selection — survives shadcn-svelte updates. */
+::selection {
+	background-color: var(--foreground);
+	color: var(--background);
+}
+
+::-moz-selection {
+	background-color: var(--foreground);
+	color: var(--background);
+}
