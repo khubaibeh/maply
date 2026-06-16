@@ -93,20 +93,20 @@
 				{projectState.name}
 			</span>
 		{/if}
-		<div class="flex items-center gap-0.5">
+		<div class="flex items-center gap-x-1">
 			<Button
 				variant="ghost"
-				size="icon-xs"
+				size="icon-sm"
 				class="size-6 shrink-0 rounded-md text-sidebar-foreground/70 transition-opacity duration-150 hover:text-sidebar-foreground {isEditing
 					? 'pointer-events-none opacity-0'
 					: 'opacity-100'}"
-				onclick={() => (newProjectDialogOpen = true)}
+				onclick={startEditing}
 			>
-				<Plus />
+				<Pencil />
 			</Button>
 			<Button
 				variant="ghost"
-				size="icon-xs"
+				size="icon-sm"
 				class="size-6 shrink-0 rounded-md text-sidebar-foreground/70 transition-opacity duration-150 hover:text-sidebar-foreground {isEditing
 					? 'pointer-events-none opacity-0'
 					: 'opacity-100'}"
@@ -116,13 +116,13 @@
 			</Button>
 			<Button
 				variant="ghost"
-				size="icon-xs"
+				size="icon-sm"
 				class="size-6 shrink-0 rounded-md text-sidebar-foreground/70 transition-opacity duration-150 hover:text-sidebar-foreground {isEditing
 					? 'pointer-events-none opacity-0'
 					: 'opacity-100'}"
-				onclick={startEditing}
+				onclick={() => (newProjectDialogOpen = true)}
 			>
-				<Pencil />
+				<Plus />
 			</Button>
 		</div>
 	</div>

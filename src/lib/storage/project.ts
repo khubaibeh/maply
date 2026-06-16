@@ -21,7 +21,7 @@ function mergeProject(defaultProject: Project, record: Project): Project {
 			...defaultProject.canvas,
 			...record.canvas
 		},
-		camera: record.camera ? { ...record.camera } : defaultProject.camera,
+		camera: record.camera ? { ...defaultProject.camera, ...record.camera } : undefined,
 		elements: record.elements ?? defaultProject.elements,
 		importExportState: {
 			...defaultProject.importExportState,

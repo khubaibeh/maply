@@ -13,6 +13,11 @@ export const defaultProject: Project = {
 	importExportState: {
 		importsOpen: true,
 		elementsOpen: true
+	},
+	camera: {
+		x: -350,
+		y: -50,
+		zoom: 0.9
 	}
 };
 
@@ -22,6 +27,7 @@ export function createDefaultProject(id = defaultProject.id): Project {
 		id,
 		canvas: { ...defaultProject.canvas },
 		elements: [...defaultProject.elements],
-		importExportState: { ...defaultProject.importExportState }
+		importExportState: { ...defaultProject.importExportState },
+		camera: defaultProject.camera ? { ...defaultProject.camera } : undefined
 	};
 }

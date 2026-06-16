@@ -37,7 +37,7 @@
 							min={1}
 							value={canvasState.width}
 							onchange={updateWidth}
-							class="h-7 text-xs"
+							class="h-7 text-xs no-spinner focus-visible:ring-0 focus-visible:ring-offset-0"
 						/>
 					</div>
 					<div class="flex flex-col gap-1">
@@ -48,7 +48,7 @@
 							min={1}
 							value={canvasState.height}
 							onchange={updateHeight}
-							class="h-7 text-xs"
+							class="h-7 text-xs no-spinner focus-visible:ring-0 focus-visible:ring-offset-0"
 						/>
 					</div>
 				</div>
@@ -56,3 +56,16 @@
 		</div>
 	</ScrollArea>
 </aside>
+
+<style>
+	:global(.no-spinner::-webkit-inner-spin-button),
+	:global(.no-spinner::-webkit-outer-spin-button) {
+		-webkit-appearance: none;
+		margin: 0;
+	}
+
+	:global(.no-spinner) {
+		-moz-appearance: textfield;
+		appearance: textfield;
+	}
+</style>
