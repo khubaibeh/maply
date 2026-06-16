@@ -1,6 +1,5 @@
 <script lang="ts">
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
-	import { Separator } from '$lib/components/ui/separator';
 	import MousePointer2 from '@lucide/svelte/icons/mouse-pointer-2';
 	import Hand from '@lucide/svelte/icons/hand';
 	import Square from '@lucide/svelte/icons/square';
@@ -24,11 +23,8 @@
 
 <div class="flex h-12 shrink-0 items-center gap-1 border-t border-border bg-background px-3">
 	<ToggleGroup.Root type="single" bind:value={activeTool} variant="default" size="sm" class="gap-1">
-		{#each tools as tool, i (tool.id)}
+		{#each tools as tool (tool.id)}
 			{@const Icon = tool.icon}
-			{#if i === 2}
-				<Separator orientation="vertical" class="mx-1 h-5" />
-			{/if}
 			<ToggleGroup.Item
 				value={tool.id}
 				aria-label={tool.label}
