@@ -32,7 +32,7 @@
 			<ToggleGroup.Item
 				value={tool.id}
 				aria-label={tool.label}
-				class="h-8 gap-1.5 rounded-lg px-2 text-xs transition-colors hover:bg-accent/60 hover:text-accent-foreground data-[state=on]:bg-accent data-[state=on]:text-accent-foreground"
+				class="h-8 gap-1.5 rounded-lg px-2 text-xs transition-all duration-300 ease-out hover:bg-primary/60 hover:text-primary-foreground active:scale-[0.98] data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:shadow-sm"
 			>
 				<Icon data-icon="inline-start" />
 				{tool.label}
