@@ -14,9 +14,15 @@ function clampZoom(value: number) {
 	return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value));
 }
 
+function validNumber(value: unknown): value is number {
+	return typeof value === 'number' && Number.isFinite(value);
+}
+
 function createCanvasState() {
 	let width = $state(DEFAULT_WIDTH);
 	let height = $state(DEFAULT_HEIGHT);
+	let x = $state(0);
+	let y = $state(0);
 	let camera = $state<Camera>({ x: 0, y: 0, zoom: DEFAULT_ZOOM });
 
 	function setSize(nextWidth: number, nextHeight: number) {
@@ -24,11 +30,16 @@ function createCanvasState() {
 		height = Math.max(1, Math.round(nextHeight));
 	}
 
+	function setPosition(nextX: number, nextY: number) {
+		x = nextX;
+		y = nextY;
+	}
+
 	function setCamera(next: Partial<Camera>) {
 		camera = {
-			x: next.x ?? camera.x,
-			y: next.y ?? camera.y,
-			zoom: next.zoom === undefined ? camera.zoom : clampZoom(next.zoom)
+			x: validNumber(next.x) ? next.x : camera.x,
+			y: validNumber(next.y) ? next.y : camera.y,
+			zoom: validNumber(next.zoom) ? clampZoom(next.zoom) : camera.zoom
 		};
 	}
 
@@ -50,8 +61,8 @@ function createCanvasState() {
 
 	function centerCamera(containerWidth: number, containerHeight: number) {
 		setCamera({
-			x: -containerWidth / 2 + width / 2,
-			y: -containerHeight / 2 + height / 2,
+			x: -containerWidth / 2 + x + width / 2,
+			y: -containerHeight / 2 + y + height / 2,
 			zoom: DEFAULT_ZOOM
 		});
 	}
@@ -63,6 +74,12 @@ function createCanvasState() {
 		get height() {
 			return height;
 		},
+		get x() {
+			return x;
+		},
+		get y() {
+			return y;
+		},
 		get camera() {
 			return camera;
 		},
@@ -73,6 +90,7 @@ function createCanvasState() {
 			return MAX_ZOOM;
 		},
 		setSize,
+		setPosition,
 		setCamera,
 		pan,
 		zoomIn,

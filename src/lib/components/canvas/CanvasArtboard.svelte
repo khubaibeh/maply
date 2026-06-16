@@ -9,8 +9,8 @@
 </defs>
 
 <rect
-	x={0}
-	y={0}
+	x={canvasState.x}
+	y={canvasState.y}
 	width={canvasState.width}
 	height={canvasState.height}
 	fill="#ffffff"

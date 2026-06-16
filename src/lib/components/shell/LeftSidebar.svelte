@@ -4,16 +4,17 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Button, buttonVariants } from '$lib/components/ui/button';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+	import { projectState } from '$lib/state/project.svelte';
 	import Pencil from '@lucide/svelte/icons/pencil';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import Upload from '@lucide/svelte/icons/upload';
 	import Download from '@lucide/svelte/icons/download';
 
-	let projectName = $state('Untitled');
+	let editName = $state(projectState.name);
 	let isEditing = $state(false);
 	let inputRef: HTMLInputElement | null = $state(null);
-	let importsOpen = $state(true);
-	let elementsOpen = $state(true);
+	let importsOpen = $state(projectState.importExportState.importsOpen);
+	let elementsOpen = $state(projectState.importExportState.elementsOpen);
 
 	$effect(() => {
 		if (isEditing && inputRef) {
@@ -23,14 +24,17 @@
 	});
 
 	function startEditing() {
+		editName = projectState.name;
 		isEditing = true;
 	}
 
 	function save() {
+		projectState.setName(editName);
 		isEditing = false;
 	}
 
 	function cancel() {
+		editName = projectState.name;
 		isEditing = false;
 	}
 
@@ -41,6 +45,19 @@
 			cancel();
 		}
 	}
+
+	$effect(() => {
+		if (!projectState.initialized) return;
+		if (isEditing) return;
+		editName = projectState.name;
+		importsOpen = projectState.importExportState.importsOpen;
+		elementsOpen = projectState.importExportState.elementsOpen;
+	});
+
+	$effect(() => {
+		if (!projectState.initialized) return;
+		projectState.setImportExportState({ importsOpen, elementsOpen });
+	});
 </script>
 
 {#snippet sectionProject()}
@@ -48,7 +65,7 @@
 		{#if isEditing}
 			<Input
 				bind:ref={() => inputRef, (v) => (inputRef = v)}
-				bind:value={projectName}
+				bind:value={editName}
 				class="h-7 flex-1 border-0 bg-transparent px-0 text-sm font-semibold shadow-none transition-none focus-visible:ring-0 focus-visible:ring-offset-0"
 				onblur={save}
 				onkeydown={handleKeydown}
@@ -60,7 +77,7 @@
 				role="button"
 				tabindex="0"
 			>
-				{projectName}
+				{projectState.name}
 			</span>
 		{/if}
 		<Button
