@@ -8,6 +8,7 @@
 	import { projectState } from '$lib/state/project.svelte';
 	import Pencil from '@lucide/svelte/icons/pencil';
 	import Plus from '@lucide/svelte/icons/plus';
+	import Save from '@lucide/svelte/icons/save';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import Upload from '@lucide/svelte/icons/upload';
 	import Download from '@lucide/svelte/icons/download';
@@ -22,6 +23,10 @@
 	async function handleCreateNewProject() {
 		await projectState.createNewProject();
 		newProjectDialogOpen = false;
+	}
+
+	async function handleSave() {
+		await projectState.saveNow();
 	}
 
 	$effect(() => {
@@ -95,9 +100,9 @@
 				class="size-6 shrink-0 rounded-md text-sidebar-foreground/70 transition-opacity duration-150 hover:text-sidebar-foreground {isEditing
 					? 'pointer-events-none opacity-0'
 					: 'opacity-100'}"
-				onclick={startEditing}
+				onclick={() => (newProjectDialogOpen = true)}
 			>
-				<Pencil />
+				<Plus />
 			</Button>
 			<Button
 				variant="ghost"
@@ -105,9 +110,19 @@
 				class="size-6 shrink-0 rounded-md text-sidebar-foreground/70 transition-opacity duration-150 hover:text-sidebar-foreground {isEditing
 					? 'pointer-events-none opacity-0'
 					: 'opacity-100'}"
-				onclick={() => (newProjectDialogOpen = true)}
+				onclick={handleSave}
 			>
-				<Plus />
+				<Save />
+			</Button>
+			<Button
+				variant="ghost"
+				size="icon-xs"
+				class="size-6 shrink-0 rounded-md text-sidebar-foreground/70 transition-opacity duration-150 hover:text-sidebar-foreground {isEditing
+					? 'pointer-events-none opacity-0'
+					: 'opacity-100'}"
+				onclick={startEditing}
+			>
+				<Pencil />
 			</Button>
 		</div>
 	</div>

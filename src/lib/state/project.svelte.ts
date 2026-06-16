@@ -44,6 +44,17 @@ function createProjectState() {
 		}, 500);
 	}
 
+	async function saveNow() {
+		if (!initialized) return;
+		if (saveTimeout) clearTimeout(saveTimeout);
+
+		try {
+			await saveProject(toProject());
+		} catch (error) {
+			console.warn('Failed to save project:', error);
+		}
+	}
+
 	async function load(projectId = PROD_PROJECT_ID) {
 		id = projectId;
 
@@ -116,6 +127,7 @@ function createProjectState() {
 		},
 		load,
 		queueSave,
+		saveNow,
 		setName,
 		setImportExportState,
 		createNewProject
