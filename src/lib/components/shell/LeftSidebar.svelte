@@ -2,9 +2,12 @@
 	import * as Collapsible from '$lib/components/ui/collapsible';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Input } from '$lib/components/ui/input';
-	import { Button } from '$lib/components/ui/button';
+	import { Button, buttonVariants } from '$lib/components/ui/button';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import Pencil from '@lucide/svelte/icons/pencil';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
+	import Upload from '@lucide/svelte/icons/upload';
+	import Download from '@lucide/svelte/icons/download';
 
 	let projectName = $state('Untitled');
 	let isEditing = $state(false);
@@ -79,7 +82,7 @@
 			class="flex h-8 w-full shrink-0 items-center justify-between border-b border-border px-3 text-left outline-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
 		>
 			<span class="text-xs font-semibold uppercase tracking-wide text-sidebar-foreground/80">
-				Imports
+				Import / Export
 			</span>
 			<ChevronDown
 				class="size-4 text-sidebar-foreground/70 transition-transform duration-200 {importsOpen
@@ -88,15 +91,40 @@
 			/>
 		</Collapsible.Trigger>
 		<Collapsible.Content class="sidebar-collapsible-content">
-			<div class="p-3">
-				<div class="flex flex-col gap-1.5">
-					<Button variant="outline" size="sm" class="h-7 w-full justify-start text-xs"
-						>Import SVG</Button
+			<div class="flex flex-col gap-1.5 p-3 items-center">
+				<DropdownMenu.Root>
+					<DropdownMenu.Trigger
+						class="{buttonVariants({
+							variant: 'secondary',
+							size: 'sm'
+						})} h-7 w-32 justify-center gap-1.5 px-2 text-xs"
 					>
-					<Button variant="outline" size="sm" class="h-7 w-full justify-start text-xs"
-						>Browse assets</Button
+						<Upload data-icon="inline-start" class="size-3" />
+						Import
+					</DropdownMenu.Trigger>
+					<DropdownMenu.Content class="min-w-32">
+						<DropdownMenu.Item class="justify-center text-center text-xs">SVG</DropdownMenu.Item>
+						<DropdownMenu.Item class="justify-center text-center text-xs">Project</DropdownMenu.Item
+						>
+					</DropdownMenu.Content>
+				</DropdownMenu.Root>
+
+				<DropdownMenu.Root>
+					<DropdownMenu.Trigger
+						class="{buttonVariants({
+							variant: 'secondary',
+							size: 'sm'
+						})} h-7 w-32 justify-center gap-1.5 px-2 text-xs"
 					>
-				</div>
+						<Download data-icon="inline-start" class="size-3" />
+						Export
+					</DropdownMenu.Trigger>
+					<DropdownMenu.Content class="min-w-32">
+						<DropdownMenu.Item class="justify-center text-center text-xs">SVG</DropdownMenu.Item>
+						<DropdownMenu.Item class="justify-center text-center text-xs">Project</DropdownMenu.Item
+						>
+					</DropdownMenu.Content>
+				</DropdownMenu.Root>
 			</div>
 		</Collapsible.Content>
 	</Collapsible.Root>
