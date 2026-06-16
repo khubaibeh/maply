@@ -59,6 +59,10 @@ function createCanvasState() {
 		setCamera({ zoom: DEFAULT_ZOOM });
 	}
 
+	function resetCamera() {
+		camera = { x: 0, y: 0, zoom: DEFAULT_ZOOM };
+	}
+
 	function centerCamera(containerWidth: number, containerHeight: number) {
 		setCamera({
 			x: -containerWidth / 2 + x + width / 2,
@@ -96,6 +100,7 @@ function createCanvasState() {
 		zoomIn,
 		zoomOut,
 		resetZoom,
+		resetCamera,
 		centerCamera
 	};
 }

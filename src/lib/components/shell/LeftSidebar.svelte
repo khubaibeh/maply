@@ -4,8 +4,10 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Button, buttonVariants } from '$lib/components/ui/button';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import { projectState } from '$lib/state/project.svelte';
 	import Pencil from '@lucide/svelte/icons/pencil';
+	import Plus from '@lucide/svelte/icons/plus';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import Upload from '@lucide/svelte/icons/upload';
 	import Download from '@lucide/svelte/icons/download';
@@ -15,6 +17,12 @@
 	let inputRef: HTMLInputElement | null = $state(null);
 	let importsOpen = $state(projectState.importExportState.importsOpen);
 	let elementsOpen = $state(projectState.importExportState.elementsOpen);
+	let newProjectDialogOpen = $state(false);
+
+	async function handleCreateNewProject() {
+		await projectState.createNewProject();
+		newProjectDialogOpen = false;
+	}
 
 	$effect(() => {
 		if (isEditing && inputRef) {
@@ -80,16 +88,28 @@
 				{projectState.name}
 			</span>
 		{/if}
-		<Button
-			variant="ghost"
-			size="icon-xs"
-			class="size-6 shrink-0 rounded-md text-sidebar-foreground/70 transition-opacity duration-150 hover:text-sidebar-foreground {isEditing
-				? 'pointer-events-none opacity-0'
-				: 'opacity-100'}"
-			onclick={startEditing}
-		>
-			<Pencil />
-		</Button>
+		<div class="flex items-center gap-0.5">
+			<Button
+				variant="ghost"
+				size="icon-xs"
+				class="size-6 shrink-0 rounded-md text-sidebar-foreground/70 transition-opacity duration-150 hover:text-sidebar-foreground {isEditing
+					? 'pointer-events-none opacity-0'
+					: 'opacity-100'}"
+				onclick={startEditing}
+			>
+				<Pencil />
+			</Button>
+			<Button
+				variant="ghost"
+				size="icon-xs"
+				class="size-6 shrink-0 rounded-md text-sidebar-foreground/70 transition-opacity duration-150 hover:text-sidebar-foreground {isEditing
+					? 'pointer-events-none opacity-0'
+					: 'opacity-100'}"
+				onclick={() => (newProjectDialogOpen = true)}
+			>
+				<Plus />
+			</Button>
+		</div>
 	</div>
 {/snippet}
 
@@ -184,6 +204,22 @@
 		{@render sectionElements()}
 	</div>
 </aside>
+
+<AlertDialog.Root bind:open={newProjectDialogOpen}>
+	<AlertDialog.Content>
+		<AlertDialog.Header>
+			<AlertDialog.Title>Create new project?</AlertDialog.Title>
+			<AlertDialog.Description>
+				This will delete your current project and create a fresh one from the default settings. This
+				action cannot be undone.
+			</AlertDialog.Description>
+		</AlertDialog.Header>
+		<AlertDialog.Footer>
+			<AlertDialog.Cancel onclick={() => (newProjectDialogOpen = false)}>Cancel</AlertDialog.Cancel>
+			<AlertDialog.Action onclick={handleCreateNewProject}>Create</AlertDialog.Action>
+		</AlertDialog.Footer>
+	</AlertDialog.Content>
+</AlertDialog.Root>
 
 <style>
 	:global(.sidebar-collapsible-content) {

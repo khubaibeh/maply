@@ -55,6 +55,20 @@ async function putProject(db: IDBDatabase, project: Project): Promise<void> {
 	});
 }
 
+async function deleteProjectRecord(db: IDBDatabase, id: string): Promise<void> {
+	await new Promise<void>((resolve, reject) => {
+		const transaction = db.transaction(PROJECT_STORE, 'readwrite');
+		const store = transaction.objectStore(PROJECT_STORE);
+
+		transaction.oncomplete = () => resolve();
+		transaction.onerror = () => reject(transaction.error);
+		transaction.onabort = () => reject(transaction.error);
+
+		const request = store.delete(id);
+		request.onerror = () => reject(request.error);
+	});
+}
+
 function openDB() {
 	if (dbPromise) return dbPromise;
 
@@ -106,4 +120,15 @@ export async function saveProject(project: Project): Promise<void> {
 
 	const db = await openDB();
 	await putProject(db, project);
+}
+
+export async function resetProdProject(): Promise<Project> {
+	if (typeof indexedDB === 'undefined') return createDefaultProject(PROD_PROJECT_ID);
+
+	const db = await openDB();
+	await deleteProjectRecord(db, PROD_PROJECT_ID);
+
+	const freshProject = createDefaultProject(PROD_PROJECT_ID);
+	await putProject(db, freshProject);
+	return freshProject;
 }

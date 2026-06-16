@@ -1,5 +1,5 @@
 import { canvasState } from './canvas.svelte';
-import { fetchProject, PROD_PROJECT_ID, saveProject } from '$lib/storage/project';
+import { fetchProject, PROD_PROJECT_ID, resetProdProject, saveProject } from '$lib/storage/project';
 import type { Project } from '$lib/storage/schema';
 
 function createProjectState() {
@@ -86,6 +86,21 @@ function createProjectState() {
 		queueSave();
 	}
 
+	async function createNewProject() {
+		const fresh = await resetProdProject();
+		name = fresh.name;
+		elements = fresh.elements;
+		importExportState = fresh.importExportState;
+		canvasState.setSize(fresh.canvas.width, fresh.canvas.height);
+		canvasState.setPosition(fresh.canvas.x, fresh.canvas.y);
+		if (fresh.camera) {
+			canvasState.setCamera(fresh.camera);
+		} else {
+			canvasState.resetCamera();
+		}
+		queueSave();
+	}
+
 	return {
 		get id() {
 			return id;
@@ -102,7 +117,8 @@ function createProjectState() {
 		load,
 		queueSave,
 		setName,
-		setImportExportState
+		setImportExportState,
+		createNewProject
 	};
 }
 
