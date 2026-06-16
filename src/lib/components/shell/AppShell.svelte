@@ -2,7 +2,7 @@
 	import TopNavbar from './TopNavbar.svelte';
 	import LeftSidebar from './LeftSidebar.svelte';
 	import RightSidebar from './RightSidebar.svelte';
-	import CanvasArea from './CanvasArea.svelte';
+	import CanvasArea from '$lib/components/canvas/CanvasArea.svelte';
 	import BottomToolbar from './BottomToolbar.svelte';
 </script>
 
