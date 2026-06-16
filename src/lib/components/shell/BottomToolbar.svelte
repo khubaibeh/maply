@@ -1,5 +1,5 @@
 <script lang="ts">
-	import * as ToggleGroup from '$lib/components/ui/toggle-group';
+	import { toolState, type Tool } from '$lib/state/tool.svelte';
 	import MousePointer2 from '@lucide/svelte/icons/mouse-pointer-2';
 	import Hand from '@lucide/svelte/icons/hand';
 	import Square from '@lucide/svelte/icons/square';
@@ -18,21 +18,31 @@
 		{ id: 'image', label: 'Image', icon: Image }
 	] as const;
 
-	let activeTool = $state<string>('select');
+	function selectTool(tool: Tool) {
+		if (toolState.isSpacePressed) return;
+		toolState.activeTool = tool;
+		(document.activeElement as HTMLElement | null)?.blur();
+	}
 </script>
 
 <div class="flex h-12 shrink-0 items-center gap-1 border-t border-border bg-background px-3">
-	<ToggleGroup.Root type="single" bind:value={activeTool} variant="default" size="sm" spacing={1}>
+	<div class="flex items-center gap-1" role="toolbar" aria-label="Tools">
 		{#each tools as tool (tool.id)}
 			{@const Icon = tool.icon}
-			<ToggleGroup.Item
-				value={tool.id}
+			{@const isActive = toolState.activeTool === tool.id}
+			<button
+				type="button"
+				role="radio"
+				aria-checked={isActive}
 				aria-label={tool.label}
-				class="h-8 gap-1.5 rounded-[0.25rem] px-2 text-xs transition-all duration-300 ease-out hover:bg-primary/60 hover:text-primary-foreground active:scale-[0.98] data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:shadow-sm"
+				onclick={() => selectTool(tool.id)}
+				class="flex h-8 items-center gap-1.5 rounded-[0.25rem] px-2 text-xs transition-all duration-300 ease-out hover:bg-primary/60 hover:text-primary-foreground active:scale-[0.98] [&_svg:not([class*='size-'])]:size-4 {isActive
+					? 'bg-primary text-primary-foreground shadow-sm'
+					: 'text-foreground'}"
 			>
 				<Icon data-icon="inline-start" />
 				{tool.label}
-			</ToggleGroup.Item>
+			</button>
 		{/each}
-	</ToggleGroup.Root>
+	</div>
 </div>
