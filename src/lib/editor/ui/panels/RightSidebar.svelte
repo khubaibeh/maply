@@ -9,6 +9,7 @@
 		const value = parseInt((event.target as HTMLInputElement).value, 10);
 		if (!Number.isNaN(value)) {
 			canvasState.setSize(value, $canvasState.height);
+			projectState.clampElementsToCanvas();
 		}
 	}
 
@@ -16,6 +17,7 @@
 		const value = parseInt((event.target as HTMLInputElement).value, 10);
 		if (!Number.isNaN(value)) {
 			canvasState.setSize($canvasState.width, value);
+			projectState.clampElementsToCanvas();
 		}
 	}
 

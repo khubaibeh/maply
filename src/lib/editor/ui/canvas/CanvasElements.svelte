@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getPathRenderTransform } from "$lib/editor/actions/element-actions";
 	import { canvasState } from "$lib/editor/state/canvas.svelte";
 	import { projectState } from "$lib/editor/state/project.svelte";
 	import { toolState } from "$lib/editor/state/tool.svelte";
@@ -73,12 +74,13 @@
 				onpointerdown={(event) => selectElement(event, element.id)}
 			/>
 		{:else if element.type === "path"}
+			{@const transform = getPathRenderTransform(element)}
 			<path
 				id="element-{element.id}"
 				role="button"
 				tabindex="-1"
 				aria-label="Select {element.name}"
-				transform="translate({element.x}, {element.y})"
+				transform="translate({transform.x}, {transform.y})"
 				d={element.d}
 				fill={element.fill}
 				stroke={element.stroke}

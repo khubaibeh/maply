@@ -1,4 +1,8 @@
-import { normalizeElements, translateElement } from "$lib/editor/actions/element-actions";
+import {
+	clampElementToCanvas,
+	normalizeElements,
+	translateElementWithinCanvas
+} from "$lib/editor/actions/element-actions";
 import type { Element } from "$lib/editor/model/elements";
 import type { Project } from "$lib/editor/model/project";
 import { fetchProject, PROD_PROJECT_ID, resetProdProject } from "$lib/editor/persistence/indexeddb-project-repository";
@@ -74,17 +78,19 @@ export const projectState = {
 
 		try {
 			const record = await fetchProject(projectId);
-			store.update((state) => ({
-				...state,
-				name: record.name,
-				elements: normalizeElements(record.elements),
-				importExportState: record.importExportState
-			}));
 			canvasState.setSize(record.canvas.width, record.canvas.height);
 			canvasState.setPosition(record.canvas.x, record.canvas.y);
 			if (record.camera) {
 				canvasState.setCamera(record.camera);
 			}
+
+			const canvas = canvasState.getSnapshot();
+			store.update((state) => ({
+				...state,
+				name: record.name,
+				elements: normalizeElements(record.elements).map((element) => clampElementToCanvas(element, canvas)),
+				importExportState: record.importExportState
+			}));
 		} catch (error) {
 			console.warn("Failed to load project, using defaults:", error);
 		}
@@ -117,13 +123,6 @@ export const projectState = {
 
 	async createNewProject() {
 		const fresh = await resetProdProject();
-		store.update((state) => ({
-			...state,
-			name: fresh.name,
-			elements: fresh.elements,
-			importExportState: fresh.importExportState,
-			selectedElementId: null
-		}));
 		canvasState.setSize(fresh.canvas.width, fresh.canvas.height);
 		canvasState.setPosition(fresh.canvas.x, fresh.canvas.y);
 		if (fresh.camera) {
@@ -131,24 +130,38 @@ export const projectState = {
 		} else {
 			canvasState.resetCamera();
 		}
+
+		const canvas = canvasState.getSnapshot();
+		store.update((state) => ({
+			...state,
+			name: fresh.name,
+			elements: fresh.elements.map((element) => clampElementToCanvas(element, canvas)),
+			importExportState: fresh.importExportState,
+			selectedElementId: null
+		}));
 		this.queueSave();
 	},
 
 	addElement(element: Element) {
+		const canvas = canvasState.getSnapshot();
+		const nextElement = clampElementToCanvas(element, canvas);
+
 		store.update((state) => ({
 			...state,
-			elements: [...state.elements, element],
-			selectedElementId: element.id
+			elements: [...state.elements, nextElement],
+			selectedElementId: nextElement.id
 		}));
 		this.queueSave();
 	},
 
 	updateElement(id: string, patch: Partial<Omit<Element, "id" | "type">>) {
+		const canvas = canvasState.getSnapshot();
+
 		store.update((state) => ({
 			...state,
 			elements: state.elements.map((element) => {
 				if (element.id !== id) return element;
-				return { ...element, ...patch } as Element;
+				return clampElementToCanvas({ ...element, ...patch } as Element, canvas);
 			})
 		}));
 		this.queueSave();
@@ -156,13 +169,24 @@ export const projectState = {
 
 	translateElement(id: string, dx: number, dy: number) {
 		if (dx === 0 && dy === 0) return;
+		const canvas = canvasState.getSnapshot();
 
 		store.update((state) => ({
 			...state,
 			elements: state.elements.map((element) => {
 				if (element.id !== id) return element;
-				return translateElement(element, dx, dy);
+				return translateElementWithinCanvas(element, dx, dy, canvas);
 			})
+		}));
+		this.queueSave();
+	},
+
+	clampElementsToCanvas() {
+		const canvas = canvasState.getSnapshot();
+
+		store.update((state) => ({
+			...state,
+			elements: state.elements.map((element) => clampElementToCanvas(element, canvas))
 		}));
 		this.queueSave();
 	},
