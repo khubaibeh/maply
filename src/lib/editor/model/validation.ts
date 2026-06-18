@@ -1,8 +1,8 @@
 export const hexColorPattern = /^#([0-9a-fA-F]{3}){1,2}$/;
 
-export function parseNumber(value: string): number | null {
-	const parsed = parseFloat(value);
-	return Number.isNaN(parsed) ? null : parsed;
+export function parseIntNumber(value: string): number | null {
+	const parsed = Number(value);
+	return Number.isNaN(parsed) ? null : Math.round(parsed);
 }
 
 export function parsePositiveInt(value: string): number | null {
@@ -11,8 +11,8 @@ export function parsePositiveInt(value: string): number | null {
 }
 
 export function parseNonNegativeNumber(value: string): number | null {
-	const parsed = parseFloat(value);
-	return Number.isNaN(parsed) || parsed < 0 ? null : parsed;
+	const parsed = Number(value);
+	return Number.isNaN(parsed) || parsed < 0 ? null : Math.round(parsed);
 }
 
 export function parseHexColor(value: string): string | null {

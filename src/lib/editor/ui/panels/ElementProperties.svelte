@@ -2,7 +2,12 @@
 	import { Input } from "$lib/components/ui/input";
 	import { Textarea } from "$lib/components/ui/textarea";
 	import type { Element } from "$lib/editor/model/elements";
-	import { parseHexColor, parseNonNegativeNumber, parseNumber, parsePositiveInt } from "$lib/editor/model/validation";
+	import {
+		parseHexColor,
+		parseIntNumber,
+		parseNonNegativeNumber,
+		parsePositiveInt
+	} from "$lib/editor/model/validation";
 	import { projectState } from "$lib/editor/state/project.svelte";
 
 	interface Props {
@@ -12,7 +17,7 @@
 	let { element }: Props = $props();
 
 	function updateNumber(key: string, value: string) {
-		const parsed = parseNumber(value);
+		const parsed = parseIntNumber(value);
 		if (parsed === null) return;
 		projectState.updateElement(element.id, { [key]: parsed } as Partial<Element>);
 	}
@@ -55,6 +60,7 @@
 			<Input
 				id="{element.id}-x"
 				type="number"
+				step={1}
 				value={element.x}
 				oninput={(event) => updateNumber("x", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -65,6 +71,7 @@
 			<Input
 				id="{element.id}-y"
 				type="number"
+				step={1}
 				value={element.y}
 				oninput={(event) => updateNumber("y", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -76,6 +83,7 @@
 				id="{element.id}-width"
 				type="number"
 				min={1}
+				step={1}
 				value={element.width}
 				oninput={(event) => updatePositiveInt("width", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -87,6 +95,7 @@
 				id="{element.id}-height"
 				type="number"
 				min={1}
+				step={1}
 				value={element.height}
 				oninput={(event) => updatePositiveInt("height", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -110,6 +119,7 @@
 			<Input
 				id="{element.id}-cx"
 				type="number"
+				step={1}
 				value={element.cx}
 				oninput={(event) => updateNumber("cx", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -120,6 +130,7 @@
 			<Input
 				id="{element.id}-cy"
 				type="number"
+				step={1}
 				value={element.cy}
 				oninput={(event) => updateNumber("cy", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -131,6 +142,7 @@
 				id="{element.id}-r"
 				type="number"
 				min={0}
+				step={1}
 				value={element.r}
 				oninput={(event) => updateNonNegativeNumber("r", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -154,6 +166,7 @@
 			<Input
 				id="{element.id}-x"
 				type="number"
+				step={1}
 				value={element.x}
 				oninput={(event) => updateNumber("x", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -164,6 +177,7 @@
 			<Input
 				id="{element.id}-y"
 				type="number"
+				step={1}
 				value={element.y}
 				oninput={(event) => updateNumber("y", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -175,6 +189,7 @@
 				id="{element.id}-fontSize"
 				type="number"
 				min={1}
+				step={1}
 				value={element.fontSize}
 				oninput={(event) => updatePositiveInt("fontSize", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -208,6 +223,7 @@
 			<Input
 				id="{element.id}-x"
 				type="number"
+				step={1}
 				value={element.x}
 				oninput={(event) => updateNumber("x", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -218,6 +234,7 @@
 			<Input
 				id="{element.id}-y"
 				type="number"
+				step={1}
 				value={element.y}
 				oninput={(event) => updateNumber("y", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -261,6 +278,7 @@
 				id="{element.id}-strokeWidth"
 				type="number"
 				min={0}
+				step={1}
 				value={element.strokeWidth}
 				oninput={(event) => updateNonNegativeNumber("strokeWidth", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -274,6 +292,7 @@
 			<Input
 				id="{element.id}-x"
 				type="number"
+				step={1}
 				value={element.x}
 				oninput={(event) => updateNumber("x", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -284,6 +303,7 @@
 			<Input
 				id="{element.id}-y"
 				type="number"
+				step={1}
 				value={element.y}
 				oninput={(event) => updateNumber("y", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -295,6 +315,7 @@
 				id="{element.id}-width"
 				type="number"
 				min={1}
+				step={1}
 				value={element.width}
 				oninput={(event) => updatePositiveInt("width", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -306,6 +327,7 @@
 				id="{element.id}-height"
 				type="number"
 				min={1}
+				step={1}
 				value={element.height}
 				oninput={(event) => updatePositiveInt("height", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"

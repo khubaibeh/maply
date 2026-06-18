@@ -52,9 +52,9 @@ export function translateElement(element: Element, dx: number, dy: number): Elem
 		case "text":
 		case "image":
 		case "path":
-			return { ...element, x: element.x + dx, y: element.y + dy };
+			return { ...element, x: Math.round(element.x + dx), y: Math.round(element.y + dy) };
 		case "circle":
-			return { ...element, cx: element.cx + dx, cy: element.cy + dy };
+			return { ...element, cx: Math.round(element.cx + dx), cy: Math.round(element.cy + dy) };
 	}
 }
 
@@ -72,8 +72,8 @@ export function createRectElement(point: Point, elements: Element[]): RectElemen
 		id: createElementId(),
 		name: nextElementName("rect", elements),
 		type: "rect",
-		x: point.x,
-		y: point.y,
+		x: Math.round(point.x),
+		y: Math.round(point.y),
 		width: 120,
 		height: 80,
 		fill: "#000000",
