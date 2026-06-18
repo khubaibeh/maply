@@ -20,8 +20,8 @@
 	] as const;
 
 	function selectTool(tool: Tool) {
-		if (toolState.isSpacePressed) return;
-		toolState.activeTool = tool;
+		if ($toolState.isSpacePressed) return;
+		toolState.setTool(tool);
 		(document.activeElement as HTMLElement | null)?.blur();
 	}
 </script>
@@ -30,7 +30,7 @@
 	<div class="flex items-center gap-1" role="toolbar" aria-label="Tools">
 		{#each tools as tool (tool.id)}
 			{@const Icon = tool.icon}
-			{@const isActive = toolState.activeTool === tool.id}
+			{@const isActive = $toolState.activeTool === tool.id}
 			<button
 				type="button"
 				role="radio"

@@ -19,8 +19,8 @@
 	let panStart = $state({ x: 0, y: 0 });
 	let cameraStart = $state({ x: 0, y: 0 });
 
-	const isHandActive = $derived(toolState.activeTool === "hand" || (isHovering && toolState.isSpacePressed));
-	const drawingToolActive = $derived(isDrawingTool(toolState.activeTool));
+	const isHandActive = $derived($toolState.activeTool === "hand" || (isHovering && $toolState.isSpacePressed));
+	const drawingToolActive = $derived(isDrawingTool($toolState.activeTool));
 	const cursorClass = $derived(() => {
 		if (isPanning) return "cursor-grabbing";
 		if (isHandActive) return "cursor-grab";
@@ -45,7 +45,6 @@
 		const initialRect = container.getBoundingClientRect();
 		containerWidth = initialRect.width;
 		containerHeight = initialRect.height;
-		canvasState.centerCamera(containerWidth, containerHeight);
 
 		function handleWheel(event: WheelEvent) {
 			event.preventDefault();
@@ -53,17 +52,20 @@
 			if (event.ctrlKey || event.metaKey) {
 				const ZOOM_SENSITIVITY = 0.005;
 				const nextZoom = Math.min(
-					canvasState.maxZoom,
-					Math.max(canvasState.minZoom, canvasState.camera.zoom * Math.exp(-event.deltaY * ZOOM_SENSITIVITY))
+					$canvasState.maxZoom,
+					Math.max(
+						$canvasState.minZoom,
+						$canvasState.camera.zoom * Math.exp(-event.deltaY * ZOOM_SENSITIVITY)
+					)
 				);
-				if (nextZoom === canvasState.camera.zoom) return;
+				if (nextZoom === $canvasState.camera.zoom) return;
 
 				const rect = viewport.getBoundingClientRect();
 				const mouseX = event.clientX - rect.left;
 				const mouseY = event.clientY - rect.top;
 
-				const worldX = canvasState.camera.x + mouseX / canvasState.camera.zoom;
-				const worldY = canvasState.camera.y + mouseY / canvasState.camera.zoom;
+				const worldX = $canvasState.camera.x + mouseX / $canvasState.camera.zoom;
+				const worldY = $canvasState.camera.y + mouseY / $canvasState.camera.zoom;
 
 				canvasState.setCamera({
 					zoom: nextZoom,
@@ -71,7 +73,7 @@
 					y: worldY - mouseY / nextZoom
 				});
 			} else {
-				canvasState.pan(event.deltaX / canvasState.camera.zoom, event.deltaY / canvasState.camera.zoom);
+				canvasState.pan(event.deltaX / $canvasState.camera.zoom, event.deltaY / $canvasState.camera.zoom);
 			}
 		}
 
@@ -83,13 +85,13 @@
 			viewport.focus();
 			isPanning = true;
 			panStart = { x: event.clientX, y: event.clientY };
-			cameraStart = { x: canvasState.camera.x, y: canvasState.camera.y };
+			cameraStart = { x: $canvasState.camera.x, y: $canvasState.camera.y };
 		}
 
 		function movePan(event: MouseEvent) {
 			if (!isPanning) return;
-			const dx = (panStart.x - event.clientX) / canvasState.camera.zoom;
-			const dy = (panStart.y - event.clientY) / canvasState.camera.zoom;
+			const dx = (panStart.x - event.clientX) / $canvasState.camera.zoom;
+			const dy = (panStart.y - event.clientY) / $canvasState.camera.zoom;
 			canvasState.setCamera({
 				x: cameraStart.x + dx,
 				y: cameraStart.y + dy
@@ -145,12 +147,12 @@
 	});
 
 	const viewBox = $derived(
-		`${canvasState.camera.x} ${canvasState.camera.y} ${containerWidth / canvasState.camera.zoom} ${containerHeight / canvasState.camera.zoom}`
+		`${$canvasState.camera.x} ${$canvasState.camera.y} ${containerWidth / $canvasState.camera.zoom} ${containerHeight / $canvasState.camera.zoom}`
 	);
 
 	function handleSvgPointerDown(event: PointerEvent) {
 		if (event.button !== 0) return;
-		if (toolState.activeTool !== "rect") return;
+		if ($toolState.activeTool !== "rect") return;
 		if (!svgRef) return;
 
 		const ctm = svgRef.getScreenCTM();
@@ -163,18 +165,18 @@
 
 		const drawPoint = { x: svgPoint.x, y: svgPoint.y };
 		const insideArtboard = isPointInsideCanvas(drawPoint, {
-			x: canvasState.x,
-			y: canvasState.y,
-			width: canvasState.width,
-			height: canvasState.height
+			x: $canvasState.x,
+			y: $canvasState.y,
+			width: $canvasState.width,
+			height: $canvasState.height
 		});
 
 		if (!insideArtboard) return;
 
 		event.stopPropagation();
 
-		projectState.addElement(createRectElement(drawPoint, projectState.elements));
-		toolState.activeTool = "select";
+		projectState.addElement(createRectElement(drawPoint, $projectState.elements));
+		toolState.setTool("select");
 	}
 </script>
 
@@ -195,7 +197,7 @@
 			aria-label="Canvas workspace"
 			onpointerdown={handleSvgPointerDown}
 		>
-			<CanvasBackground {containerWidth} {containerHeight} camera={canvasState.camera} />
+			<CanvasBackground {containerWidth} {containerHeight} camera={$canvasState.camera} />
 			<CanvasArtboard />
 		</svg>
 	{/if}

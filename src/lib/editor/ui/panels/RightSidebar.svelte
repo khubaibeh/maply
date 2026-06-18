@@ -8,16 +8,20 @@
 	function updateWidth(event: Event) {
 		const value = parseInt((event.target as HTMLInputElement).value, 10);
 		if (!Number.isNaN(value)) {
-			canvasState.setSize(value, canvasState.height);
+			canvasState.setSize(value, $canvasState.height);
 		}
 	}
 
 	function updateHeight(event: Event) {
 		const value = parseInt((event.target as HTMLInputElement).value, 10);
 		if (!Number.isNaN(value)) {
-			canvasState.setSize(canvasState.width, value);
+			canvasState.setSize($canvasState.width, value);
 		}
 	}
+
+	const selectedElement = $derived(
+		$projectState.elements.find((element) => element.id === $projectState.selectedElementId) ?? null
+	);
 </script>
 
 <aside class="border-border bg-sidebar flex w-72 shrink-0 flex-col border-l">
@@ -35,7 +39,7 @@
 							id="canvas-width"
 							type="number"
 							min={1}
-							value={canvasState.width}
+							value={$canvasState.width}
 							onchange={updateWidth}
 							class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 						/>
@@ -46,7 +50,7 @@
 							id="canvas-height"
 							type="number"
 							min={1}
-							value={canvasState.height}
+							value={$canvasState.height}
 							onchange={updateHeight}
 							class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 						/>
@@ -54,12 +58,12 @@
 				</div>
 			</div>
 
-			{#if projectState.selectedElement}
+			{#if selectedElement}
 				<div class="flex flex-col gap-2">
 					<span class="text-sidebar-foreground/80 text-xs font-semibold tracking-wide">
-						{projectState.selectedElement.name}
+						{selectedElement.name}
 					</span>
-					<ElementProperties element={projectState.selectedElement} />
+					<ElementProperties element={selectedElement} />
 				</div>
 			{/if}
 		</div>

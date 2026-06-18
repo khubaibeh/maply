@@ -2,57 +2,84 @@ import { normalizeElements } from "$lib/editor/actions/element-actions";
 import type { Element } from "$lib/editor/model/elements";
 import type { Project } from "$lib/editor/model/project";
 import { fetchProject, PROD_PROJECT_ID, resetProdProject } from "$lib/editor/persistence/indexeddb-project-repository";
+import { get, writable } from "svelte/store";
 
 import { queueProjectSave, saveProjectNow } from "./autosave.svelte";
 import { canvasState } from "./canvas.svelte";
 
-function createProjectState() {
-	let id = $state(PROD_PROJECT_ID);
-	let name = $state("Untitled");
-	let elements = $state<Project["elements"]>([]);
-	let importExportState = $state<Project["importExportState"]>({
+type ProjectState = {
+	id: string;
+	name: string;
+	elements: Project["elements"];
+	importExportState: Project["importExportState"];
+	initialized: boolean;
+	selectedElementId: string | null;
+};
+
+const store = writable<ProjectState>({
+	id: PROD_PROJECT_ID,
+	name: "Untitled",
+	elements: [],
+	importExportState: {
 		importsOpen: true,
 		elementsOpen: true
-	});
-	let initialized = $state(false);
-	let selectedElementId = $state<string | null>(null);
+	},
+	initialized: false,
+	selectedElementId: null
+});
 
-	function toProject(): Project {
-		return {
-			id,
-			name,
-			canvas: {
-				width: canvasState.width,
-				height: canvasState.height,
-				x: canvasState.x,
-				y: canvasState.y
-			},
-			camera: {
-				x: canvasState.camera.x,
-				y: canvasState.camera.y,
-				zoom: canvasState.camera.zoom
-			},
-			elements: elements.map((element) => ({ ...element })),
-			importExportState: { ...importExportState }
-		};
-	}
+function toProject(): Project {
+	const project = get(store);
+	const canvas = canvasState.getSnapshot();
 
-	function queueSave(project = toProject()) {
-		queueProjectSave(project, initialized);
-	}
+	return {
+		id: project.id,
+		name: project.name,
+		canvas: {
+			width: canvas.width,
+			height: canvas.height,
+			x: canvas.x,
+			y: canvas.y
+		},
+		camera: {
+			x: canvas.camera.x,
+			y: canvas.camera.y,
+			zoom: canvas.camera.zoom
+		},
+		elements: project.elements.map((element) => ({ ...element })),
+		importExportState: { ...project.importExportState }
+	};
+}
 
-	async function saveNow() {
-		await saveProjectNow(toProject(), initialized);
-	}
+export const projectState = {
+	subscribe: store.subscribe,
 
-	async function load(projectId = PROD_PROJECT_ID) {
-		id = projectId;
+	toProject,
+
+	getSelectedElement() {
+		const project = get(store);
+		return project.elements.find((element) => element.id === project.selectedElementId) ?? null;
+	},
+
+	queueSave(project = toProject()) {
+		queueProjectSave(project, get(store).initialized);
+	},
+
+	async saveNow() {
+		await saveProjectNow(toProject(), get(store).initialized);
+	},
+
+	async load(projectId = PROD_PROJECT_ID) {
+		store.update((state) => ({ ...state, id: projectId }));
 
 		try {
-			const record = await fetchProject(id);
-			name = record.name;
-			elements = normalizeElements(record.elements);
-			importExportState = record.importExportState;
+			const record = await fetchProject(projectId);
+			store.update((state) => ({
+				...state,
+				name: record.name,
+				elements: normalizeElements(record.elements),
+				importExportState: record.importExportState
+			}));
 			canvasState.setSize(record.canvas.width, record.canvas.height);
 			canvasState.setPosition(record.canvas.x, record.canvas.y);
 			if (record.camera) {
@@ -62,38 +89,41 @@ function createProjectState() {
 			console.warn("Failed to load project, using defaults:", error);
 		}
 
-		selectedElementId = null;
-		initialized = true;
-	}
+		store.update((state) => ({ ...state, selectedElementId: null, initialized: true }));
+	},
 
-	function setName(nextName: string) {
-		name = nextName;
-		queueSave();
-	}
+	setName(nextName: string) {
+		store.update((state) => ({ ...state, name: nextName }));
+		this.queueSave();
+	},
 
-	function setImportExportState(nextState: Partial<Project["importExportState"]>) {
+	setImportExportState(nextState: Partial<Project["importExportState"]>) {
+		const current = get(store).importExportState;
 		const nextImportExportState = {
-			...importExportState,
+			...current,
 			...nextState
 		};
 
 		if (
-			nextImportExportState.importsOpen === importExportState.importsOpen &&
-			nextImportExportState.elementsOpen === importExportState.elementsOpen
+			nextImportExportState.importsOpen === current.importsOpen &&
+			nextImportExportState.elementsOpen === current.elementsOpen
 		) {
 			return;
 		}
 
-		importExportState = nextImportExportState;
-		queueSave();
-	}
+		store.update((state) => ({ ...state, importExportState: nextImportExportState }));
+		this.queueSave();
+	},
 
-	async function createNewProject() {
+	async createNewProject() {
 		const fresh = await resetProdProject();
-		name = fresh.name;
-		elements = fresh.elements;
-		importExportState = fresh.importExportState;
-		selectedElementId = null;
+		store.update((state) => ({
+			...state,
+			name: fresh.name,
+			elements: fresh.elements,
+			importExportState: fresh.importExportState,
+			selectedElementId: null
+		}));
 		canvasState.setSize(fresh.canvas.width, fresh.canvas.height);
 		canvasState.setPosition(fresh.canvas.x, fresh.canvas.y);
 		if (fresh.camera) {
@@ -101,93 +131,64 @@ function createProjectState() {
 		} else {
 			canvasState.resetCamera();
 		}
-		queueSave();
-	}
+		this.queueSave();
+	},
 
-	function addElement(element: Element) {
-		elements = [...elements, element];
-		selectedElementId = element.id;
-		queueSave();
-	}
+	addElement(element: Element) {
+		store.update((state) => ({
+			...state,
+			elements: [...state.elements, element],
+			selectedElementId: element.id
+		}));
+		this.queueSave();
+	},
 
-	function updateElement(id: string, patch: Partial<Omit<Element, "id" | "type">>) {
-		elements = elements.map((element) => {
-			if (element.id !== id) return element;
-			return { ...element, ...patch } as Element;
-		});
-		queueSave();
-	}
+	updateElement(id: string, patch: Partial<Omit<Element, "id" | "type">>) {
+		store.update((state) => ({
+			...state,
+			elements: state.elements.map((element) => {
+				if (element.id !== id) return element;
+				return { ...element, ...patch } as Element;
+			})
+		}));
+		this.queueSave();
+	},
 
-	function renameElement(id: string, nextName: string) {
-		updateElement(id, { name: nextName });
-	}
+	renameElement(id: string, nextName: string) {
+		this.updateElement(id, { name: nextName });
+	},
 
-	function selectElement(id: string | null) {
-		selectedElementId = id;
-	}
+	selectElement(id: string | null) {
+		store.update((state) => ({ ...state, selectedElementId: id }));
+	},
 
-	function reorderElements(fromIndex: number, toIndex: number) {
+	reorderElements(fromIndex: number, toIndex: number) {
+		const project = get(store);
 		if (
 			fromIndex === toIndex ||
 			fromIndex < 0 ||
-			fromIndex >= elements.length ||
+			fromIndex >= project.elements.length ||
 			toIndex < 0 ||
-			toIndex >= elements.length
+			toIndex >= project.elements.length
 		) {
 			return;
 		}
 
-		const next = [...elements];
+		const next = [...project.elements];
 		const [moved] = next.splice(fromIndex, 1);
 		next.splice(toIndex, 0, moved);
-		elements = next;
-		queueSave();
+		store.update((state) => ({ ...state, elements: next }));
+		this.queueSave();
+	},
+
+	deleteElement(id: string) {
+		store.update((state) => ({
+			...state,
+			elements: state.elements.filter((element) => element.id !== id),
+			selectedElementId: state.selectedElementId === id ? null : state.selectedElementId
+		}));
+		this.queueSave();
 	}
+};
 
-	function deleteElement(id: string) {
-		elements = elements.filter((element) => element.id !== id);
-		if (selectedElementId === id) {
-			selectedElementId = null;
-		}
-		queueSave();
-	}
-
-	return {
-		get id() {
-			return id;
-		},
-		get name() {
-			return name;
-		},
-		get initialized() {
-			return initialized;
-		},
-		get importExportState() {
-			return importExportState;
-		},
-		get elements() {
-			return elements;
-		},
-		get selectedElementId() {
-			return selectedElementId;
-		},
-		get selectedElement() {
-			return elements.find((element) => element.id === selectedElementId) ?? null;
-		},
-		load,
-		queueSave,
-		saveNow,
-		setName,
-		setImportExportState,
-		createNewProject,
-		addElement,
-		updateElement,
-		renameElement,
-		selectElement,
-		reorderElements,
-		deleteElement
-	};
-}
-
-export const projectState = createProjectState();
 export type { Project };

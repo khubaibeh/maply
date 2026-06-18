@@ -23,11 +23,11 @@
 	import Upload from "@lucide/svelte/icons/upload";
 	import type { Component } from "svelte";
 
-	let editName = $state(projectState.name);
+	let editName = $state("");
 	let isEditing = $state(false);
 	let inputRef: HTMLInputElement | null = $state(null);
-	let importsOpen = $state(projectState.importExportState.importsOpen);
-	let elementsOpen = $state(projectState.importExportState.elementsOpen);
+	let importsOpen = $state(true);
+	let elementsOpen = $state(true);
 	let newProjectDialogOpen = $state(false);
 	let editingElementId = $state<string | null>(null);
 	let editingElementName = $state("");
@@ -60,7 +60,7 @@
 	});
 
 	function startEditing() {
-		editName = projectState.name;
+		editName = $projectState.name;
 		isEditing = true;
 	}
 
@@ -70,7 +70,7 @@
 	}
 
 	function cancel() {
-		editName = projectState.name;
+		editName = $projectState.name;
 		isEditing = false;
 	}
 
@@ -115,15 +115,15 @@
 	});
 
 	$effect(() => {
-		if (!projectState.initialized) return;
+		if (!$projectState.initialized) return;
 		if (isEditing) return;
-		editName = projectState.name;
-		importsOpen = projectState.importExportState.importsOpen;
-		elementsOpen = projectState.importExportState.elementsOpen;
+		editName = $projectState.name;
+		importsOpen = $projectState.importExportState.importsOpen;
+		elementsOpen = $projectState.importExportState.elementsOpen;
 	});
 
 	$effect(() => {
-		if (!projectState.initialized) return;
+		if (!$projectState.initialized) return;
 		projectState.setImportExportState({ importsOpen, elementsOpen });
 	});
 </script>
@@ -145,7 +145,7 @@
 				role="button"
 				tabindex="0"
 			>
-				{projectState.name}
+				{$projectState.name}
 			</span>
 		{/if}
 		<div class="flex items-center gap-x-1">
@@ -256,9 +256,9 @@
 					<ContextMenu.Trigger class="flex flex-1 flex-col">
 						<ScrollArea class="flex-1">
 							<div class="flex min-h-full flex-col gap-0.5 p-2">
-								{#each projectState.elements as element (element.id)}
+								{#each $projectState.elements as element (element.id)}
 									{@const Icon = elementIcons[element.type]}
-									{@const isSelected = projectState.selectedElementId === element.id}
+									{@const isSelected = $projectState.selectedElementId === element.id}
 									{@const isEditingElement = editingElementId === element.id}
 									{#if isEditingElement}
 										<div

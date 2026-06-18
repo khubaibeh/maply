@@ -1,43 +1,43 @@
 import type { Tool } from "$lib/editor/model/tools";
+import { get, writable } from "svelte/store";
 
 export type { Tool };
 
-function createToolState() {
-	let activeTool = $state<Tool>("select");
-	let previousTool = $state<Tool | null>(null);
-	let isSpacePressed = $state(false);
+type ToolState = {
+	activeTool: Tool;
+	previousTool: Tool | null;
+	isSpacePressed: boolean;
+};
 
-	function setTool(tool: Tool) {
-		activeTool = tool;
-	}
+const store = writable<ToolState>({
+	activeTool: "select",
+	previousTool: null,
+	isSpacePressed: false
+});
 
-	function setSpacePressed(value: boolean) {
+export const toolState = {
+	subscribe: store.subscribe,
+
+	setTool(tool: Tool) {
+		store.update((state) => ({ ...state, activeTool: tool }));
+	},
+
+	setSpacePressed(value: boolean) {
+		const state = get(store);
+
 		if (value) {
-			if (activeTool !== "hand") {
-				previousTool = activeTool;
-				activeTool = "hand";
-			}
-		} else if (previousTool !== null) {
-			activeTool = previousTool;
-			previousTool = null;
+			store.set({
+				activeTool: state.activeTool === "hand" ? state.activeTool : "hand",
+				previousTool: state.activeTool === "hand" ? state.previousTool : state.activeTool,
+				isSpacePressed: true
+			});
+			return;
 		}
 
-		isSpacePressed = value;
+		store.set({
+			activeTool: state.previousTool ?? state.activeTool,
+			previousTool: null,
+			isSpacePressed: false
+		});
 	}
-
-	return {
-		get activeTool() {
-			return activeTool;
-		},
-		set activeTool(value: Tool) {
-			activeTool = value;
-		},
-		get isSpacePressed() {
-			return isSpacePressed;
-		},
-		setTool,
-		setSpacePressed
-	};
-}
-
-export const toolState = createToolState();
+};

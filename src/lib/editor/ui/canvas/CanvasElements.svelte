@@ -3,14 +3,14 @@
 	import { toolState } from "$lib/editor/state/tool.svelte";
 
 	function selectElement(event: PointerEvent, id: string) {
-		if (toolState.activeTool !== "select") return;
+		if ($toolState.activeTool !== "select") return;
 		event.stopPropagation();
 		projectState.selectElement(id);
 	}
 </script>
 
 <g class="canvas-elements">
-	{#each projectState.elements as element (element.id)}
+	{#each $projectState.elements as element (element.id)}
 		{#if element.type === "rect"}
 			<rect
 				id="element-{element.id}"

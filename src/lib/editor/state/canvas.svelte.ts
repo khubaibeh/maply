@@ -8,88 +8,78 @@ import {
 	sanitizeCanvasSize
 } from "$lib/editor/actions/canvas-actions";
 import type { Camera } from "$lib/editor/model/project";
+import { get, writable } from "svelte/store";
 
-function createCanvasState() {
-	let width = $state(DEFAULT_CANVAS_WIDTH);
-	let height = $state(DEFAULT_CANVAS_HEIGHT);
-	let x = $state(0);
-	let y = $state(0);
-	let camera = $state<Camera>({ x: 0, y: 0, zoom: DEFAULT_ZOOM });
+type CanvasState = {
+	width: number;
+	height: number;
+	x: number;
+	y: number;
+	camera: Camera;
+	minZoom: number;
+	maxZoom: number;
+};
 
-	function setSize(nextWidth: number, nextHeight: number) {
-		width = sanitizeCanvasSize(nextWidth);
-		height = sanitizeCanvasSize(nextHeight);
-	}
+const store = writable<CanvasState>({
+	width: DEFAULT_CANVAS_WIDTH,
+	height: DEFAULT_CANVAS_HEIGHT,
+	x: 0,
+	y: 0,
+	camera: { x: 0, y: 0, zoom: DEFAULT_ZOOM },
+	minZoom: MIN_ZOOM,
+	maxZoom: MAX_ZOOM
+});
 
-	function setPosition(nextX: number, nextY: number) {
-		x = nextX;
-		y = nextY;
-	}
+export const canvasState = {
+	subscribe: store.subscribe,
 
-	function setCamera(next: Partial<Camera>) {
-		camera = mergeCamera(camera, next);
-	}
+	getSnapshot() {
+		return get(store);
+	},
 
-	function pan(deltaX: number, deltaY: number) {
-		setCamera({ x: camera.x + deltaX, y: camera.y + deltaY });
-	}
+	setSize(nextWidth: number, nextHeight: number) {
+		store.update((state) => ({
+			...state,
+			width: sanitizeCanvasSize(nextWidth),
+			height: sanitizeCanvasSize(nextHeight)
+		}));
+	},
 
-	function zoomIn() {
-		setCamera({ zoom: camera.zoom + 0.1 });
-	}
+	setPosition(nextX: number, nextY: number) {
+		store.update((state) => ({ ...state, x: nextX, y: nextY }));
+	},
 
-	function zoomOut() {
-		setCamera({ zoom: camera.zoom - 0.1 });
-	}
+	setCamera(next: Partial<Camera>) {
+		store.update((state) => ({ ...state, camera: mergeCamera(state.camera, next) }));
+	},
 
-	function resetZoom() {
-		setCamera({ zoom: DEFAULT_ZOOM });
-	}
+	pan(deltaX: number, deltaY: number) {
+		const state = get(store);
+		this.setCamera({ x: state.camera.x + deltaX, y: state.camera.y + deltaY });
+	},
 
-	function resetCamera() {
-		camera = { x: 0, y: 0, zoom: DEFAULT_ZOOM };
-	}
+	zoomIn() {
+		this.setCamera({ zoom: get(store).camera.zoom + 0.1 });
+	},
 
-	function centerCamera(containerWidth: number, containerHeight: number) {
-		setCamera({
-			x: -containerWidth / 2 + x + width / 2,
-			y: -containerHeight / 2 + y + height / 2,
+	zoomOut() {
+		this.setCamera({ zoom: get(store).camera.zoom - 0.1 });
+	},
+
+	resetZoom() {
+		this.setCamera({ zoom: DEFAULT_ZOOM });
+	},
+
+	resetCamera() {
+		store.update((state) => ({ ...state, camera: { x: 0, y: 0, zoom: DEFAULT_ZOOM } }));
+	},
+
+	centerCamera(containerWidth: number, containerHeight: number) {
+		const state = get(store);
+		this.setCamera({
+			x: -containerWidth / 2 + state.x + state.width / 2,
+			y: -containerHeight / 2 + state.y + state.height / 2,
 			zoom: DEFAULT_ZOOM
 		});
 	}
-
-	return {
-		get width() {
-			return width;
-		},
-		get height() {
-			return height;
-		},
-		get x() {
-			return x;
-		},
-		get y() {
-			return y;
-		},
-		get camera() {
-			return camera;
-		},
-		get minZoom() {
-			return MIN_ZOOM;
-		},
-		get maxZoom() {
-			return MAX_ZOOM;
-		},
-		setSize,
-		setPosition,
-		setCamera,
-		pan,
-		zoomIn,
-		zoomOut,
-		resetZoom,
-		resetCamera,
-		centerCamera
-	};
-}
-
-export const canvasState = createCanvasState();
+};

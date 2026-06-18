@@ -13,10 +13,10 @@
 </defs>
 
 <rect
-	x={canvasState.x}
-	y={canvasState.y}
-	width={canvasState.width}
-	height={canvasState.height}
+	x={$canvasState.x}
+	y={$canvasState.y}
+	width={$canvasState.width}
+	height={$canvasState.height}
 	fill="#ffffff"
 	stroke="var(--border)"
 	filter="url(#canvas-shadow)"
@@ -24,6 +24,6 @@
 
 <CanvasElements />
 
-{#if projectState.selectedElementId}
-	<SelectionOutline elementId={projectState.selectedElementId} />
+{#if $projectState.selectedElementId}
+	<SelectionOutline elementId={$projectState.selectedElementId} />
 {/if}

@@ -22,7 +22,9 @@
 
 			if (event.key === "c") {
 				if (isEditingText(event)) return;
-				const selected = projectState.selectedElement;
+				const selected = $projectState.elements.find(
+					(element) => element.id === $projectState.selectedElementId
+				);
 				if (!selected) return;
 
 				event.preventDefault();
