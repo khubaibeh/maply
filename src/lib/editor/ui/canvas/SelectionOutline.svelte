@@ -1,35 +1,106 @@
 <script lang="ts">
+	import type { Element } from "$lib/editor/model/elements";
+	import { canvasState } from "$lib/editor/state/canvas.svelte";
+	import { projectState } from "$lib/editor/state/project.svelte";
+	import { toolState } from "$lib/editor/state/tool.svelte";
+	import { onMount } from "svelte";
+
 	interface Props {
-		elementId: string;
+		element: Element;
 	}
 
-	let { elementId }: Props = $props();
+	let { element }: Props = $props();
 
 	let bbox = $state({ x: 0, y: 0, width: 0, height: 0 });
+	let dragState = $state<{ clientX: number; clientY: number } | null>(null);
 
 	$effect(() => {
 		if (typeof document === "undefined") return;
-		const el = document.getElementById(`element-${elementId}`);
+		const el = document.getElementById(`element-${element.id}`);
 		if (!(el instanceof SVGGraphicsElement)) return;
+		const svg = el.ownerSVGElement;
+		if (!svg) return;
+		const elementScreenMatrix = el.getScreenCTM();
+		const svgScreenMatrix = svg.getScreenCTM();
+		if (!elementScreenMatrix || !svgScreenMatrix) return;
+
 		const rect = el.getBBox();
+		const matrix = svgScreenMatrix.inverse().multiply(elementScreenMatrix);
+		const corners = [
+			toSvgPoint(svg, rect.x, rect.y).matrixTransform(matrix),
+			toSvgPoint(svg, rect.x + rect.width, rect.y).matrixTransform(matrix),
+			toSvgPoint(svg, rect.x, rect.y + rect.height).matrixTransform(matrix),
+			toSvgPoint(svg, rect.x + rect.width, rect.y + rect.height).matrixTransform(matrix)
+		];
+		const minX = Math.min(...corners.map((point) => point.x));
+		const minY = Math.min(...corners.map((point) => point.y));
+		const maxX = Math.max(...corners.map((point) => point.x));
+		const maxY = Math.max(...corners.map((point) => point.y));
 		const padding = 2;
+
 		bbox = {
-			x: rect.x - padding,
-			y: rect.y - padding,
-			width: rect.width + padding * 2,
-			height: rect.height + padding * 2
+			x: minX - padding,
+			y: minY - padding,
+			width: maxX - minX + padding * 2,
+			height: maxY - minY + padding * 2
+		};
+	});
+
+	function toSvgPoint(svg: SVGSVGElement, x: number, y: number) {
+		const point = svg.createSVGPoint();
+		point.x = x;
+		point.y = y;
+		return point;
+	}
+
+	function startSelectionDrag(event: PointerEvent) {
+		if (event.button !== 0) return;
+		if ($toolState.activeTool !== "select") return;
+
+		event.stopPropagation();
+		projectState.selectElement(element.id);
+		dragState = { clientX: event.clientX, clientY: event.clientY };
+	}
+
+	onMount(() => {
+		function handlePointerMove(event: PointerEvent) {
+			if (!dragState) return;
+
+			const dx = (event.clientX - dragState.clientX) / $canvasState.camera.zoom;
+			const dy = (event.clientY - dragState.clientY) / $canvasState.camera.zoom;
+			dragState = { clientX: event.clientX, clientY: event.clientY };
+			projectState.translateElement(element.id, dx, dy);
+		}
+
+		function stopDragging() {
+			dragState = null;
+		}
+
+		window.addEventListener("pointermove", handlePointerMove);
+		window.addEventListener("pointerup", stopDragging);
+		window.addEventListener("pointercancel", stopDragging);
+
+		return () => {
+			window.removeEventListener("pointermove", handlePointerMove);
+			window.removeEventListener("pointerup", stopDragging);
+			window.removeEventListener("pointercancel", stopDragging);
 		};
 	});
 </script>
 
 <rect
+	role="button"
+	tabindex="-1"
+	aria-label="Move {element.name}"
 	x={bbox.x}
 	y={bbox.y}
 	width={bbox.width}
 	height={bbox.height}
-	fill="none"
+	fill="transparent"
 	stroke="var(--primary)"
 	stroke-width="1"
 	stroke-dasharray="4 2"
-	pointer-events="none"
+	pointer-events="all"
+	class="cursor-move"
+	onpointerdown={startSelectionDrag}
 />

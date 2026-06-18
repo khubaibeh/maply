@@ -1,12 +1,42 @@
 <script lang="ts">
+	import { canvasState } from "$lib/editor/state/canvas.svelte";
 	import { projectState } from "$lib/editor/state/project.svelte";
 	import { toolState } from "$lib/editor/state/tool.svelte";
+	import { onMount } from "svelte";
+
+	let dragState = $state<{ id: string; clientX: number; clientY: number } | null>(null);
 
 	function selectElement(event: PointerEvent, id: string) {
 		if ($toolState.activeTool !== "select") return;
 		event.stopPropagation();
 		projectState.selectElement(id);
+		dragState = { id, clientX: event.clientX, clientY: event.clientY };
 	}
+
+	onMount(() => {
+		function handlePointerMove(event: PointerEvent) {
+			if (!dragState) return;
+
+			const dx = (event.clientX - dragState.clientX) / $canvasState.camera.zoom;
+			const dy = (event.clientY - dragState.clientY) / $canvasState.camera.zoom;
+			dragState = { id: dragState.id, clientX: event.clientX, clientY: event.clientY };
+			projectState.translateElement(dragState.id, dx, dy);
+		}
+
+		function stopDragging() {
+			dragState = null;
+		}
+
+		window.addEventListener("pointermove", handlePointerMove);
+		window.addEventListener("pointerup", stopDragging);
+		window.addEventListener("pointercancel", stopDragging);
+
+		return () => {
+			window.removeEventListener("pointermove", handlePointerMove);
+			window.removeEventListener("pointerup", stopDragging);
+			window.removeEventListener("pointercancel", stopDragging);
+		};
+	});
 </script>
 
 <g class="canvas-elements">

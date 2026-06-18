@@ -1,4 +1,4 @@
-import { normalizeElements } from "$lib/editor/actions/element-actions";
+import { normalizeElements, translateElement } from "$lib/editor/actions/element-actions";
 import type { Element } from "$lib/editor/model/elements";
 import type { Project } from "$lib/editor/model/project";
 import { fetchProject, PROD_PROJECT_ID, resetProdProject } from "$lib/editor/persistence/indexeddb-project-repository";
@@ -149,6 +149,19 @@ export const projectState = {
 			elements: state.elements.map((element) => {
 				if (element.id !== id) return element;
 				return { ...element, ...patch } as Element;
+			})
+		}));
+		this.queueSave();
+	},
+
+	translateElement(id: string, dx: number, dy: number) {
+		if (dx === 0 && dy === 0) return;
+
+		store.update((state) => ({
+			...state,
+			elements: state.elements.map((element) => {
+				if (element.id !== id) return element;
+				return translateElement(element, dx, dy);
 			})
 		}));
 		this.queueSave();

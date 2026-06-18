@@ -4,6 +4,10 @@
 
 	import CanvasElements from "./CanvasElements.svelte";
 	import SelectionOutline from "./SelectionOutline.svelte";
+
+	const selectedElement = $derived(
+		$projectState.elements.find((element) => element.id === $projectState.selectedElementId) ?? null
+	);
 </script>
 
 <defs>
@@ -24,6 +28,6 @@
 
 <CanvasElements />
 
-{#if $projectState.selectedElementId}
-	<SelectionOutline elementId={$projectState.selectedElementId} />
+{#if selectedElement}
+	<SelectionOutline element={selectedElement} />
 {/if}
