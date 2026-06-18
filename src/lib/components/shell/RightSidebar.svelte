@@ -1,7 +1,9 @@
 <script lang="ts">
+	import ElementProperties from "$lib/components/shell/ElementProperties.svelte";
 	import { Input } from "$lib/components/ui/input";
 	import { ScrollArea } from "$lib/components/ui/scroll-area";
 	import { canvasState } from "$lib/state/canvas.svelte";
+	import { projectState } from "$lib/state/project.svelte";
 
 	function updateWidth(event: Event) {
 		const value = parseInt((event.target as HTMLInputElement).value, 10);
@@ -23,7 +25,7 @@
 		<span class="text-sidebar-foreground/80 text-xs font-semibold tracking-wide uppercase">Properties</span>
 	</div>
 	<ScrollArea class="h-full">
-		<div class="p-3">
+		<div class="flex flex-col gap-4 p-3">
 			<div class="flex flex-col gap-2">
 				<span class="text-sidebar-foreground/80 text-xs font-semibold tracking-wide">Canvas</span>
 				<div class="grid grid-cols-2 gap-2">
@@ -51,6 +53,15 @@
 					</div>
 				</div>
 			</div>
+
+			{#if projectState.selectedElement}
+				<div class="flex flex-col gap-2">
+					<span class="text-sidebar-foreground/80 text-xs font-semibold tracking-wide">
+						{projectState.selectedElement.name}
+					</span>
+					<ElementProperties element={projectState.selectedElement} />
+				</div>
+			{/if}
 		</div>
 	</ScrollArea>
 </aside>

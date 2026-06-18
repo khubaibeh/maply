@@ -1,12 +1,15 @@
 <script lang="ts">
 	import { canvasState } from "$lib/state/canvas.svelte";
+	import { projectState } from "$lib/state/project.svelte";
 	import { toolState } from "$lib/state/tool.svelte";
+	import type { RectElement } from "$lib/storage/schema";
 	import { onMount } from "svelte";
 
 	import CanvasArtboard from "./CanvasArtboard.svelte";
 	import CanvasBackground from "./CanvasBackground.svelte";
 
 	let container: HTMLDivElement | null = $state(null);
+	let svgRef: SVGSVGElement | null = $state(null);
 	let containerWidth = $state(0);
 	let containerHeight = $state(0);
 	let isPanning = $state(false);
@@ -15,6 +18,13 @@
 	let cameraStart = $state({ x: 0, y: 0 });
 
 	const isHandActive = $derived(toolState.activeTool === "hand" || (isHovering && toolState.isSpacePressed));
+	const isDrawingTool = $derived(["rect", "circle", "path", "text", "image"].includes(toolState.activeTool));
+	const cursorClass = $derived(() => {
+		if (isPanning) return "cursor-grabbing";
+		if (isHandActive) return "cursor-grab";
+		if (isDrawingTool) return "cursor-crosshair";
+		return "cursor-default";
+	});
 
 	onMount(() => {
 		if (!container) return;
@@ -135,35 +145,79 @@
 	const viewBox = $derived(
 		`${canvasState.camera.x} ${canvasState.camera.y} ${containerWidth / canvasState.camera.zoom} ${containerHeight / canvasState.camera.zoom}`
 	);
+
+	function createId(): string {
+		if (typeof crypto !== "undefined" && crypto.randomUUID) {
+			return crypto.randomUUID();
+		}
+		return Math.random().toString(36).slice(2);
+	}
+
+	function nextRectangleName(): string {
+		const rectCount = projectState.elements.filter((element) => element.type === "rect").length;
+		return `rectangle${rectCount + 1}`;
+	}
+
+	function handleSvgPointerDown(event: PointerEvent) {
+		if (event.button !== 0) return;
+		if (toolState.activeTool !== "rect") return;
+		if (!svgRef) return;
+
+		const ctm = svgRef.getScreenCTM();
+		if (!ctm) return;
+
+		const point = svgRef.createSVGPoint();
+		point.x = event.clientX;
+		point.y = event.clientY;
+		const svgPoint = point.matrixTransform(ctm.inverse());
+
+		const insideArtboard =
+			svgPoint.x >= canvasState.x &&
+			svgPoint.y >= canvasState.y &&
+			svgPoint.x <= canvasState.x + canvasState.width &&
+			svgPoint.y <= canvasState.y + canvasState.height;
+
+		if (!insideArtboard) return;
+
+		event.stopPropagation();
+
+		const newRect: RectElement = {
+			id: createId(),
+			name: nextRectangleName(),
+			type: "rect",
+			x: svgPoint.x,
+			y: svgPoint.y,
+			width: 120,
+			height: 80,
+			fill: "#000000",
+			stroke: "#000000",
+			strokeWidth: 0
+		};
+
+		projectState.addElement(newRect);
+		toolState.activeTool = "select";
+	}
 </script>
 
 <div
 	bind:this={container}
-	class="canvas-viewport bg-muted relative min-h-0 flex-1 overflow-hidden outline-none"
-	class:panning={isPanning}
-	class:hand={isHandActive}
+	class="canvas-viewport bg-muted relative min-h-0 flex-1 overflow-hidden outline-none {cursorClass()}"
 	role="application"
 	aria-label="Canvas workspace"
 	tabindex="-1"
 >
 	{#if containerWidth > 0 && containerHeight > 0}
-		<svg width="100%" height="100%" {viewBox} role="img" aria-label="Canvas workspace">
+		<svg
+			bind:this={svgRef}
+			width="100%"
+			height="100%"
+			{viewBox}
+			role="img"
+			aria-label="Canvas workspace"
+			onpointerdown={handleSvgPointerDown}
+		>
 			<CanvasBackground {containerWidth} {containerHeight} camera={canvasState.camera} />
 			<CanvasArtboard />
 		</svg>
 	{/if}
 </div>
-
-<style>
-	.canvas-viewport {
-		cursor: default;
-	}
-
-	.canvas-viewport.hand {
-		cursor: grab;
-	}
-
-	.canvas-viewport.panning {
-		cursor: grabbing;
-	}
-</style>

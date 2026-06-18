@@ -1,7 +1,40 @@
 import { fetchProject, PROD_PROJECT_ID, resetProdProject, saveProject } from "$lib/storage/project";
-import type { Project } from "$lib/storage/schema";
+import type { Element, Project } from "$lib/storage/schema";
 
 import { canvasState } from "./canvas.svelte";
+
+function defaultElementName(element: Element): string {
+	switch (element.type) {
+		case "rect":
+			return "rectangle";
+		case "circle":
+			return "circle";
+		case "path":
+			return "path";
+		case "text":
+			return "text";
+		case "image":
+			return "image";
+		default:
+			return "element";
+	}
+}
+
+function normalizeElements(items: Element[]): Element[] {
+	return items.map((element) => {
+		const normalized: Element = {
+			...element,
+			name: element.name?.trim() || defaultElementName(element)
+		};
+
+		if (normalized.type === "path" && (typeof normalized.x !== "number" || typeof normalized.y !== "number")) {
+			normalized.x = 0;
+			normalized.y = 0;
+		}
+
+		return normalized;
+	});
+}
 
 function createProjectState() {
 	let id = $state(PROD_PROJECT_ID);
@@ -13,6 +46,7 @@ function createProjectState() {
 	});
 	let initialized = $state(false);
 	let saveTimeout: ReturnType<typeof setTimeout> | null = null;
+	let selectedElementId = $state<string | null>(null);
 
 	function toProject(): Project {
 		return {
@@ -62,7 +96,7 @@ function createProjectState() {
 		try {
 			const record = await fetchProject(id);
 			name = record.name;
-			elements = record.elements;
+			elements = normalizeElements(record.elements);
 			importExportState = record.importExportState;
 			canvasState.setSize(record.canvas.width, record.canvas.height);
 			canvasState.setPosition(record.canvas.x, record.canvas.y);
@@ -73,6 +107,7 @@ function createProjectState() {
 			console.warn("Failed to load project, using defaults:", error);
 		}
 
+		selectedElementId = null;
 		initialized = true;
 	}
 
@@ -103,12 +138,61 @@ function createProjectState() {
 		name = fresh.name;
 		elements = fresh.elements;
 		importExportState = fresh.importExportState;
+		selectedElementId = null;
 		canvasState.setSize(fresh.canvas.width, fresh.canvas.height);
 		canvasState.setPosition(fresh.canvas.x, fresh.canvas.y);
 		if (fresh.camera) {
 			canvasState.setCamera(fresh.camera);
 		} else {
 			canvasState.resetCamera();
+		}
+		queueSave();
+	}
+
+	function addElement(element: Element) {
+		elements = [...elements, element];
+		selectedElementId = element.id;
+		queueSave();
+	}
+
+	function updateElement(id: string, patch: Partial<Omit<Element, "id" | "type">>) {
+		elements = elements.map((element) => {
+			if (element.id !== id) return element;
+			return { ...element, ...patch } as Element;
+		});
+		queueSave();
+	}
+
+	function renameElement(id: string, nextName: string) {
+		updateElement(id, { name: nextName });
+	}
+
+	function selectElement(id: string | null) {
+		selectedElementId = id;
+	}
+
+	function reorderElements(fromIndex: number, toIndex: number) {
+		if (
+			fromIndex === toIndex ||
+			fromIndex < 0 ||
+			fromIndex >= elements.length ||
+			toIndex < 0 ||
+			toIndex >= elements.length
+		) {
+			return;
+		}
+
+		const next = [...elements];
+		const [moved] = next.splice(fromIndex, 1);
+		next.splice(toIndex, 0, moved);
+		elements = next;
+		queueSave();
+	}
+
+	function deleteElement(id: string) {
+		elements = elements.filter((element) => element.id !== id);
+		if (selectedElementId === id) {
+			selectedElementId = null;
 		}
 		queueSave();
 	}
@@ -126,12 +210,27 @@ function createProjectState() {
 		get importExportState() {
 			return importExportState;
 		},
+		get elements() {
+			return elements;
+		},
+		get selectedElementId() {
+			return selectedElementId;
+		},
+		get selectedElement() {
+			return elements.find((element) => element.id === selectedElementId) ?? null;
+		},
 		load,
 		queueSave,
 		saveNow,
 		setName,
 		setImportExportState,
-		createNewProject
+		createNewProject,
+		addElement,
+		updateElement,
+		renameElement,
+		selectElement,
+		reorderElements,
+		deleteElement
 	};
 }
 

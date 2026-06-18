@@ -1,5 +1,9 @@
 <script lang="ts">
 	import { canvasState } from "$lib/state/canvas.svelte";
+	import { projectState } from "$lib/state/project.svelte";
+
+	import CanvasElements from "./CanvasElements.svelte";
+	import SelectionOutline from "./SelectionOutline.svelte";
 </script>
 
 <defs>
@@ -17,3 +21,9 @@
 	stroke="var(--border)"
 	filter="url(#canvas-shadow)"
 />
+
+<CanvasElements />
+
+{#if projectState.selectedElementId}
+	<SelectionOutline elementId={projectState.selectedElementId} />
+{/if}
