@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { projectState } from "$lib/state/project.svelte";
-	import { toolState } from "$lib/state/tool.svelte";
+	import { projectState } from "$lib/editor/state/project.svelte";
+	import { toolState } from "$lib/editor/state/tool.svelte";
 
 	function selectElement(event: PointerEvent, id: string) {
 		if (toolState.activeTool !== "select") return;

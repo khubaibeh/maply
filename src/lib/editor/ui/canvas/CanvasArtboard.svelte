@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { canvasState } from "$lib/state/canvas.svelte";
-	import { projectState } from "$lib/state/project.svelte";
+	import { canvasState } from "$lib/editor/state/canvas.svelte";
+	import { projectState } from "$lib/editor/state/project.svelte";
 
 	import CanvasElements from "./CanvasElements.svelte";
 	import SelectionOutline from "./SelectionOutline.svelte";

@@ -1,8 +1,10 @@
 <script lang="ts">
-	import { canvasState } from "$lib/state/canvas.svelte";
-	import { projectState } from "$lib/state/project.svelte";
-	import { toolState } from "$lib/state/tool.svelte";
-	import type { RectElement } from "$lib/storage/schema";
+	import { createRectElement } from "$lib/editor/actions/element-actions";
+	import { isPointInsideCanvas } from "$lib/editor/model/geometry";
+	import { isDrawingTool } from "$lib/editor/model/tools";
+	import { canvasState } from "$lib/editor/state/canvas.svelte";
+	import { projectState } from "$lib/editor/state/project.svelte";
+	import { toolState } from "$lib/editor/state/tool.svelte";
 	import { onMount } from "svelte";
 
 	import CanvasArtboard from "./CanvasArtboard.svelte";
@@ -18,11 +20,11 @@
 	let cameraStart = $state({ x: 0, y: 0 });
 
 	const isHandActive = $derived(toolState.activeTool === "hand" || (isHovering && toolState.isSpacePressed));
-	const isDrawingTool = $derived(["rect", "circle", "path", "text", "image"].includes(toolState.activeTool));
+	const drawingToolActive = $derived(isDrawingTool(toolState.activeTool));
 	const cursorClass = $derived(() => {
 		if (isPanning) return "cursor-grabbing";
 		if (isHandActive) return "cursor-grab";
-		if (isDrawingTool) return "cursor-crosshair";
+		if (drawingToolActive) return "cursor-crosshair";
 		return "cursor-default";
 	});
 
@@ -146,18 +148,6 @@
 		`${canvasState.camera.x} ${canvasState.camera.y} ${containerWidth / canvasState.camera.zoom} ${containerHeight / canvasState.camera.zoom}`
 	);
 
-	function createId(): string {
-		if (typeof crypto !== "undefined" && crypto.randomUUID) {
-			return crypto.randomUUID();
-		}
-		return Math.random().toString(36).slice(2);
-	}
-
-	function nextRectangleName(): string {
-		const rectCount = projectState.elements.filter((element) => element.type === "rect").length;
-		return `rectangle${rectCount + 1}`;
-	}
-
 	function handleSvgPointerDown(event: PointerEvent) {
 		if (event.button !== 0) return;
 		if (toolState.activeTool !== "rect") return;
@@ -171,30 +161,19 @@
 		point.y = event.clientY;
 		const svgPoint = point.matrixTransform(ctm.inverse());
 
-		const insideArtboard =
-			svgPoint.x >= canvasState.x &&
-			svgPoint.y >= canvasState.y &&
-			svgPoint.x <= canvasState.x + canvasState.width &&
-			svgPoint.y <= canvasState.y + canvasState.height;
+		const drawPoint = { x: svgPoint.x, y: svgPoint.y };
+		const insideArtboard = isPointInsideCanvas(drawPoint, {
+			x: canvasState.x,
+			y: canvasState.y,
+			width: canvasState.width,
+			height: canvasState.height
+		});
 
 		if (!insideArtboard) return;
 
 		event.stopPropagation();
 
-		const newRect: RectElement = {
-			id: createId(),
-			name: nextRectangleName(),
-			type: "rect",
-			x: svgPoint.x,
-			y: svgPoint.y,
-			width: 120,
-			height: 80,
-			fill: "#000000",
-			stroke: "#000000",
-			strokeWidth: 0
-		};
-
-		projectState.addElement(newRect);
+		projectState.addElement(createRectElement(drawPoint, projectState.elements));
 		toolState.activeTool = "select";
 	}
 </script>

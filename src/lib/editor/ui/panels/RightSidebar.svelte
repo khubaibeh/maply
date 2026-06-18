@@ -1,9 +1,9 @@
 <script lang="ts">
-	import ElementProperties from "$lib/components/shell/ElementProperties.svelte";
 	import { Input } from "$lib/components/ui/input";
 	import { ScrollArea } from "$lib/components/ui/scroll-area";
-	import { canvasState } from "$lib/state/canvas.svelte";
-	import { projectState } from "$lib/state/project.svelte";
+	import { canvasState } from "$lib/editor/state/canvas.svelte";
+	import { projectState } from "$lib/editor/state/project.svelte";
+	import ElementProperties from "$lib/editor/ui/panels/ElementProperties.svelte";
 
 	function updateWidth(event: Event) {
 		const value = parseInt((event.target as HTMLInputElement).value, 10);

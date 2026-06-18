@@ -1,40 +1,10 @@
-import { fetchProject, PROD_PROJECT_ID, resetProdProject, saveProject } from "$lib/storage/project";
-import type { Element, Project } from "$lib/storage/schema";
+import { normalizeElements } from "$lib/editor/actions/element-actions";
+import type { Element } from "$lib/editor/model/elements";
+import type { Project } from "$lib/editor/model/project";
+import { fetchProject, PROD_PROJECT_ID, resetProdProject } from "$lib/editor/persistence/indexeddb-project-repository";
 
+import { queueProjectSave, saveProjectNow } from "./autosave.svelte";
 import { canvasState } from "./canvas.svelte";
-
-function defaultElementName(element: Element): string {
-	switch (element.type) {
-		case "rect":
-			return "rectangle";
-		case "circle":
-			return "circle";
-		case "path":
-			return "path";
-		case "text":
-			return "text";
-		case "image":
-			return "image";
-		default:
-			return "element";
-	}
-}
-
-function normalizeElements(items: Element[]): Element[] {
-	return items.map((element) => {
-		const normalized: Element = {
-			...element,
-			name: element.name?.trim() || defaultElementName(element)
-		};
-
-		if (normalized.type === "path" && (typeof normalized.x !== "number" || typeof normalized.y !== "number")) {
-			normalized.x = 0;
-			normalized.y = 0;
-		}
-
-		return normalized;
-	});
-}
 
 function createProjectState() {
 	let id = $state(PROD_PROJECT_ID);
@@ -45,7 +15,6 @@ function createProjectState() {
 		elementsOpen: true
 	});
 	let initialized = $state(false);
-	let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 	let selectedElementId = $state<string | null>(null);
 
 	function toProject(): Project {
@@ -69,25 +38,11 @@ function createProjectState() {
 	}
 
 	function queueSave(project = toProject()) {
-		if (!initialized) return;
-		if (saveTimeout) clearTimeout(saveTimeout);
-
-		saveTimeout = setTimeout(() => {
-			saveProject(project).catch((error) => {
-				console.warn("Failed to save project:", error);
-			});
-		}, 500);
+		queueProjectSave(project, initialized);
 	}
 
 	async function saveNow() {
-		if (!initialized) return;
-		if (saveTimeout) clearTimeout(saveTimeout);
-
-		try {
-			await saveProject(toProject());
-		} catch (error) {
-			console.warn("Failed to save project:", error);
-		}
+		await saveProjectNow(toProject(), initialized);
 	}
 
 	async function load(projectId = PROD_PROJECT_ID) {

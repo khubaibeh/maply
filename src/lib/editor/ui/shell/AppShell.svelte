@@ -1,51 +1,19 @@
 <script lang="ts">
-	import CanvasArea from "$lib/components/canvas/CanvasArea.svelte";
-	import { getClipboardElement, copyElement } from "$lib/state/clipboard.svelte";
-	import { projectState } from "$lib/state/project.svelte";
-	import type { Element } from "$lib/storage/schema";
+	import { duplicateElement } from "$lib/editor/actions/element-actions";
+	import { getClipboardElement, copyElement } from "$lib/editor/state/clipboard.svelte";
+	import { projectState } from "$lib/editor/state/project.svelte";
+	import CanvasArea from "$lib/editor/ui/canvas/CanvasArea.svelte";
 	import { onMount } from "svelte";
 
-	import BottomToolbar from "./BottomToolbar.svelte";
-	import LeftSidebar from "./LeftSidebar.svelte";
-	import RightSidebar from "./RightSidebar.svelte";
+	import LeftSidebar from "../panels/LeftSidebar.svelte";
+	import RightSidebar from "../panels/RightSidebar.svelte";
+	import BottomToolbar from "../toolbar/BottomToolbar.svelte";
 	import TopNavbar from "./TopNavbar.svelte";
 
 	function isEditingText(event: KeyboardEvent): boolean {
 		const target = event.target as HTMLElement | null;
 		if (!target) return false;
 		return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target.isContentEditable;
-	}
-
-	function createId(): string {
-		if (typeof crypto !== "undefined" && crypto.randomUUID) {
-			return crypto.randomUUID();
-		}
-		return Math.random().toString(36).slice(2);
-	}
-
-	function offsetPastedElement(element: Element): Element {
-		const next = structuredClone(element);
-		next.id = createId();
-		next.name = `${next.name} copy`;
-
-		switch (next.type) {
-			case "rect":
-			case "text":
-			case "image":
-				next.x += 20;
-				next.y += 20;
-				break;
-			case "circle":
-				next.cx += 20;
-				next.cy += 20;
-				break;
-			case "path":
-				next.x += 20;
-				next.y += 20;
-				break;
-		}
-
-		return next;
 	}
 
 	onMount(() => {
@@ -65,7 +33,7 @@
 				if (!copied) return;
 
 				event.preventDefault();
-				projectState.addElement(offsetPastedElement(copied));
+				projectState.addElement(duplicateElement(copied));
 			}
 		}
 

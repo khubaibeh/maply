@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { Input } from "$lib/components/ui/input";
 	import { Textarea } from "$lib/components/ui/textarea";
-	import { projectState } from "$lib/state/project.svelte";
-	import type { Element } from "$lib/storage/schema";
+	import type { Element } from "$lib/editor/model/elements";
+	import { parseHexColor, parseNonNegativeNumber, parseNumber, parsePositiveInt } from "$lib/editor/model/validation";
+	import { projectState } from "$lib/editor/state/project.svelte";
 
 	interface Props {
 		element: Element;
@@ -10,30 +11,28 @@
 
 	let { element }: Props = $props();
 
-	const hexColorPattern = /^#([0-9a-fA-F]{3}){1,2}$/;
-
 	function updateNumber(key: string, value: string) {
-		const parsed = parseFloat(value);
-		if (Number.isNaN(parsed)) return;
+		const parsed = parseNumber(value);
+		if (parsed === null) return;
 		projectState.updateElement(element.id, { [key]: parsed } as Partial<Element>);
 	}
 
 	function updatePositiveInt(key: string, value: string) {
-		const parsed = parseInt(value, 10);
-		if (Number.isNaN(parsed) || parsed < 1) return;
+		const parsed = parsePositiveInt(value);
+		if (parsed === null) return;
 		projectState.updateElement(element.id, { [key]: parsed } as Partial<Element>);
 	}
 
 	function updateNonNegativeNumber(key: string, value: string) {
-		const parsed = parseFloat(value);
-		if (Number.isNaN(parsed) || parsed < 0) return;
+		const parsed = parseNonNegativeNumber(value);
+		if (parsed === null) return;
 		projectState.updateElement(element.id, { [key]: parsed } as Partial<Element>);
 	}
 
-	function updateColor(value: string) {
-		const trimmed = value.trim();
-		if (!hexColorPattern.test(trimmed)) return;
-		projectState.updateElement(element.id, { fill: trimmed } as Partial<Element>);
+	function updateColor(key: "fill" | "stroke", value: string) {
+		const color = parseHexColor(value);
+		if (color === null) return;
+		projectState.updateElement(element.id, { [key]: color } as Partial<Element>);
 	}
 
 	function updateText(value: string) {
@@ -100,7 +99,7 @@
 			id="{element.id}-fill"
 			type="text"
 			value={element.fill}
-			onchange={(event) => updateColor((event.target as HTMLInputElement).value)}
+			onchange={(event) => updateColor("fill", (event.target as HTMLInputElement).value)}
 			class="h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 		/>
 	</div>
@@ -143,7 +142,7 @@
 				id="{element.id}-fill"
 				type="text"
 				value={element.fill}
-				onchange={(event) => updateColor((event.target as HTMLInputElement).value)}
+				onchange={(event) => updateColor("fill", (event.target as HTMLInputElement).value)}
 				class="h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
@@ -187,7 +186,7 @@
 				id="{element.id}-fill"
 				type="text"
 				value={element.fill}
-				onchange={(event) => updateColor((event.target as HTMLInputElement).value)}
+				onchange={(event) => updateColor("fill", (event.target as HTMLInputElement).value)}
 				class="h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
@@ -242,7 +241,7 @@
 				id="{element.id}-fill"
 				type="text"
 				value={element.fill}
-				onchange={(event) => updateColor((event.target as HTMLInputElement).value)}
+				onchange={(event) => updateColor("fill", (event.target as HTMLInputElement).value)}
 				class="h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
@@ -252,7 +251,7 @@
 				id="{element.id}-stroke"
 				type="text"
 				value={element.stroke}
-				onchange={(event) => updateColor((event.target as HTMLInputElement).value)}
+				onchange={(event) => updateColor("stroke", (event.target as HTMLInputElement).value)}
 				class="h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>

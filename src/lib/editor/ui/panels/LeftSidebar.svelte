@@ -6,9 +6,10 @@
 	import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
 	import { Input } from "$lib/components/ui/input";
 	import { ScrollArea } from "$lib/components/ui/scroll-area";
-	import { copyElement, getClipboardElement } from "$lib/state/clipboard.svelte";
-	import { projectState } from "$lib/state/project.svelte";
-	import type { Element } from "$lib/storage/schema";
+	import { duplicateElement } from "$lib/editor/actions/element-actions";
+	import type { Element } from "$lib/editor/model/elements";
+	import { copyElement, getClipboardElement } from "$lib/editor/state/clipboard.svelte";
+	import { projectState } from "$lib/editor/state/project.svelte";
 	import ChevronDown from "@lucide/svelte/icons/chevron-down";
 	import Circle from "@lucide/svelte/icons/circle";
 	import Download from "@lucide/svelte/icons/download";
@@ -155,6 +156,7 @@
 					? 'pointer-events-none opacity-0'
 					: 'opacity-100'}"
 				onclick={startEditing}
+				aria-label="Rename project"
 			>
 				<Pencil />
 			</Button>
@@ -165,6 +167,7 @@
 					? 'pointer-events-none opacity-0'
 					: 'opacity-100'}"
 				onclick={handleSave}
+				aria-label="Save project"
 			>
 				<Save />
 			</Button>
@@ -175,6 +178,7 @@
 					? 'pointer-events-none opacity-0'
 					: 'opacity-100'}"
 				onclick={() => (newProjectDialogOpen = true)}
+				aria-label="Create new project"
 			>
 				<Plus />
 			</Button>
@@ -327,24 +331,7 @@
 							onclick={() => {
 								const copied = getClipboardElement();
 								if (!copied) return;
-								// Offset logic mirrors AppShell paste behavior.
-								const next = structuredClone(copied);
-								next.id = crypto.randomUUID?.() ?? Math.random().toString(36).slice(2);
-								next.name = `${next.name} copy`;
-								switch (next.type) {
-									case "rect":
-									case "text":
-									case "image":
-									case "path":
-										next.x += 20;
-										next.y += 20;
-										break;
-									case "circle":
-										next.cx += 20;
-										next.cy += 20;
-										break;
-								}
-								projectState.addElement(next);
+								projectState.addElement(duplicateElement(copied));
 							}}
 						>
 							Paste

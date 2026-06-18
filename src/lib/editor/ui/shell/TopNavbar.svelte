@@ -1,6 +1,6 @@
 <script lang="ts">
+	import { getTheme } from "$lib/app/theme.svelte";
 	import * as ToggleGroup from "$lib/components/ui/toggle-group";
-	import { getTheme } from "$lib/theme.svelte";
 	import Monitor from "@lucide/svelte/icons/monitor";
 	import Moon from "@lucide/svelte/icons/moon";
 	import Sun from "@lucide/svelte/icons/sun";

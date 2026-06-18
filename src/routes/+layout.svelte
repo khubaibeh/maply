@@ -1,10 +1,10 @@
 <script lang="ts">
-	import favicon from "$lib/assets/favicon.svg";
+	import { getTheme } from "$lib/app/theme.svelte";
 
 	import "./layout.css";
 	import "./selections.css";
-	import { projectState } from "$lib/state/project.svelte";
-	import { getTheme } from "$lib/theme.svelte";
+	import favicon from "$lib/assets/favicon.svg";
+	import { projectState } from "$lib/editor/state/project.svelte";
 	import { onMount } from "svelte";
 
 	let { children } = $props();

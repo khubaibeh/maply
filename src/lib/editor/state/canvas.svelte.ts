@@ -1,33 +1,24 @@
-const DEFAULT_WIDTH = 800;
-const DEFAULT_HEIGHT = 800;
-const DEFAULT_ZOOM = 1;
-const MIN_ZOOM = 0.1;
-const MAX_ZOOM = 5;
-
-type Camera = {
-	x: number;
-	y: number;
-	zoom: number;
-};
-
-function clampZoom(value: number) {
-	return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value));
-}
-
-function validNumber(value: unknown): value is number {
-	return typeof value === "number" && Number.isFinite(value);
-}
+import {
+	DEFAULT_CANVAS_HEIGHT,
+	DEFAULT_CANVAS_WIDTH,
+	DEFAULT_ZOOM,
+	MAX_ZOOM,
+	MIN_ZOOM,
+	mergeCamera,
+	sanitizeCanvasSize
+} from "$lib/editor/actions/canvas-actions";
+import type { Camera } from "$lib/editor/model/project";
 
 function createCanvasState() {
-	let width = $state(DEFAULT_WIDTH);
-	let height = $state(DEFAULT_HEIGHT);
+	let width = $state(DEFAULT_CANVAS_WIDTH);
+	let height = $state(DEFAULT_CANVAS_HEIGHT);
 	let x = $state(0);
 	let y = $state(0);
 	let camera = $state<Camera>({ x: 0, y: 0, zoom: DEFAULT_ZOOM });
 
 	function setSize(nextWidth: number, nextHeight: number) {
-		width = Math.max(1, Math.round(nextWidth));
-		height = Math.max(1, Math.round(nextHeight));
+		width = sanitizeCanvasSize(nextWidth);
+		height = sanitizeCanvasSize(nextHeight);
 	}
 
 	function setPosition(nextX: number, nextY: number) {
@@ -36,11 +27,7 @@ function createCanvasState() {
 	}
 
 	function setCamera(next: Partial<Camera>) {
-		camera = {
-			x: validNumber(next.x) ? next.x : camera.x,
-			y: validNumber(next.y) ? next.y : camera.y,
-			zoom: validNumber(next.zoom) ? clampZoom(next.zoom) : camera.zoom
-		};
+		camera = mergeCamera(camera, next);
 	}
 
 	function pan(deltaX: number, deltaY: number) {

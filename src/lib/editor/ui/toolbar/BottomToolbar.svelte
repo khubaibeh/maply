@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { toolState, type Tool } from "$lib/state/tool.svelte";
+	import type { Tool } from "$lib/editor/model/tools";
+	import { toolState } from "$lib/editor/state/tool.svelte";
 	import Circle from "@lucide/svelte/icons/circle";
 	import Hand from "@lucide/svelte/icons/hand";
 	import Image from "@lucide/svelte/icons/image";

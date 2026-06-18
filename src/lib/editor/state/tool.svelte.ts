@@ -1,4 +1,6 @@
-export type Tool = "select" | "hand" | "rect" | "circle" | "path" | "text" | "image";
+import type { Tool } from "$lib/editor/model/tools";
+
+export type { Tool };
 
 function createToolState() {
 	let activeTool = $state<Tool>("select");

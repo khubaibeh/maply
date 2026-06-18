@@ -1,4 +1,4 @@
-import type { Element } from "$lib/storage/schema";
+import type { Element } from "$lib/editor/model/elements";
 
 let clipboardElement = $state<Element | null>(null);
 

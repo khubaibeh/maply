@@ -1,4 +1,5 @@
-import type { Element, Project } from "./schema";
+import type { Element } from "./elements";
+import type { Project } from "./project";
 
 const defaultElements: Element[] = [
 	{
