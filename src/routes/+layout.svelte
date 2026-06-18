@@ -1,10 +1,11 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import './layout.css';
-	import './selections.css';
-	import favicon from '$lib/assets/favicon.svg';
-	import { getTheme } from '$lib/theme.svelte';
-	import { projectState } from '$lib/state/project.svelte';
+	import favicon from "$lib/assets/favicon.svg";
+
+	import "./layout.css";
+	import "./selections.css";
+	import { projectState } from "$lib/state/project.svelte";
+	import { getTheme } from "$lib/theme.svelte";
+	import { onMount } from "svelte";
 
 	let { children } = $props();
 

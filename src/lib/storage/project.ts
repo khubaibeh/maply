@@ -1,11 +1,11 @@
-import { createDefaultProject } from './default-settings';
-import type { Project } from './schema';
+import { createDefaultProject } from "./default-settings";
+import type { Project } from "./schema";
 
-const DB_NAME = 'maply';
+const DB_NAME = "maply";
 const DB_VERSION = 3;
-const PROJECT_STORE = 'projects';
-const DEFAULT_PROJECT_ID = 'default';
-export const PROD_PROJECT_ID = 'prod';
+const PROJECT_STORE = "projects";
+const DEFAULT_PROJECT_ID = "default";
+export const PROD_PROJECT_ID = "prod";
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
@@ -32,7 +32,7 @@ function mergeProject(defaultProject: Project, record: Project): Project {
 
 async function readProject(db: IDBDatabase, id: string): Promise<Project | undefined> {
 	return new Promise((resolve, reject) => {
-		const transaction = db.transaction(PROJECT_STORE, 'readonly');
+		const transaction = db.transaction(PROJECT_STORE, "readonly");
 		const store = transaction.objectStore(PROJECT_STORE);
 		const request = store.get(id);
 
@@ -43,7 +43,7 @@ async function readProject(db: IDBDatabase, id: string): Promise<Project | undef
 
 async function putProject(db: IDBDatabase, project: Project): Promise<void> {
 	await new Promise<void>((resolve, reject) => {
-		const transaction = db.transaction(PROJECT_STORE, 'readwrite');
+		const transaction = db.transaction(PROJECT_STORE, "readwrite");
 		const store = transaction.objectStore(PROJECT_STORE);
 
 		transaction.oncomplete = () => resolve();
@@ -57,7 +57,7 @@ async function putProject(db: IDBDatabase, project: Project): Promise<void> {
 
 async function deleteProjectRecord(db: IDBDatabase, id: string): Promise<void> {
 	await new Promise<void>((resolve, reject) => {
-		const transaction = db.transaction(PROJECT_STORE, 'readwrite');
+		const transaction = db.transaction(PROJECT_STORE, "readwrite");
 		const store = transaction.objectStore(PROJECT_STORE);
 
 		transaction.oncomplete = () => resolve();
@@ -81,7 +81,7 @@ function openDB() {
 		request.onupgradeneeded = () => {
 			const db = request.result;
 			if (!db.objectStoreNames.contains(PROJECT_STORE)) {
-				db.createObjectStore(PROJECT_STORE, { keyPath: 'id' });
+				db.createObjectStore(PROJECT_STORE, { keyPath: "id" });
 			}
 		};
 	});
@@ -90,7 +90,7 @@ function openDB() {
 }
 
 export async function fetchProject(id: string): Promise<Project> {
-	if (typeof indexedDB === 'undefined')
+	if (typeof indexedDB === "undefined")
 		return createDefaultProject(id === DEFAULT_PROJECT_ID ? DEFAULT_PROJECT_ID : PROD_PROJECT_ID);
 
 	const db = await openDB();
@@ -115,7 +115,7 @@ export async function fetchProject(id: string): Promise<Project> {
 }
 
 export async function saveProject(project: Project): Promise<void> {
-	if (typeof indexedDB === 'undefined') return;
+	if (typeof indexedDB === "undefined") return;
 	if (project.id === DEFAULT_PROJECT_ID) return;
 
 	const db = await openDB();
@@ -123,7 +123,7 @@ export async function saveProject(project: Project): Promise<void> {
 }
 
 export async function resetProdProject(): Promise<Project> {
-	if (typeof indexedDB === 'undefined') return createDefaultProject(PROD_PROJECT_ID);
+	if (typeof indexedDB === "undefined") return createDefaultProject(PROD_PROJECT_ID);
 
 	const db = await openDB();
 	await deleteProjectRecord(db, PROD_PROJECT_ID);

@@ -1,17 +1,17 @@
 {
 	"name": "maply",
-	"private": true,
 	"version": "0.0.1",
+	"private": true,
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
-		"prepare": "svelte-kit sync || echo ''",
+		"prepare": "husky",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-		"lint": "prettier --check . && eslint .",
-		"format": "prettier --write ."
+		"lint": "eslint --ignore-pattern \"src/lib/components/ui/**\" --fix .",
+		"fmt": "oxfmt && prettier --log-level warn --write ."
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",
@@ -30,6 +30,10 @@
 		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-svelte": "^3.19.0",
 		"globals": "^17.6.0",
+		"husky": "^9.1.7",
+		"lint-staged": "^17.0.7",
+		"oxfmt": "^0.55.0",
+		"oxlint": "^1.70.0",
 		"prettier": "^3.8.4",
 		"prettier-plugin-svelte": "^4.1.0",
 		"prettier-plugin-tailwindcss": "^0.8.0",
@@ -43,5 +47,12 @@
 		"typescript": "^6.0.3",
 		"typescript-eslint": "^8.61.0",
 		"vite": "^8.0.16"
+	},
+	"lint-staged": {
+		"*.{js,ts,svelte,json,css}": [
+			"oxfmt",
+			"prettier --write",
+			"eslint --fix"
+		]
 	}
 }

@@ -1,23 +1,23 @@
-export type Theme = 'light' | 'dark' | 'system';
+export type Theme = "light" | "dark" | "system";
 
-const STORAGE_KEY = 'maply-theme';
+const STORAGE_KEY = "maply-theme";
 
 function getStoredTheme(): Theme {
-	if (typeof localStorage === 'undefined') return 'system';
+	if (typeof localStorage === "undefined") return "system";
 	const stored = localStorage.getItem(STORAGE_KEY);
-	return stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system';
+	return stored === "light" || stored === "dark" || stored === "system" ? stored : "system";
 }
 
 function storeTheme(theme: Theme) {
-	if (typeof localStorage === 'undefined') return;
+	if (typeof localStorage === "undefined") return;
 	localStorage.setItem(STORAGE_KEY, theme);
 }
 
 function applyTheme(theme: Theme) {
-	if (typeof document === 'undefined') return;
-	const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-	const isDark = theme === 'dark' || (theme === 'system' && systemDark);
-	document.documentElement.classList.toggle('dark', isDark);
+	if (typeof document === "undefined") return;
+	const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+	const isDark = theme === "dark" || (theme === "system" && systemDark);
+	document.documentElement.classList.toggle("dark", isDark);
 }
 
 function createTheme() {
@@ -29,12 +29,12 @@ function createTheme() {
 	});
 
 	$effect(() => {
-		const media = window.matchMedia('(prefers-color-scheme: dark)');
+		const media = window.matchMedia("(prefers-color-scheme: dark)");
 		const handler = () => {
-			if (theme === 'system') applyTheme('system');
+			if (theme === "system") applyTheme("system");
 		};
-		media.addEventListener('change', handler);
-		return () => media.removeEventListener('change', handler);
+		media.addEventListener("change", handler);
+		return () => media.removeEventListener("change", handler);
 	});
 
 	return {

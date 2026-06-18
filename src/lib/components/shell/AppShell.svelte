@@ -1,12 +1,13 @@
 <script lang="ts">
-	import TopNavbar from './TopNavbar.svelte';
-	import LeftSidebar from './LeftSidebar.svelte';
-	import RightSidebar from './RightSidebar.svelte';
-	import CanvasArea from '$lib/components/canvas/CanvasArea.svelte';
-	import BottomToolbar from './BottomToolbar.svelte';
+	import CanvasArea from "$lib/components/canvas/CanvasArea.svelte";
+
+	import BottomToolbar from "./BottomToolbar.svelte";
+	import LeftSidebar from "./LeftSidebar.svelte";
+	import RightSidebar from "./RightSidebar.svelte";
+	import TopNavbar from "./TopNavbar.svelte";
 </script>
 
-<div class="flex h-screen w-screen flex-col overflow-hidden bg-background text-foreground">
+<div class="bg-background text-foreground flex h-screen w-screen flex-col overflow-hidden">
 	<TopNavbar />
 
 	<div class="flex min-h-0 flex-1">

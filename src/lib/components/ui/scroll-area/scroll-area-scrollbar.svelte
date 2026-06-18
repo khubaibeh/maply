@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { ScrollArea as ScrollAreaPrimitive } from "bits-ui";
 	import { cn, type WithoutChild } from "$lib/utils.js";
+	import { ScrollArea as ScrollAreaPrimitive } from "bits-ui";
 
 	let {
 		ref = $bindable(null),
@@ -17,14 +17,11 @@
 	data-orientation={orientation}
 	{orientation}
 	class={cn(
-		"data-horizontal:h-2.5 data-horizontal:flex-col data-horizontal:border-t data-horizontal:border-t-transparent data-vertical:h-full data-vertical:w-2.5 data-vertical:border-l data-vertical:border-l-transparent flex touch-none p-px transition-colors select-none",
+		"flex touch-none p-px transition-colors select-none data-horizontal:h-2.5 data-horizontal:flex-col data-horizontal:border-t data-horizontal:border-t-transparent data-vertical:h-full data-vertical:w-2.5 data-vertical:border-l data-vertical:border-l-transparent",
 		className
 	)}
 	{...restProps}
 >
 	{@render children?.()}
-	<ScrollAreaPrimitive.Thumb
-		data-slot="scroll-area-thumb"
-		class="rounded-full bg-border relative flex-1"
-	/>
+	<ScrollAreaPrimitive.Thumb data-slot="scroll-area-thumb" class="bg-border relative flex-1 rounded-full" />
 </ScrollAreaPrimitive.Scrollbar>

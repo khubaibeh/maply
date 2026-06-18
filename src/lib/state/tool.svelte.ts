@@ -1,7 +1,7 @@
-export type Tool = 'select' | 'hand' | 'rect' | 'circle' | 'path' | 'text' | 'image';
+export type Tool = "select" | "hand" | "rect" | "circle" | "path" | "text" | "image";
 
 function createToolState() {
-	let activeTool = $state<Tool>('select');
+	let activeTool = $state<Tool>("select");
 	let isSpacePressed = $state(false);
 
 	function setTool(tool: Tool) {

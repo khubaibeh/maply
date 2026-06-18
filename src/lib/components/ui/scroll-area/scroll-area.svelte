@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { ScrollArea as ScrollAreaPrimitive } from "bits-ui";
-	import { Scrollbar } from "./index.js";
 	import { cn, type WithoutChild } from "$lib/utils.js";
+	import { ScrollArea as ScrollAreaPrimitive } from "bits-ui";
+
+	import { Scrollbar } from "./index.js";
 
 	let {
 		ref = $bindable(null),
@@ -20,12 +21,7 @@
 	} = $props();
 </script>
 
-<ScrollAreaPrimitive.Root
-	bind:ref
-	data-slot="scroll-area"
-	class={cn("relative", className)}
-	{...restProps}
->
+<ScrollAreaPrimitive.Root bind:ref data-slot="scroll-area" class={cn("relative", className)} {...restProps}>
 	<ScrollAreaPrimitive.Viewport
 		bind:ref={viewportRef}
 		data-slot="scroll-area-viewport"

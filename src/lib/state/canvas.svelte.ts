@@ -15,7 +15,7 @@ function clampZoom(value: number) {
 }
 
 function validNumber(value: unknown): value is number {
-	return typeof value === 'number' && Number.isFinite(value);
+	return typeof value === "number" && Number.isFinite(value);
 }
 
 function createCanvasState() {

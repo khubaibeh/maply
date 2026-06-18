@@ -1,6 +1,6 @@
 export type RectElement = {
 	id: string;
-	type: 'rect';
+	type: "rect";
 	x: number;
 	y: number;
 	width: number;
@@ -12,7 +12,7 @@ export type RectElement = {
 
 export type CircleElement = {
 	id: string;
-	type: 'circle';
+	type: "circle";
 	cx: number;
 	cy: number;
 	r: number;
@@ -23,7 +23,7 @@ export type CircleElement = {
 
 export type PathElement = {
 	id: string;
-	type: 'path';
+	type: "path";
 	d: string;
 	fill: string;
 	stroke: string;
@@ -32,7 +32,7 @@ export type PathElement = {
 
 export type TextElement = {
 	id: string;
-	type: 'text';
+	type: "text";
 	x: number;
 	y: number;
 	text: string;
@@ -42,7 +42,7 @@ export type TextElement = {
 
 export type ImageElement = {
 	id: string;
-	type: 'image';
+	type: "image";
 	x: number;
 	y: number;
 	width: number;

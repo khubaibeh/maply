@@ -1,8 +1,8 @@
-import type { Project } from './schema';
+import type { Project } from "./schema";
 
 export const defaultProject: Project = {
-	id: 'default',
-	name: 'Untitled',
+	id: "default",
+	name: "Untitled",
 	canvas: {
 		width: 800,
 		height: 800,

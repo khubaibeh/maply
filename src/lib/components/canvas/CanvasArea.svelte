@@ -1,9 +1,10 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { canvasState } from '$lib/state/canvas.svelte';
-	import { toolState } from '$lib/state/tool.svelte';
-	import CanvasBackground from './CanvasBackground.svelte';
-	import CanvasArtboard from './CanvasArtboard.svelte';
+	import { canvasState } from "$lib/state/canvas.svelte";
+	import { toolState } from "$lib/state/tool.svelte";
+	import { onMount } from "svelte";
+
+	import CanvasArtboard from "./CanvasArtboard.svelte";
+	import CanvasBackground from "./CanvasBackground.svelte";
 
 	let container: HTMLDivElement | null = $state(null);
 	let containerWidth = $state(0);
@@ -13,9 +14,7 @@
 	let panStart = $state({ x: 0, y: 0 });
 	let cameraStart = $state({ x: 0, y: 0 });
 
-	const isHandActive = $derived(
-		toolState.activeTool === 'hand' || (isHovering && toolState.isSpacePressed)
-	);
+	const isHandActive = $derived(toolState.activeTool === "hand" || (isHovering && toolState.isSpacePressed));
 
 	onMount(() => {
 		if (!container) return;
@@ -43,10 +42,7 @@
 				const ZOOM_SENSITIVITY = 0.005;
 				const nextZoom = Math.min(
 					canvasState.maxZoom,
-					Math.max(
-						canvasState.minZoom,
-						canvasState.camera.zoom * Math.exp(-event.deltaY * ZOOM_SENSITIVITY)
-					)
+					Math.max(canvasState.minZoom, canvasState.camera.zoom * Math.exp(-event.deltaY * ZOOM_SENSITIVITY))
 				);
 				if (nextZoom === canvasState.camera.zoom) return;
 
@@ -63,10 +59,7 @@
 					y: worldY - mouseY / nextZoom
 				});
 			} else {
-				canvasState.pan(
-					event.deltaX / canvasState.camera.zoom,
-					event.deltaY / canvasState.camera.zoom
-				);
+				canvasState.pan(event.deltaX / canvasState.camera.zoom, event.deltaY / canvasState.camera.zoom);
 			}
 		}
 
@@ -96,14 +89,14 @@
 		}
 
 		function handleKeyDown(event: KeyboardEvent) {
-			if (event.key !== ' ') return;
+			if (event.key !== " ") return;
 			if (!isHovering) return;
 			event.preventDefault();
 			toolState.setSpacePressed(true);
 		}
 
 		function handleKeyUp(event: KeyboardEvent) {
-			if (event.key !== ' ') return;
+			if (event.key !== " ") return;
 			event.preventDefault();
 			toolState.setSpacePressed(false);
 		}
@@ -117,25 +110,25 @@
 			toolState.setSpacePressed(false);
 		}
 
-		viewport.addEventListener('wheel', handleWheel, { passive: false });
-		viewport.addEventListener('mousedown', startPan);
-		viewport.addEventListener('mouseenter', handleMouseEnter);
-		viewport.addEventListener('mouseleave', handleMouseLeave);
-		window.addEventListener('mousemove', movePan);
-		window.addEventListener('mouseup', endPan);
-		window.addEventListener('keydown', handleKeyDown);
-		window.addEventListener('keyup', handleKeyUp);
+		viewport.addEventListener("wheel", handleWheel, { passive: false });
+		viewport.addEventListener("mousedown", startPan);
+		viewport.addEventListener("mouseenter", handleMouseEnter);
+		viewport.addEventListener("mouseleave", handleMouseLeave);
+		window.addEventListener("mousemove", movePan);
+		window.addEventListener("mouseup", endPan);
+		window.addEventListener("keydown", handleKeyDown);
+		window.addEventListener("keyup", handleKeyUp);
 
 		return () => {
 			resizeObserver.disconnect();
-			viewport.removeEventListener('wheel', handleWheel);
-			viewport.removeEventListener('mousedown', startPan);
-			viewport.removeEventListener('mouseenter', handleMouseEnter);
-			viewport.removeEventListener('mouseleave', handleMouseLeave);
-			window.removeEventListener('mousemove', movePan);
-			window.removeEventListener('mouseup', endPan);
-			window.removeEventListener('keydown', handleKeyDown);
-			window.removeEventListener('keyup', handleKeyUp);
+			viewport.removeEventListener("wheel", handleWheel);
+			viewport.removeEventListener("mousedown", startPan);
+			viewport.removeEventListener("mouseenter", handleMouseEnter);
+			viewport.removeEventListener("mouseleave", handleMouseLeave);
+			window.removeEventListener("mousemove", movePan);
+			window.removeEventListener("mouseup", endPan);
+			window.removeEventListener("keydown", handleKeyDown);
+			window.removeEventListener("keyup", handleKeyUp);
 		};
 	});
 
@@ -146,7 +139,7 @@
 
 <div
 	bind:this={container}
-	class="canvas-viewport relative min-h-0 flex-1 overflow-hidden bg-muted outline-none"
+	class="canvas-viewport bg-muted relative min-h-0 flex-1 overflow-hidden outline-none"
 	class:panning={isPanning}
 	class:hand={isHandActive}
 	role="application"

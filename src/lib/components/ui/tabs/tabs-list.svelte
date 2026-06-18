@@ -6,20 +6,20 @@
 		variants: {
 			variant: {
 				default: "cn-tabs-list-variant-default bg-muted",
-				line: "cn-tabs-list-variant-line gap-1 bg-transparent",
-			},
+				line: "cn-tabs-list-variant-line gap-1 bg-transparent"
+			}
 		},
 		defaultVariants: {
-			variant: "default",
-		},
+			variant: "default"
+		}
 	});
 
 	export type TabsListVariant = VariantProps<typeof tabsListVariants>["variant"];
 </script>
 
 <script lang="ts">
-	import { Tabs as TabsPrimitive } from "bits-ui";
 	import { cn } from "$lib/utils.js";
+	import { Tabs as TabsPrimitive } from "bits-ui";
 
 	let {
 		ref = $bindable(null),

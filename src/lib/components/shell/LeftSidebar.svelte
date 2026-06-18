@@ -1,17 +1,17 @@
 <script lang="ts">
-	import * as Collapsible from '$lib/components/ui/collapsible';
-	import { ScrollArea } from '$lib/components/ui/scroll-area';
-	import { Input } from '$lib/components/ui/input';
-	import { Button, buttonVariants } from '$lib/components/ui/button';
-	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import * as AlertDialog from '$lib/components/ui/alert-dialog';
-	import { projectState } from '$lib/state/project.svelte';
-	import Pencil from '@lucide/svelte/icons/pencil';
-	import Plus from '@lucide/svelte/icons/plus';
-	import Save from '@lucide/svelte/icons/save';
-	import ChevronDown from '@lucide/svelte/icons/chevron-down';
-	import Upload from '@lucide/svelte/icons/upload';
-	import Download from '@lucide/svelte/icons/download';
+	import * as AlertDialog from "$lib/components/ui/alert-dialog";
+	import { Button, buttonVariants } from "$lib/components/ui/button";
+	import * as Collapsible from "$lib/components/ui/collapsible";
+	import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
+	import { Input } from "$lib/components/ui/input";
+	import { ScrollArea } from "$lib/components/ui/scroll-area";
+	import { projectState } from "$lib/state/project.svelte";
+	import ChevronDown from "@lucide/svelte/icons/chevron-down";
+	import Download from "@lucide/svelte/icons/download";
+	import Pencil from "@lucide/svelte/icons/pencil";
+	import Plus from "@lucide/svelte/icons/plus";
+	import Save from "@lucide/svelte/icons/save";
+	import Upload from "@lucide/svelte/icons/upload";
 
 	let editName = $state(projectState.name);
 	let isEditing = $state(false);
@@ -52,9 +52,9 @@
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
-		if (event.key === 'Enter') {
+		if (event.key === "Enter") {
 			save();
-		} else if (event.key === 'Escape') {
+		} else if (event.key === "Escape") {
 			cancel();
 		}
 	}
@@ -85,7 +85,7 @@
 			/>
 		{:else}
 			<span
-				class="truncate text-sm font-semibold text-sidebar-foreground"
+				class="text-sidebar-foreground truncate text-sm font-semibold"
 				ondblclick={startEditing}
 				role="button"
 				tabindex="0"
@@ -97,7 +97,7 @@
 			<Button
 				variant="ghost"
 				size="icon-sm"
-				class="size-6 shrink-0 rounded-md text-sidebar-foreground/70 transition-opacity duration-150 hover:text-sidebar-foreground {isEditing
+				class="text-sidebar-foreground/70 hover:text-sidebar-foreground size-6 shrink-0 rounded-md transition-opacity duration-150 {isEditing
 					? 'pointer-events-none opacity-0'
 					: 'opacity-100'}"
 				onclick={startEditing}
@@ -107,7 +107,7 @@
 			<Button
 				variant="ghost"
 				size="icon-sm"
-				class="size-6 shrink-0 rounded-md text-sidebar-foreground/70 transition-opacity duration-150 hover:text-sidebar-foreground {isEditing
+				class="text-sidebar-foreground/70 hover:text-sidebar-foreground size-6 shrink-0 rounded-md transition-opacity duration-150 {isEditing
 					? 'pointer-events-none opacity-0'
 					: 'opacity-100'}"
 				onclick={handleSave}
@@ -117,7 +117,7 @@
 			<Button
 				variant="ghost"
 				size="icon-sm"
-				class="size-6 shrink-0 rounded-md text-sidebar-foreground/70 transition-opacity duration-150 hover:text-sidebar-foreground {isEditing
+				class="text-sidebar-foreground/70 hover:text-sidebar-foreground size-6 shrink-0 rounded-md transition-opacity duration-150 {isEditing
 					? 'pointer-events-none opacity-0'
 					: 'opacity-100'}"
 				onclick={() => (newProjectDialogOpen = true)}
@@ -131,19 +131,19 @@
 {#snippet sectionImports()}
 	<Collapsible.Root bind:open={importsOpen}>
 		<Collapsible.Trigger
-			class="flex h-8 w-full shrink-0 items-center justify-between border-b border-border px-3 text-left outline-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+			class="border-border hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex h-8 w-full shrink-0 items-center justify-between border-b px-3 text-left outline-none"
 		>
-			<span class="text-xs font-semibold uppercase tracking-wide text-sidebar-foreground/80">
+			<span class="text-sidebar-foreground/80 text-xs font-semibold tracking-wide uppercase">
 				Import / Export
 			</span>
 			<ChevronDown
-				class="size-4 text-sidebar-foreground/70 transition-transform duration-200 {importsOpen
+				class="text-sidebar-foreground/70 size-4 transition-transform duration-200 {importsOpen
 					? 'rotate-180'
 					: ''}"
 			/>
 		</Collapsible.Trigger>
 		<Collapsible.Content class="sidebar-collapsible-content">
-			<div class="flex flex-col gap-1.5 p-3 items-center">
+			<div class="flex flex-col items-center gap-1.5 p-3">
 				<DropdownMenu.Root>
 					<DropdownMenu.Trigger
 						class="{buttonVariants({
@@ -156,8 +156,7 @@
 					</DropdownMenu.Trigger>
 					<DropdownMenu.Content class="min-w-32">
 						<DropdownMenu.Item class="justify-center text-center text-xs">SVG</DropdownMenu.Item>
-						<DropdownMenu.Item class="justify-center text-center text-xs">Project</DropdownMenu.Item
-						>
+						<DropdownMenu.Item class="justify-center text-center text-xs">Project</DropdownMenu.Item>
 					</DropdownMenu.Content>
 				</DropdownMenu.Root>
 
@@ -173,8 +172,7 @@
 					</DropdownMenu.Trigger>
 					<DropdownMenu.Content class="min-w-32">
 						<DropdownMenu.Item class="justify-center text-center text-xs">SVG</DropdownMenu.Item>
-						<DropdownMenu.Item class="justify-center text-center text-xs">Project</DropdownMenu.Item
-						>
+						<DropdownMenu.Item class="justify-center text-center text-xs">Project</DropdownMenu.Item>
 					</DropdownMenu.Content>
 				</DropdownMenu.Root>
 			</div>
@@ -185,13 +183,11 @@
 {#snippet sectionElements()}
 	<Collapsible.Root bind:open={elementsOpen}>
 		<Collapsible.Trigger
-			class="flex h-8 w-full shrink-0 items-center justify-between border-b border-border px-3 text-left outline-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+			class="border-border hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex h-8 w-full shrink-0 items-center justify-between border-b px-3 text-left outline-none"
 		>
-			<span class="text-xs font-semibold uppercase tracking-wide text-sidebar-foreground/80">
-				Elements
-			</span>
+			<span class="text-sidebar-foreground/80 text-xs font-semibold tracking-wide uppercase"> Elements </span>
 			<ChevronDown
-				class="size-4 text-sidebar-foreground/70 transition-transform duration-200 {elementsOpen
+				class="text-sidebar-foreground/70 size-4 transition-transform duration-200 {elementsOpen
 					? 'rotate-180'
 					: ''}"
 			/>
@@ -199,19 +195,19 @@
 		<Collapsible.Content class="sidebar-collapsible-content">
 			<ScrollArea class="min-h-0 flex-1">
 				<div class="p-2">
-					<p class="text-xs text-muted-foreground">No elements</p>
+					<p class="text-muted-foreground text-xs">No elements</p>
 				</div>
 			</ScrollArea>
 		</Collapsible.Content>
 	</Collapsible.Root>
 {/snippet}
 
-<aside class="flex w-60 shrink-0 flex-col border-r border-border bg-sidebar">
-	<div class="border-b border-border p-3">
+<aside class="border-border bg-sidebar flex w-60 shrink-0 flex-col border-r">
+	<div class="border-border border-b p-3">
 		{@render sectionProject()}
 	</div>
 
-	<div class={`flex flex-col ${importsOpen ? 'border-b border-border' : ''} `}>
+	<div class={`flex flex-col ${importsOpen ? "border-border border-b" : ""} `}>
 		{@render sectionImports()}
 	</div>
 
@@ -225,8 +221,8 @@
 		<AlertDialog.Header>
 			<AlertDialog.Title>Create new project?</AlertDialog.Title>
 			<AlertDialog.Description>
-				This will delete your current project and create a fresh one from the default settings. This
-				action cannot be undone.
+				This will delete your current project and create a fresh one from the default settings. This action
+				cannot be undone.
 			</AlertDialog.Description>
 		</AlertDialog.Header>
 		<AlertDialog.Footer>
@@ -241,11 +237,11 @@
 		overflow: hidden;
 	}
 
-	:global(.sidebar-collapsible-content[data-state='open']) {
+	:global(.sidebar-collapsible-content[data-state="open"]) {
 		animation: sidebar-collapse-down 200ms ease-out;
 	}
 
-	:global(.sidebar-collapsible-content[data-state='closed']) {
+	:global(.sidebar-collapsible-content[data-state="closed"]) {
 		animation: sidebar-collapse-up 200ms ease-out;
 	}
 

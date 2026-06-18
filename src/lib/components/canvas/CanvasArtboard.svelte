@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { canvasState } from '$lib/state/canvas.svelte';
+	import { canvasState } from "$lib/state/canvas.svelte";
 </script>
 
 <defs>

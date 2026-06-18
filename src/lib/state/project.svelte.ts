@@ -1,12 +1,13 @@
-import { canvasState } from './canvas.svelte';
-import { fetchProject, PROD_PROJECT_ID, resetProdProject, saveProject } from '$lib/storage/project';
-import type { Project } from '$lib/storage/schema';
+import { fetchProject, PROD_PROJECT_ID, resetProdProject, saveProject } from "$lib/storage/project";
+import type { Project } from "$lib/storage/schema";
+
+import { canvasState } from "./canvas.svelte";
 
 function createProjectState() {
 	let id = $state(PROD_PROJECT_ID);
-	let name = $state('Untitled');
-	let elements = $state<Project['elements']>([]);
-	let importExportState = $state<Project['importExportState']>({
+	let name = $state("Untitled");
+	let elements = $state<Project["elements"]>([]);
+	let importExportState = $state<Project["importExportState"]>({
 		importsOpen: true,
 		elementsOpen: true
 	});
@@ -39,7 +40,7 @@ function createProjectState() {
 
 		saveTimeout = setTimeout(() => {
 			saveProject(project).catch((error) => {
-				console.warn('Failed to save project:', error);
+				console.warn("Failed to save project:", error);
 			});
 		}, 500);
 	}
@@ -51,7 +52,7 @@ function createProjectState() {
 		try {
 			await saveProject(toProject());
 		} catch (error) {
-			console.warn('Failed to save project:', error);
+			console.warn("Failed to save project:", error);
 		}
 	}
 
@@ -69,7 +70,7 @@ function createProjectState() {
 				canvasState.setCamera(record.camera);
 			}
 		} catch (error) {
-			console.warn('Failed to load project, using defaults:', error);
+			console.warn("Failed to load project, using defaults:", error);
 		}
 
 		initialized = true;
@@ -80,7 +81,7 @@ function createProjectState() {
 		queueSave();
 	}
 
-	function setImportExportState(nextState: Partial<Project['importExportState']>) {
+	function setImportExportState(nextState: Partial<Project["importExportState"]>) {
 		const nextImportExportState = {
 			...importExportState,
 			...nextState

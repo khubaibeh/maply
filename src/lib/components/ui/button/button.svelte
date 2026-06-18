@@ -8,11 +8,14 @@
 		variants: {
 			variant: {
 				default: "bg-primary text-primary-foreground hover:bg-primary/80",
-				outline: "border-border bg-background hover:bg-muted hover:text-foreground dark:hover:bg-input/30 aria-expanded:bg-muted aria-expanded:text-foreground dark:bg-transparent",
-				secondary: "bg-secondary text-secondary-foreground aria-expanded:bg-secondary aria-expanded:text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)]",
+				outline:
+					"border-border bg-background hover:bg-muted hover:text-foreground dark:hover:bg-input/30 aria-expanded:bg-muted aria-expanded:text-foreground dark:bg-transparent",
+				secondary:
+					"bg-secondary text-secondary-foreground aria-expanded:bg-secondary aria-expanded:text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)]",
 				ghost: "hover:bg-muted hover:text-foreground dark:hover:bg-muted/50 aria-expanded:bg-muted aria-expanded:text-foreground",
-				destructive: "bg-destructive/10 hover:bg-destructive/20 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/20 text-destructive focus-visible:border-destructive/40 dark:hover:bg-destructive/30",
-				link: "text-primary underline-offset-4 hover:underline",
+				destructive:
+					"bg-destructive/10 hover:bg-destructive/20 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/20 text-destructive focus-visible:border-destructive/40 dark:hover:bg-destructive/30",
+				link: "text-primary underline-offset-4 hover:underline"
 			},
 			size: {
 				default: "h-8 gap-1.5 px-3 has-data-[icon=inline-end]:pr-2.5 has-data-[icon=inline-start]:pl-2.5",
@@ -22,13 +25,13 @@
 				icon: "size-8",
 				"icon-xs": "size-6 [&_svg:not([class*='size-'])]:size-3",
 				"icon-sm": "size-7",
-				"icon-lg": "size-9",
-			},
+				"icon-lg": "size-9"
+			}
 		},
 		defaultVariants: {
 			variant: "default",
-			size: "default",
-		},
+			size: "default"
+		}
 	});
 
 	export type ButtonVariant = VariantProps<typeof buttonVariants>["variant"];
