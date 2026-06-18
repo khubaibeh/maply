@@ -56,7 +56,7 @@
 				id="{element.id}-x"
 				type="number"
 				value={element.x}
-				onchange={(event) => updateNumber("x", (event.target as HTMLInputElement).value)}
+				oninput={(event) => updateNumber("x", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
@@ -66,7 +66,7 @@
 				id="{element.id}-y"
 				type="number"
 				value={element.y}
-				onchange={(event) => updateNumber("y", (event.target as HTMLInputElement).value)}
+				oninput={(event) => updateNumber("y", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
@@ -77,7 +77,7 @@
 				type="number"
 				min={1}
 				value={element.width}
-				onchange={(event) => updatePositiveInt("width", (event.target as HTMLInputElement).value)}
+				oninput={(event) => updatePositiveInt("width", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
@@ -88,7 +88,7 @@
 				type="number"
 				min={1}
 				value={element.height}
-				onchange={(event) => updatePositiveInt("height", (event.target as HTMLInputElement).value)}
+				oninput={(event) => updatePositiveInt("height", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
@@ -99,7 +99,7 @@
 			id="{element.id}-fill"
 			type="text"
 			value={element.fill}
-			onchange={(event) => updateColor("fill", (event.target as HTMLInputElement).value)}
+			oninput={(event) => updateColor("fill", (event.target as HTMLInputElement).value)}
 			class="h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 		/>
 	</div>
@@ -111,7 +111,7 @@
 				id="{element.id}-cx"
 				type="number"
 				value={element.cx}
-				onchange={(event) => updateNumber("cx", (event.target as HTMLInputElement).value)}
+				oninput={(event) => updateNumber("cx", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
@@ -121,7 +121,7 @@
 				id="{element.id}-cy"
 				type="number"
 				value={element.cy}
-				onchange={(event) => updateNumber("cy", (event.target as HTMLInputElement).value)}
+				oninput={(event) => updateNumber("cy", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
@@ -132,7 +132,7 @@
 				type="number"
 				min={0}
 				value={element.r}
-				onchange={(event) => updateNonNegativeNumber("r", (event.target as HTMLInputElement).value)}
+				oninput={(event) => updateNonNegativeNumber("r", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
@@ -142,7 +142,7 @@
 				id="{element.id}-fill"
 				type="text"
 				value={element.fill}
-				onchange={(event) => updateColor("fill", (event.target as HTMLInputElement).value)}
+				oninput={(event) => updateColor("fill", (event.target as HTMLInputElement).value)}
 				class="h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
@@ -155,7 +155,7 @@
 				id="{element.id}-x"
 				type="number"
 				value={element.x}
-				onchange={(event) => updateNumber("x", (event.target as HTMLInputElement).value)}
+				oninput={(event) => updateNumber("x", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
@@ -165,7 +165,7 @@
 				id="{element.id}-y"
 				type="number"
 				value={element.y}
-				onchange={(event) => updateNumber("y", (event.target as HTMLInputElement).value)}
+				oninput={(event) => updateNumber("y", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
@@ -176,7 +176,7 @@
 				type="number"
 				min={1}
 				value={element.fontSize}
-				onchange={(event) => updatePositiveInt("fontSize", (event.target as HTMLInputElement).value)}
+				oninput={(event) => updatePositiveInt("fontSize", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
@@ -186,7 +186,7 @@
 				id="{element.id}-fill"
 				type="text"
 				value={element.fill}
-				onchange={(event) => updateColor("fill", (event.target as HTMLInputElement).value)}
+				oninput={(event) => updateColor("fill", (event.target as HTMLInputElement).value)}
 				class="h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
@@ -196,7 +196,7 @@
 		<Textarea
 			id="{element.id}-text"
 			value={element.text}
-			onchange={(event) => updateText((event.target as HTMLTextAreaElement).value)}
+			oninput={(event) => updateText((event.target as HTMLTextAreaElement).value)}
 			rows={3}
 			class="text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 		/>
@@ -209,7 +209,7 @@
 				id="{element.id}-x"
 				type="number"
 				value={element.x}
-				onchange={(event) => updateNumber("x", (event.target as HTMLInputElement).value)}
+				oninput={(event) => updateNumber("x", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
@@ -219,7 +219,7 @@
 				id="{element.id}-y"
 				type="number"
 				value={element.y}
-				onchange={(event) => updateNumber("y", (event.target as HTMLInputElement).value)}
+				oninput={(event) => updateNumber("y", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
@@ -229,7 +229,7 @@
 		<Textarea
 			id="{element.id}-d"
 			value={element.d}
-			onchange={(event) => updatePath((event.target as HTMLTextAreaElement).value)}
+			oninput={(event) => updatePath((event.target as HTMLTextAreaElement).value)}
 			rows={4}
 			class="font-mono text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 		/>
@@ -241,7 +241,7 @@
 				id="{element.id}-fill"
 				type="text"
 				value={element.fill}
-				onchange={(event) => updateColor("fill", (event.target as HTMLInputElement).value)}
+				oninput={(event) => updateColor("fill", (event.target as HTMLInputElement).value)}
 				class="h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
@@ -251,7 +251,7 @@
 				id="{element.id}-stroke"
 				type="text"
 				value={element.stroke}
-				onchange={(event) => updateColor("stroke", (event.target as HTMLInputElement).value)}
+				oninput={(event) => updateColor("stroke", (event.target as HTMLInputElement).value)}
 				class="h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
@@ -262,7 +262,7 @@
 				type="number"
 				min={0}
 				value={element.strokeWidth}
-				onchange={(event) => updateNonNegativeNumber("strokeWidth", (event.target as HTMLInputElement).value)}
+				oninput={(event) => updateNonNegativeNumber("strokeWidth", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
@@ -275,7 +275,7 @@
 				id="{element.id}-x"
 				type="number"
 				value={element.x}
-				onchange={(event) => updateNumber("x", (event.target as HTMLInputElement).value)}
+				oninput={(event) => updateNumber("x", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
@@ -285,7 +285,7 @@
 				id="{element.id}-y"
 				type="number"
 				value={element.y}
-				onchange={(event) => updateNumber("y", (event.target as HTMLInputElement).value)}
+				oninput={(event) => updateNumber("y", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
@@ -296,7 +296,7 @@
 				type="number"
 				min={1}
 				value={element.width}
-				onchange={(event) => updatePositiveInt("width", (event.target as HTMLInputElement).value)}
+				oninput={(event) => updatePositiveInt("width", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
@@ -307,7 +307,7 @@
 				type="number"
 				min={1}
 				value={element.height}
-				onchange={(event) => updatePositiveInt("height", (event.target as HTMLInputElement).value)}
+				oninput={(event) => updatePositiveInt("height", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
@@ -318,7 +318,7 @@
 			id="{element.id}-href"
 			type="text"
 			value={element.href}
-			onchange={(event) => updateHref((event.target as HTMLInputElement).value)}
+			oninput={(event) => updateHref((event.target as HTMLInputElement).value)}
 			class="h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 		/>
 	</div>
