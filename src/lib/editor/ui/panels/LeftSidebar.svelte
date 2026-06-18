@@ -107,6 +107,11 @@
 		}
 	}
 
+	function handleElementTreeBackgroundPointerDown(event: PointerEvent) {
+		if (event.target !== event.currentTarget) return;
+		projectState.selectElement(null);
+	}
+
 	$effect(() => {
 		if (editingElementId && editingElementInputRef) {
 			editingElementInputRef.focus();
@@ -255,7 +260,11 @@
 				<ContextMenu.Root>
 					<ContextMenu.Trigger class="flex flex-1 flex-col">
 						<ScrollArea class="flex-1">
-							<div class="flex min-h-full flex-col gap-0.5 p-2">
+							<div
+								class="flex min-h-full flex-col gap-0.5 p-2"
+								onpointerdown={handleElementTreeBackgroundPointerDown}
+								role="presentation"
+							>
 								{#each $projectState.elements as element (element.id)}
 									{@const Icon = elementIcons[element.type]}
 									{@const isSelected = $projectState.selectedElementId === element.id}

@@ -152,6 +152,11 @@
 
 	function handleSvgPointerDown(event: PointerEvent) {
 		if (event.button !== 0) return;
+		if ($toolState.activeTool === "select") {
+			projectState.selectElement(null);
+			return;
+		}
+
 		if ($toolState.activeTool !== "rect") return;
 		if (!svgRef) return;
 
