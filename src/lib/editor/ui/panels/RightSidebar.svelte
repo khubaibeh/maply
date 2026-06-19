@@ -1,21 +1,29 @@
 <script lang="ts">
 	import { Input } from "$lib/components/ui/input";
 	import { ScrollArea } from "$lib/components/ui/scroll-area";
-	import { canvasState } from "$lib/state/canvas.svelte";
+	import { canvasState } from "$lib/editor/state/canvas.svelte";
+	import { projectState } from "$lib/editor/state/project.svelte";
+	import ElementProperties from "$lib/editor/ui/panels/ElementProperties.svelte";
 
 	function updateWidth(event: Event) {
 		const value = parseInt((event.target as HTMLInputElement).value, 10);
 		if (!Number.isNaN(value)) {
-			canvasState.setSize(value, canvasState.height);
+			canvasState.setSize(value, $canvasState.height);
+			projectState.clampElementsToCanvas();
 		}
 	}
 
 	function updateHeight(event: Event) {
 		const value = parseInt((event.target as HTMLInputElement).value, 10);
 		if (!Number.isNaN(value)) {
-			canvasState.setSize(canvasState.width, value);
+			canvasState.setSize($canvasState.width, value);
+			projectState.clampElementsToCanvas();
 		}
 	}
+
+	const selectedElement = $derived(
+		$projectState.elements.find((element) => element.id === $projectState.selectedElementId) ?? null
+	);
 </script>
 
 <aside class="border-border bg-sidebar flex w-72 shrink-0 flex-col border-l">
@@ -23,7 +31,7 @@
 		<span class="text-sidebar-foreground/80 text-xs font-semibold tracking-wide uppercase">Properties</span>
 	</div>
 	<ScrollArea class="h-full">
-		<div class="p-3">
+		<div class="flex flex-col gap-4 p-3">
 			<div class="flex flex-col gap-2">
 				<span class="text-sidebar-foreground/80 text-xs font-semibold tracking-wide">Canvas</span>
 				<div class="grid grid-cols-2 gap-2">
@@ -33,8 +41,9 @@
 							id="canvas-width"
 							type="number"
 							min={1}
-							value={canvasState.width}
-							onchange={updateWidth}
+							step={1}
+							value={$canvasState.width}
+							oninput={updateWidth}
 							class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 						/>
 					</div>
@@ -44,13 +53,23 @@
 							id="canvas-height"
 							type="number"
 							min={1}
-							value={canvasState.height}
-							onchange={updateHeight}
+							step={1}
+							value={$canvasState.height}
+							oninput={updateHeight}
 							class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 						/>
 					</div>
 				</div>
 			</div>
+
+			{#if selectedElement}
+				<div class="flex flex-col gap-2">
+					<span class="text-sidebar-foreground/80 text-xs font-semibold tracking-wide">
+						{selectedElement.name}
+					</span>
+					<ElementProperties element={selectedElement} />
+				</div>
+			{/if}
 		</div>
 	</ScrollArea>
 </aside>

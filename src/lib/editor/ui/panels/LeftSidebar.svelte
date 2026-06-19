@@ -2,23 +2,46 @@
 	import * as AlertDialog from "$lib/components/ui/alert-dialog";
 	import { Button, buttonVariants } from "$lib/components/ui/button";
 	import * as Collapsible from "$lib/components/ui/collapsible";
+	import * as ContextMenu from "$lib/components/ui/context-menu";
 	import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
 	import { Input } from "$lib/components/ui/input";
 	import { ScrollArea } from "$lib/components/ui/scroll-area";
-	import { projectState } from "$lib/state/project.svelte";
+	import { duplicateElement } from "$lib/editor/actions/element-actions";
+	import type { Element } from "$lib/editor/model/elements";
+	import { copyElement, getClipboardElement } from "$lib/editor/state/clipboard.svelte";
+	import { projectState } from "$lib/editor/state/project.svelte";
 	import ChevronDown from "@lucide/svelte/icons/chevron-down";
+	import Circle from "@lucide/svelte/icons/circle";
 	import Download from "@lucide/svelte/icons/download";
+	import Image from "@lucide/svelte/icons/image";
 	import Pencil from "@lucide/svelte/icons/pencil";
 	import Plus from "@lucide/svelte/icons/plus";
 	import Save from "@lucide/svelte/icons/save";
+	import Square from "@lucide/svelte/icons/square";
+	import Trash2 from "@lucide/svelte/icons/trash-2";
+	import Type from "@lucide/svelte/icons/type";
 	import Upload from "@lucide/svelte/icons/upload";
+	import type { Component } from "svelte";
 
-	let editName = $state(projectState.name);
+	let editName = $state("");
 	let isEditing = $state(false);
 	let inputRef: HTMLInputElement | null = $state(null);
-	let importsOpen = $state(projectState.importExportState.importsOpen);
-	let elementsOpen = $state(projectState.importExportState.elementsOpen);
+	let importsOpen = $state(true);
+	let elementsOpen = $state(true);
 	let newProjectDialogOpen = $state(false);
+	let editingElementId = $state<string | null>(null);
+	let editingElementName = $state("");
+	let editingElementInputRef: HTMLInputElement | null = $state(null);
+
+	const hasClipboardElement = $derived(!!getClipboardElement());
+
+	const elementIcons: Record<Element["type"], Component> = {
+		rect: Square,
+		circle: Circle,
+		path: Pencil,
+		text: Type,
+		image: Image
+	};
 
 	async function handleCreateNewProject() {
 		await projectState.createNewProject();
@@ -37,7 +60,7 @@
 	});
 
 	function startEditing() {
-		editName = projectState.name;
+		editName = $projectState.name;
 		isEditing = true;
 	}
 
@@ -47,7 +70,7 @@
 	}
 
 	function cancel() {
-		editName = projectState.name;
+		editName = $projectState.name;
 		isEditing = false;
 	}
 
@@ -59,16 +82,53 @@
 		}
 	}
 
+	function startEditingElement(element: Element) {
+		editingElementId = element.id;
+		editingElementName = element.name;
+	}
+
+	function saveElementEdit() {
+		const trimmed = editingElementName.trim();
+		if (editingElementId && trimmed) {
+			projectState.renameElement(editingElementId, trimmed);
+		}
+		editingElementId = null;
+	}
+
+	function cancelElementEdit() {
+		editingElementId = null;
+	}
+
+	function handleElementEditKeydown(event: KeyboardEvent) {
+		if (event.key === "Enter") {
+			saveElementEdit();
+		} else if (event.key === "Escape") {
+			cancelElementEdit();
+		}
+	}
+
+	function handleElementTreeBackgroundPointerDown(event: PointerEvent) {
+		if (event.target !== event.currentTarget) return;
+		projectState.selectElement(null);
+	}
+
 	$effect(() => {
-		if (!projectState.initialized) return;
-		if (isEditing) return;
-		editName = projectState.name;
-		importsOpen = projectState.importExportState.importsOpen;
-		elementsOpen = projectState.importExportState.elementsOpen;
+		if (editingElementId && editingElementInputRef) {
+			editingElementInputRef.focus();
+			editingElementInputRef.select();
+		}
 	});
 
 	$effect(() => {
-		if (!projectState.initialized) return;
+		if (!$projectState.initialized) return;
+		if (isEditing) return;
+		editName = $projectState.name;
+		importsOpen = $projectState.importExportState.importsOpen;
+		elementsOpen = $projectState.importExportState.elementsOpen;
+	});
+
+	$effect(() => {
+		if (!$projectState.initialized) return;
 		projectState.setImportExportState({ importsOpen, elementsOpen });
 	});
 </script>
@@ -90,7 +150,7 @@
 				role="button"
 				tabindex="0"
 			>
-				{projectState.name}
+				{$projectState.name}
 			</span>
 		{/if}
 		<div class="flex items-center gap-x-1">
@@ -101,6 +161,7 @@
 					? 'pointer-events-none opacity-0'
 					: 'opacity-100'}"
 				onclick={startEditing}
+				aria-label="Rename project"
 			>
 				<Pencil />
 			</Button>
@@ -111,6 +172,7 @@
 					? 'pointer-events-none opacity-0'
 					: 'opacity-100'}"
 				onclick={handleSave}
+				aria-label="Save project"
 			>
 				<Save />
 			</Button>
@@ -121,6 +183,7 @@
 					? 'pointer-events-none opacity-0'
 					: 'opacity-100'}"
 				onclick={() => (newProjectDialogOpen = true)}
+				aria-label="Create new project"
 			>
 				<Plus />
 			</Button>
@@ -181,7 +244,7 @@
 {/snippet}
 
 {#snippet sectionElements()}
-	<Collapsible.Root bind:open={elementsOpen}>
+	<Collapsible.Root bind:open={elementsOpen} class="flex flex-1 flex-col">
 		<Collapsible.Trigger
 			class="border-border hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex h-8 w-full shrink-0 items-center justify-between border-b px-3 text-left outline-none"
 		>
@@ -192,12 +255,99 @@
 					: ''}"
 			/>
 		</Collapsible.Trigger>
-		<Collapsible.Content class="sidebar-collapsible-content">
-			<ScrollArea class="min-h-0 flex-1">
-				<div class="p-2">
-					<p class="text-muted-foreground text-xs">No elements</p>
-				</div>
-			</ScrollArea>
+		<Collapsible.Content class="sidebar-collapsible-content flex flex-1 flex-col">
+			<div class="flex flex-1 flex-col">
+				<ContextMenu.Root>
+					<ContextMenu.Trigger class="flex flex-1 flex-col">
+						<ScrollArea class="flex-1">
+							<div
+								class="flex min-h-full flex-col gap-0.5 p-2"
+								onpointerdown={handleElementTreeBackgroundPointerDown}
+								role="presentation"
+							>
+								{#each $projectState.elements as element (element.id)}
+									{@const Icon = elementIcons[element.type]}
+									{@const isSelected = $projectState.selectedElementId === element.id}
+									{@const isEditingElement = editingElementId === element.id}
+									{#if isEditingElement}
+										<div
+											class="bg-sidebar-accent flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs"
+										>
+											<Icon class="text-muted-foreground size-4 shrink-0" />
+											<Input
+												bind:ref={
+													() => editingElementInputRef, (v) => (editingElementInputRef = v)
+												}
+												bind:value={editingElementName}
+												onblur={saveElementEdit}
+												onkeydown={handleElementEditKeydown}
+												class="h-6 flex-1 border-0 bg-transparent px-0 py-0 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+											/>
+										</div>
+									{:else}
+										<ContextMenu.Root>
+											<ContextMenu.Trigger class="contents">
+												<div
+													class="group flex w-full items-center rounded-lg {isSelected
+														? 'bg-sidebar-accent text-sidebar-accent-foreground'
+														: 'text-sidebar-foreground hover:bg-sidebar-accent/50'}"
+												>
+													<button
+														type="button"
+														class="flex min-w-0 flex-1 items-center gap-2 px-2 py-1.5 text-left text-xs outline-none select-none"
+														onclick={() => projectState.selectElement(element.id)}
+														ondblclick={() => startEditingElement(element)}
+													>
+														<Icon class="text-muted-foreground size-3 shrink-0" />
+														<span class="truncate" title={element.name}>{element.name}</span
+														>
+													</button>
+													<button
+														type="button"
+														class="text-sidebar-foreground/60 hover:text-destructive px-2 py-1.5 opacity-0 transition-opacity duration-150 outline-none group-hover:opacity-100 focus-visible:opacity-100"
+														onclick={(event) => {
+															event.stopPropagation();
+															projectState.deleteElement(element.id);
+														}}
+														aria-label="Delete {element.name}"
+													>
+														<Trash2 class="size-3.5" />
+													</button>
+												</div>
+											</ContextMenu.Trigger>
+											<ContextMenu.Content>
+												<ContextMenu.Item onclick={() => copyElement(element)}>
+													Copy
+												</ContextMenu.Item>
+												<ContextMenu.Item
+													variant="destructive"
+													onclick={() => projectState.deleteElement(element.id)}
+												>
+													Delete
+												</ContextMenu.Item>
+											</ContextMenu.Content>
+										</ContextMenu.Root>
+									{/if}
+								{:else}
+									<p class="text-muted-foreground px-2 py-1 text-xs">No elements</p>
+								{/each}
+							</div>
+						</ScrollArea>
+					</ContextMenu.Trigger>
+					<ContextMenu.Content>
+						<ContextMenu.Item
+							disabled={!hasClipboardElement}
+							onclick={() => {
+								const copied = getClipboardElement();
+								if (!copied) return;
+								projectState.addElement(duplicateElement(copied));
+							}}
+						>
+							Paste
+						</ContextMenu.Item>
+					</ContextMenu.Content>
+				</ContextMenu.Root>
+			</div>
 		</Collapsible.Content>
 	</Collapsible.Root>
 {/snippet}

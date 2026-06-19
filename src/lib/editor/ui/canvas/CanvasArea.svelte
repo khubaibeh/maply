@@ -1,12 +1,17 @@
 <script lang="ts">
-	import { canvasState } from "$lib/state/canvas.svelte";
-	import { toolState } from "$lib/state/tool.svelte";
+	import { createRectElement } from "$lib/editor/actions/element-actions";
+	import { isPointInsideCanvas } from "$lib/editor/model/geometry";
+	import { isDrawingTool } from "$lib/editor/model/tools";
+	import { canvasState } from "$lib/editor/state/canvas.svelte";
+	import { projectState } from "$lib/editor/state/project.svelte";
+	import { toolState } from "$lib/editor/state/tool.svelte";
 	import { onMount } from "svelte";
 
 	import CanvasArtboard from "./CanvasArtboard.svelte";
 	import CanvasBackground from "./CanvasBackground.svelte";
 
 	let container: HTMLDivElement | null = $state(null);
+	let svgRef: SVGSVGElement | null = $state(null);
 	let containerWidth = $state(0);
 	let containerHeight = $state(0);
 	let isPanning = $state(false);
@@ -14,7 +19,14 @@
 	let panStart = $state({ x: 0, y: 0 });
 	let cameraStart = $state({ x: 0, y: 0 });
 
-	const isHandActive = $derived(toolState.activeTool === "hand" || (isHovering && toolState.isSpacePressed));
+	const isHandActive = $derived($toolState.activeTool === "hand" || (isHovering && $toolState.isSpacePressed));
+	const drawingToolActive = $derived(isDrawingTool($toolState.activeTool));
+	const cursorClass = $derived(() => {
+		if (isPanning) return "cursor-grabbing";
+		if (isHandActive) return "cursor-grab";
+		if (drawingToolActive) return "cursor-crosshair";
+		return "cursor-default";
+	});
 
 	onMount(() => {
 		if (!container) return;
@@ -33,7 +45,6 @@
 		const initialRect = container.getBoundingClientRect();
 		containerWidth = initialRect.width;
 		containerHeight = initialRect.height;
-		canvasState.centerCamera(containerWidth, containerHeight);
 
 		function handleWheel(event: WheelEvent) {
 			event.preventDefault();
@@ -41,17 +52,20 @@
 			if (event.ctrlKey || event.metaKey) {
 				const ZOOM_SENSITIVITY = 0.005;
 				const nextZoom = Math.min(
-					canvasState.maxZoom,
-					Math.max(canvasState.minZoom, canvasState.camera.zoom * Math.exp(-event.deltaY * ZOOM_SENSITIVITY))
+					$canvasState.maxZoom,
+					Math.max(
+						$canvasState.minZoom,
+						$canvasState.camera.zoom * Math.exp(-event.deltaY * ZOOM_SENSITIVITY)
+					)
 				);
-				if (nextZoom === canvasState.camera.zoom) return;
+				if (nextZoom === $canvasState.camera.zoom) return;
 
 				const rect = viewport.getBoundingClientRect();
 				const mouseX = event.clientX - rect.left;
 				const mouseY = event.clientY - rect.top;
 
-				const worldX = canvasState.camera.x + mouseX / canvasState.camera.zoom;
-				const worldY = canvasState.camera.y + mouseY / canvasState.camera.zoom;
+				const worldX = $canvasState.camera.x + mouseX / $canvasState.camera.zoom;
+				const worldY = $canvasState.camera.y + mouseY / $canvasState.camera.zoom;
 
 				canvasState.setCamera({
 					zoom: nextZoom,
@@ -59,7 +73,7 @@
 					y: worldY - mouseY / nextZoom
 				});
 			} else {
-				canvasState.pan(event.deltaX / canvasState.camera.zoom, event.deltaY / canvasState.camera.zoom);
+				canvasState.pan(event.deltaX / $canvasState.camera.zoom, event.deltaY / $canvasState.camera.zoom);
 			}
 		}
 
@@ -71,13 +85,13 @@
 			viewport.focus();
 			isPanning = true;
 			panStart = { x: event.clientX, y: event.clientY };
-			cameraStart = { x: canvasState.camera.x, y: canvasState.camera.y };
+			cameraStart = { x: $canvasState.camera.x, y: $canvasState.camera.y };
 		}
 
 		function movePan(event: MouseEvent) {
 			if (!isPanning) return;
-			const dx = (panStart.x - event.clientX) / canvasState.camera.zoom;
-			const dy = (panStart.y - event.clientY) / canvasState.camera.zoom;
+			const dx = (panStart.x - event.clientX) / $canvasState.camera.zoom;
+			const dy = (panStart.y - event.clientY) / $canvasState.camera.zoom;
 			canvasState.setCamera({
 				x: cameraStart.x + dx,
 				y: cameraStart.y + dy
@@ -133,37 +147,63 @@
 	});
 
 	const viewBox = $derived(
-		`${canvasState.camera.x} ${canvasState.camera.y} ${containerWidth / canvasState.camera.zoom} ${containerHeight / canvasState.camera.zoom}`
+		`${$canvasState.camera.x} ${$canvasState.camera.y} ${containerWidth / $canvasState.camera.zoom} ${containerHeight / $canvasState.camera.zoom}`
 	);
+
+	function handleSvgPointerDown(event: PointerEvent) {
+		if (event.button !== 0) return;
+		if ($toolState.activeTool === "select") {
+			projectState.selectElement(null);
+			return;
+		}
+
+		if ($toolState.activeTool !== "rect") return;
+		if (!svgRef) return;
+
+		const ctm = svgRef.getScreenCTM();
+		if (!ctm) return;
+
+		const point = svgRef.createSVGPoint();
+		point.x = event.clientX;
+		point.y = event.clientY;
+		const svgPoint = point.matrixTransform(ctm.inverse());
+
+		const drawPoint = { x: svgPoint.x, y: svgPoint.y };
+		const insideArtboard = isPointInsideCanvas(drawPoint, {
+			x: $canvasState.x,
+			y: $canvasState.y,
+			width: $canvasState.width,
+			height: $canvasState.height
+		});
+
+		if (!insideArtboard) return;
+
+		event.stopPropagation();
+
+		projectState.addElement(createRectElement(drawPoint, $projectState.elements));
+		toolState.setTool("select");
+	}
 </script>
 
 <div
 	bind:this={container}
-	class="canvas-viewport bg-muted relative min-h-0 flex-1 overflow-hidden outline-none"
-	class:panning={isPanning}
-	class:hand={isHandActive}
+	class="canvas-viewport bg-muted relative min-h-0 flex-1 overflow-hidden outline-none {cursorClass()}"
 	role="application"
 	aria-label="Canvas workspace"
 	tabindex="-1"
 >
 	{#if containerWidth > 0 && containerHeight > 0}
-		<svg width="100%" height="100%" {viewBox} role="img" aria-label="Canvas workspace">
-			<CanvasBackground {containerWidth} {containerHeight} camera={canvasState.camera} />
+		<svg
+			bind:this={svgRef}
+			width="100%"
+			height="100%"
+			{viewBox}
+			role="img"
+			aria-label="Canvas workspace"
+			onpointerdown={handleSvgPointerDown}
+		>
+			<CanvasBackground {containerWidth} {containerHeight} camera={$canvasState.camera} />
 			<CanvasArtboard />
 		</svg>
 	{/if}
 </div>
-
-<style>
-	.canvas-viewport {
-		cursor: default;
-	}
-
-	.canvas-viewport.hand {
-		cursor: grab;
-	}
-
-	.canvas-viewport.panning {
-		cursor: grabbing;
-	}
-</style>
