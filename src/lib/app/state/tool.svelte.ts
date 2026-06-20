@@ -1,5 +1,6 @@
-import type { Tool } from "$lib/editor/model/tools";
 import { get, writable } from "svelte/store";
+
+import type { Tool } from "../domain/tools";
 
 export type { Tool };
 

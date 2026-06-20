@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { getPathRenderTransform } from "$lib/editor/actions/element-actions";
-	import { canvasState } from "$lib/editor/state/canvas.svelte";
-	import { projectState } from "$lib/editor/state/project.svelte";
-	import { toolState } from "$lib/editor/state/tool.svelte";
+	import { getPathRenderTransform } from "$lib/app/core/element-actions";
+	import { canvasState } from "$lib/app/state/canvas.svelte";
+	import { projectState } from "$lib/app/state/project.svelte";
+	import { toolState } from "$lib/app/state/tool.svelte";
 	import { onMount } from "svelte";
 
 	let dragState = $state<{ id: string; clientX: number; clientY: number } | null>(null);

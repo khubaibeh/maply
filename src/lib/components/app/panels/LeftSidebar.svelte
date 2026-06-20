@@ -1,4 +1,8 @@
 <script lang="ts">
+	import { duplicateElement } from "$lib/app/core/element-actions";
+	import type { Element } from "$lib/app/domain/elements";
+	import { copyElement, getClipboardElement } from "$lib/app/state/clipboard.svelte";
+	import { projectState } from "$lib/app/state/project.svelte";
 	import * as AlertDialog from "$lib/components/ui/alert-dialog";
 	import { Button, buttonVariants } from "$lib/components/ui/button";
 	import * as Collapsible from "$lib/components/ui/collapsible";
@@ -6,10 +10,6 @@
 	import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
 	import { Input } from "$lib/components/ui/input";
 	import { ScrollArea } from "$lib/components/ui/scroll-area";
-	import { duplicateElement } from "$lib/editor/actions/element-actions";
-	import type { Element } from "$lib/editor/model/elements";
-	import { copyElement, getClipboardElement } from "$lib/editor/state/clipboard.svelte";
-	import { projectState } from "$lib/editor/state/project.svelte";
 	import ChevronDown from "@lucide/svelte/icons/chevron-down";
 	import Circle from "@lucide/svelte/icons/circle";
 	import Download from "@lucide/svelte/icons/download";

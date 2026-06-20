@@ -1,14 +1,7 @@
-import {
-	DEFAULT_CANVAS_HEIGHT,
-	DEFAULT_CANVAS_WIDTH,
-	DEFAULT_ZOOM,
-	MAX_ZOOM,
-	MIN_ZOOM,
-	mergeCamera,
-	sanitizeCanvasSize
-} from "$lib/editor/actions/canvas-actions";
-import type { Camera } from "$lib/editor/model/project";
 import { get, writable } from "svelte/store";
+
+import { CONSTANTS, mergeCamera, sanitizeCanvasSize } from "../core/canvas-actions";
+import type { Camera } from "../domain/project";
 
 type CanvasState = {
 	width: number;
@@ -21,13 +14,13 @@ type CanvasState = {
 };
 
 const store = writable<CanvasState>({
-	width: DEFAULT_CANVAS_WIDTH,
-	height: DEFAULT_CANVAS_HEIGHT,
+	width: CONSTANTS.width,
+	height: CONSTANTS.height,
 	x: 0,
 	y: 0,
-	camera: { x: 0, y: 0, zoom: DEFAULT_ZOOM },
-	minZoom: MIN_ZOOM,
-	maxZoom: MAX_ZOOM
+	camera: { x: 0, y: 0, zoom: CONSTANTS.zoom },
+	minZoom: CONSTANTS.min_zoom,
+	maxZoom: CONSTANTS.max_zoom
 });
 
 export const canvasState = {
@@ -67,11 +60,11 @@ export const canvasState = {
 	},
 
 	resetZoom() {
-		this.setCamera({ zoom: DEFAULT_ZOOM });
+		this.setCamera({ zoom: CONSTANTS.zoom });
 	},
 
 	resetCamera() {
-		store.update((state) => ({ ...state, camera: { x: 0, y: 0, zoom: DEFAULT_ZOOM } }));
+		store.update((state) => ({ ...state, camera: { x: 0, y: 0, zoom: CONSTANTS.zoom } }));
 	},
 
 	centerCamera(containerWidth: number, containerHeight: number) {
@@ -79,7 +72,7 @@ export const canvasState = {
 		this.setCamera({
 			x: -containerWidth / 2 + state.x + state.width / 2,
 			y: -containerHeight / 2 + state.y + state.height / 2,
-			zoom: DEFAULT_ZOOM
+			zoom: CONSTANTS.zoom
 		});
 	}
 };

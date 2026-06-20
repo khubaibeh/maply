@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { canvasState } from "$lib/editor/state/canvas.svelte";
-	import { projectState } from "$lib/editor/state/project.svelte";
+	import { canvasState } from "$lib/app/state/canvas.svelte";
+	import { projectState } from "$lib/app/state/project.svelte";
 
-	import CanvasElements from "./CanvasElements.svelte";
-	import SelectionOutline from "./SelectionOutline.svelte";
+	import Elements from "./Elements.svelte";
+	import Outline from "./Outline.svelte";
 
 	const selectedElement = $derived(
 		$projectState.elements.find((element) => element.id === $projectState.selectedElementId) ?? null
@@ -26,8 +26,8 @@
 	filter="url(#canvas-shadow)"
 />
 
-<CanvasElements />
+<Elements />
 
 {#if selectedElement}
-	<SelectionOutline element={selectedElement} />
+	<Outline element={selectedElement} />
 {/if}

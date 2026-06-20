@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { Element } from "$lib/editor/model/elements";
-	import { canvasState } from "$lib/editor/state/canvas.svelte";
-	import { projectState } from "$lib/editor/state/project.svelte";
-	import { toolState } from "$lib/editor/state/tool.svelte";
+	import type { Element } from "$lib/app/domain/elements";
+	import { canvasState } from "$lib/app/state/canvas.svelte";
+	import { projectState } from "$lib/app/state/project.svelte";
+	import { toolState } from "$lib/app/state/tool.svelte";
 	import { onMount } from "svelte";
 
 	interface Props {

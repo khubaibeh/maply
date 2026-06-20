@@ -1,13 +1,9 @@
-import {
-	clampElementToCanvas,
-	normalizeElements,
-	translateElementWithinCanvas
-} from "$lib/editor/actions/element-actions";
-import type { Element } from "$lib/editor/model/elements";
-import type { Project } from "$lib/editor/model/project";
-import { fetchProject, PROD_PROJECT_ID, resetProdProject } from "$lib/editor/persistence/indexeddb-project-repository";
 import { get, writable } from "svelte/store";
 
+import { fetchProject, DEFAULTS, resetProdProject } from "../core/db";
+import { clampElementToCanvas, normalizeElements, translateElementWithinCanvas } from "../core/element-actions";
+import type { Element } from "../domain/elements";
+import type { Project } from "../domain/project";
 import { queueProjectSave, saveProjectNow } from "./autosave.svelte";
 import { canvasState } from "./canvas.svelte";
 
@@ -21,7 +17,7 @@ type ProjectState = {
 };
 
 const store = writable<ProjectState>({
-	id: PROD_PROJECT_ID,
+	id: DEFAULTS.prodProjId,
 	name: "Untitled",
 	elements: [],
 	importExportState: {
@@ -73,7 +69,7 @@ export const projectState = {
 		await saveProjectNow(toProject(), get(store).initialized);
 	},
 
-	async load(projectId = PROD_PROJECT_ID) {
+	async load(projectId = DEFAULTS.prodProjId) {
 		store.update((state) => ({ ...state, id: projectId }));
 
 		try {

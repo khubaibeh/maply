@@ -1,6 +1,6 @@
-import type { Element, ElementType, PathElement, RectElement } from "$lib/editor/model/elements";
-import type { Point } from "$lib/editor/model/geometry";
-import type { Canvas } from "$lib/editor/model/project";
+import type { Element, ElementType, PathElement, RectElement } from "../domain/elements";
+import type { Point } from "../domain/geometry";
+import type { Canvas } from "../domain/project";
 
 const PASTE_OFFSET = 20;
 const CURVE_SAMPLE_STEPS = 32;

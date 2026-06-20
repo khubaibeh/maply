@@ -1,5 +1,5 @@
-import type { Project } from "$lib/editor/model/project";
-import { saveProject } from "$lib/editor/persistence/indexeddb-project-repository";
+import { saveProject } from "../core/db";
+import type { Project } from "../domain/project";
 
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 

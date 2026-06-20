@@ -1,14 +1,14 @@
 <script lang="ts">
-	import { createRectElement } from "$lib/editor/actions/element-actions";
-	import { isPointInsideCanvas } from "$lib/editor/model/geometry";
-	import { isDrawingTool } from "$lib/editor/model/tools";
-	import { canvasState } from "$lib/editor/state/canvas.svelte";
-	import { projectState } from "$lib/editor/state/project.svelte";
-	import { toolState } from "$lib/editor/state/tool.svelte";
+	import { createRectElement } from "$lib/app/core/element-actions";
+	import { isPointInsideCanvas } from "$lib/app/domain/geometry";
+	import { isDrawingTool } from "$lib/app/domain/tools";
+	import { canvasState } from "$lib/app/state/canvas.svelte";
+	import { projectState } from "$lib/app/state/project.svelte";
+	import { toolState } from "$lib/app/state/tool.svelte";
 	import { onMount } from "svelte";
 
-	import CanvasArtboard from "./CanvasArtboard.svelte";
-	import CanvasBackground from "./CanvasBackground.svelte";
+	import Artboard from "./Artboard.svelte";
+	import Background from "./Background.svelte";
 
 	let container: HTMLDivElement | null = $state(null);
 	let svgRef: SVGSVGElement | null = $state(null);
@@ -202,8 +202,8 @@
 			aria-label="Canvas workspace"
 			onpointerdown={handleSvgPointerDown}
 		>
-			<CanvasBackground {containerWidth} {containerHeight} camera={$canvasState.camera} />
-			<CanvasArtboard />
+			<Background {containerWidth} {containerHeight} camera={$canvasState.camera} />
+			<Artboard />
 		</svg>
 	{/if}
 </div>

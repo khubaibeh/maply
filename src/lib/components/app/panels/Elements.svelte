@@ -1,14 +1,14 @@
 <script lang="ts">
-	import { Input } from "$lib/components/ui/input";
-	import { Textarea } from "$lib/components/ui/textarea";
-	import type { Element } from "$lib/editor/model/elements";
+	import type { Element } from "$lib/app/domain/elements";
 	import {
 		parseHexColor,
 		parseIntNumber,
 		parseNonNegativeNumber,
 		parsePositiveInt
-	} from "$lib/editor/model/validation";
-	import { projectState } from "$lib/editor/state/project.svelte";
+	} from "$lib/app/domain/validation";
+	import { projectState } from "$lib/app/state/project.svelte";
+	import { Input } from "$lib/components/ui/input";
+	import { Textarea } from "$lib/components/ui/textarea";
 
 	interface Props {
 		element: Element;

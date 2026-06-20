@@ -1,13 +1,15 @@
-import type { Camera } from "$lib/editor/model/project";
+import type { Camera } from "../domain/project";
 
-export const DEFAULT_CANVAS_WIDTH = 800;
-export const DEFAULT_CANVAS_HEIGHT = 800;
-export const DEFAULT_ZOOM = 1;
-export const MIN_ZOOM = 0.1;
-export const MAX_ZOOM = 5;
+export const CONSTANTS = {
+	width: 800,
+	height: 800,
+	zoom: 1,
+	min_zoom: 0.1,
+	max_zoom: 5
+};
 
 export function clampZoom(value: number): number {
-	return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value));
+	return Math.min(CONSTANTS.max_zoom, Math.max(CONSTANTS.min_zoom, value));
 }
 
 export function validNumber(value: unknown): value is number {

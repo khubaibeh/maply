@@ -1,14 +1,14 @@
 <script lang="ts">
-	import { duplicateElement } from "$lib/editor/actions/element-actions";
-	import { getClipboardElement, copyElement } from "$lib/editor/state/clipboard.svelte";
-	import { projectState } from "$lib/editor/state/project.svelte";
-	import CanvasArea from "$lib/editor/ui/canvas/CanvasArea.svelte";
+	import { duplicateElement } from "$lib/app/core/element-actions";
+	import { getClipboardElement, copyElement } from "$lib/app/state/clipboard.svelte";
+	import { projectState } from "$lib/app/state/project.svelte";
 	import { onMount } from "svelte";
 
-	import LeftSidebar from "../panels/LeftSidebar.svelte";
-	import RightSidebar from "../panels/RightSidebar.svelte";
-	import BottomToolbar from "../toolbar/BottomToolbar.svelte";
-	import TopNavbar from "./TopNavbar.svelte";
+	import CanvasArea from "./canvas";
+	import BottomToolbar from "./core/BottomToolbar.svelte";
+	import TopNavbar from "./core/TopNavbar.svelte";
+	import LeftSidebar from "./panels/LeftSidebar.svelte";
+	import RightSidebar from "./panels/RightSidebar.svelte";
 
 	function isEditingText(event: KeyboardEvent): boolean {
 		const target = event.target as HTMLElement | null;

@@ -1,4 +1,4 @@
-import type { Element } from "$lib/editor/model/elements";
+import type { Element } from "../domain/elements";
 
 let clipboardElement = $state<Element | null>(null);
 
