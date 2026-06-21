@@ -24,6 +24,7 @@ export const toolState = {
 	},
 
 	setSpacePressed(value: boolean) {
+		// Space temporarily switches to hand mode and restores the previous tool on release.
 		const state = get(store);
 
 		if (value) {

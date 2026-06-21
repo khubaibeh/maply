@@ -15,6 +15,7 @@
 	$effect(() => {
 		if (!$projectState.initialized) return;
 
+		// Layout owns autosave because it observes both project and canvas state.
 		projectState.queueSave({
 			id: $projectState.id,
 			name: $projectState.name,
@@ -48,6 +49,7 @@
 			}
 		};
 
+		// Load once on the client and flush pending saves through browser shutdown paths.
 		void projectState.load();
 		window.addEventListener("pagehide", flushProjectSave);
 		window.addEventListener("beforeunload", flushProjectSave);

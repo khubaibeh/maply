@@ -7,6 +7,7 @@ import type { Project } from "../domain/project";
 import { queueProjectSave, saveProjectNow } from "./autosave.svelte";
 import { canvasState } from "./canvas.svelte";
 
+// Project state owns document data while canvasState owns viewport and artboard geometry.
 type ProjectState = {
 	id: string;
 	name: string;
@@ -29,6 +30,7 @@ const store = writable<ProjectState>({
 });
 
 function toProject(): Project {
+	// Persisted projects are assembled from both state stores.
 	const project = get(store);
 	const canvas = canvasState.getSnapshot();
 
@@ -74,6 +76,7 @@ export const projectState = {
 
 		try {
 			const record = await fetchProject(projectId);
+			// Canvas is hydrated first so loaded elements can be normalized against current bounds.
 			canvasState.setSize(record.canvas.width, record.canvas.height);
 			canvasState.setPosition(record.canvas.x, record.canvas.y);
 			if (record.camera) {
@@ -91,6 +94,7 @@ export const projectState = {
 			console.warn("Failed to load project, using defaults:", error);
 		}
 
+		// Autosave is enabled only after the initial load path has finished.
 		store.update((state) => ({ ...state, selectedElementId: null, initialized: true }));
 	},
 
@@ -118,6 +122,7 @@ export const projectState = {
 	},
 
 	async createNewProject() {
+		// The app has one editable project slot, so creating a project resets that slot.
 		const fresh = await resetProdProject();
 		canvasState.setSize(fresh.canvas.width, fresh.canvas.height);
 		canvasState.setPosition(fresh.canvas.x, fresh.canvas.y);

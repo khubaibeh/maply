@@ -25,6 +25,7 @@
 		if (!elementScreenMatrix || !svgScreenMatrix) return;
 
 		const rect = el.getBBox();
+		// Project the element's local bbox through SVG matrices so transformed paths outline correctly.
 		const matrix = svgScreenMatrix.inverse().multiply(elementScreenMatrix);
 		const corners = [
 			toSvgPoint(svg, rect.x, rect.y).matrixTransform(matrix),
@@ -66,6 +67,7 @@
 		function handlePointerMove(event: PointerEvent) {
 			if (!dragState) return;
 
+			// Pointer deltas are screen pixels; element movement is in zoomed canvas units.
 			const dx = (event.clientX - dragState.clientX) / $canvasState.camera.zoom;
 			const dy = (event.clientY - dragState.clientY) / $canvasState.camera.zoom;
 			dragState = { clientX: event.clientX, clientY: event.clientY };

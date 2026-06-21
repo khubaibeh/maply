@@ -4,6 +4,7 @@ import type { Project } from "../domain/project";
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
 export function queueProjectSave(project: Project, canSave: boolean) {
+	// Saves before hydration can overwrite persisted data with startup defaults.
 	if (!canSave) return;
 	if (saveTimeout) clearTimeout(saveTimeout);
 
@@ -15,6 +16,7 @@ export function queueProjectSave(project: Project, canSave: boolean) {
 }
 
 export async function saveProjectNow(project: Project, canSave: boolean) {
+	// Flushes replace the pending debounce so unload handlers do not race a later save.
 	if (!canSave) return;
 	if (saveTimeout) clearTimeout(saveTimeout);
 

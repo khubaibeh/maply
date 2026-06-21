@@ -50,6 +50,7 @@
 			event.preventDefault();
 
 			if (event.ctrlKey || event.metaKey) {
+				// Zoom around the pointer so the world point under the cursor stays fixed.
 				const ZOOM_SENSITIVITY = 0.005;
 				const nextZoom = Math.min(
 					$canvasState.maxZoom,
@@ -124,6 +125,7 @@
 			toolState.setSpacePressed(false);
 		}
 
+		// Global move/up handlers keep panning stable after the pointer leaves the viewport.
 		viewport.addEventListener("wheel", handleWheel, { passive: false });
 		viewport.addEventListener("mousedown", startPan);
 		viewport.addEventListener("mouseenter", handleMouseEnter);
@@ -166,6 +168,7 @@
 		const point = svgRef.createSVGPoint();
 		point.x = event.clientX;
 		point.y = event.clientY;
+		// Convert from viewport coordinates into the SVG viewBox coordinate system.
 		const svgPoint = point.matrixTransform(ctm.inverse());
 
 		const drawPoint = { x: svgPoint.x, y: svgPoint.y };

@@ -2,6 +2,7 @@ import type { Element, ElementType, PathElement, RectElement } from "../domain/e
 import type { Point } from "../domain/geometry";
 import type { Canvas } from "../domain/project";
 
+// Element mutations stay canvas-safe here so UI handlers can work with raw deltas.
 const PASTE_OFFSET = 20;
 const CURVE_SAMPLE_STEPS = 32;
 
@@ -65,6 +66,7 @@ export function translateElementWithinCanvas(element: Element, dx: number, dy: n
 }
 
 export function getPathRenderTransform(element: PathElement): Point {
+	// Path x/y stores the padded visual box, while SVG path data keeps its own local origin.
 	const bounds = getPathDataBounds(element.d);
 	const strokePadding = Math.ceil(element.strokeWidth / 2);
 
@@ -75,6 +77,7 @@ export function getPathRenderTransform(element: PathElement): Point {
 }
 
 export function clampElementToCanvas(element: Element, canvas: Canvas): Element {
+	// Size is clamped first so the final position clamp uses the rendered bounds.
 	const resized = clampElementSize(element, canvas);
 	const bounds = getElementBounds(resized);
 	const dx = getClampDelta(bounds.x, bounds.width, canvas.x, canvas.width);
@@ -151,6 +154,7 @@ function getElementBounds(element: Element): Bounds {
 				height: element.r * 2
 			};
 		case "path": {
+			// Paths are positioned by their visual box; data bounds only provide the drawn size.
 			const pathBounds = getPathDataBounds(element.d);
 			const strokePadding = Math.ceil(element.strokeWidth / 2);
 			return {
@@ -161,6 +165,7 @@ function getElementBounds(element: Element): Bounds {
 			};
 		}
 		case "text":
+			// Canvas text measurement is not available here, so use a stable editor-side estimate.
 			return {
 				x: element.x,
 				y: element.y - element.fontSize,
@@ -171,6 +176,7 @@ function getElementBounds(element: Element): Bounds {
 }
 
 function getPathDataBounds(path: string): Bounds {
+	// This is a tolerant SVG path scanner used for editor bounds, not a full renderer.
 	const tokens = path.match(/[a-zA-Z]|[-+]?(?:\d*\.\d+|\d+\.?)(?:e[-+]?\d+)?/g) ?? [];
 	const points: Point[] = [];
 	let index = 0;
@@ -348,6 +354,7 @@ function getPathDataBounds(path: string): Bounds {
 					const radiusX = Math.abs(values[0]);
 					const radiusY = Math.abs(values[1]);
 					const end = toPathPoint(values[5], values[6], relative, current);
+					// Arc extrema are approximated from the endpoint radius box for fast selection bounds.
 					points.push(
 						current,
 						end,
@@ -416,6 +423,7 @@ function reflectPoint(point: Point, around: Point): Point {
 }
 
 function addQuadraticPoints(points: Point[], start: Point, control: Point, end: Point) {
+	// Fixed sampling keeps bounds predictable without pulling in a path measurement dependency.
 	for (let step = 0; step <= CURVE_SAMPLE_STEPS; step += 1) {
 		const t = step / CURVE_SAMPLE_STEPS;
 		const inverse = 1 - t;
@@ -427,6 +435,7 @@ function addQuadraticPoints(points: Point[], start: Point, control: Point, end: 
 }
 
 function addCubicPoints(points: Point[], start: Point, controlA: Point, controlB: Point, end: Point) {
+	// Fixed sampling keeps bounds predictable without pulling in a path measurement dependency.
 	for (let step = 0; step <= CURVE_SAMPLE_STEPS; step += 1) {
 		const t = step / CURVE_SAMPLE_STEPS;
 		const inverse = 1 - t;

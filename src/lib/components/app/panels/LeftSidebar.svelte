@@ -121,6 +121,7 @@
 
 	$effect(() => {
 		if (!$projectState.initialized) return;
+		// Do not overwrite the local draft while the project name input is active.
 		if (isEditing) return;
 		editName = $projectState.name;
 		importsOpen = $projectState.importExportState.importsOpen;
@@ -129,6 +130,7 @@
 
 	$effect(() => {
 		if (!$projectState.initialized) return;
+		// Collapsible state is part of the persisted project UI state.
 		projectState.setImportExportState({ importsOpen, elementsOpen });
 	});
 </script>
@@ -243,6 +245,7 @@
 	</Collapsible.Root>
 {/snippet}
 
+<!-- The tree has item-level menus plus a background menu for paste into empty space. -->
 {#snippet sectionElements()}
 	<Collapsible.Root bind:open={elementsOpen} class="flex flex-1 flex-col">
 		<Collapsible.Trigger

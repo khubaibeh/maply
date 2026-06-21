@@ -1,6 +1,8 @@
 import { createDefaultProject } from "../domain/defaults";
 import type { Project } from "../domain/project";
 
+// TODO: Make a single function that returns an initialized object
+// with all functions instead of relying on GLOBAL VARIABLES.
 export const DEFAULTS = {
 	name: "maply",
 	version: 3,
@@ -95,6 +97,7 @@ export async function fetchProject(id: string): Promise<Project> {
 	const defaultId = DEFAULTS.projectId;
 	const prodId = DEFAULTS.prodProjId;
 
+	// indexedDB is undefined outside the browser
 	if (typeof indexedDB === "undefined") return createDefaultProject(id === defaultId ? defaultId : prodId);
 
 	const db = await openDB();
