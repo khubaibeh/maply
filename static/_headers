@@ -1,0 +1,5 @@
+/*
+  Cache-Control: no-cache
+
+/_app/immutable/*
+  Cache-Control: public, max-age=86400, immutable
