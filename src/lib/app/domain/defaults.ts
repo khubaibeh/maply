@@ -3,20 +3,8 @@ import type { Project } from "./project";
 
 const defaultElements: Element[] = [
 	{
-		id: "el-rect-1",
-		name: "Background rectangle",
-		type: "rect",
-		x: 100,
-		y: 100,
-		width: 200,
-		height: 120,
-		fill: "#e5e5e5",
-		stroke: "#000000",
-		strokeWidth: 0
-	},
-	{
 		id: "el-circle-1",
-		name: "Highlight circle",
+		name: "Highlight-circle",
 		type: "circle",
 		cx: 350,
 		cy: 250,
@@ -27,7 +15,7 @@ const defaultElements: Element[] = [
 	},
 	{
 		id: "el-path-1",
-		name: "Decorative path",
+		name: "Decorative-path",
 		type: "path",
 		x: 0,
 		y: 0,
@@ -38,7 +26,7 @@ const defaultElements: Element[] = [
 	},
 	{
 		id: "el-text-1",
-		name: "Title text",
+		name: "Title-text",
 		type: "text",
 		x: 120,
 		y: 80,
@@ -48,13 +36,25 @@ const defaultElements: Element[] = [
 	},
 	{
 		id: "el-image-1",
-		name: "Sample image",
+		name: "Sample-image",
 		type: "image",
 		x: 300,
 		y: 120,
 		width: 160,
 		height: 120,
 		href: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='120'%3E%3Crect width='160' height='120' fill='%23d4d4d4'/%3E%3Ccircle cx='80' cy='60' r='30' fill='%239ca3af'/%3E%3C/svg%3E"
+	},
+	{
+		id: "el-rect-1",
+		name: "1 Background/rectangle",
+		type: "rect",
+		x: 100,
+		y: 100,
+		width: 200,
+		height: 120,
+		fill: "#e5e5e5",
+		stroke: "#000000",
+		strokeWidth: 0
 	}
 ];
 
