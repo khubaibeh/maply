@@ -1,9 +1,10 @@
-import type { Element, ElementType, PathElement, RectElement } from "../domain/elements";
+import type { CircleElement, Element, ElementType, PathElement, RectElement } from "../domain/elements";
 import type { Point } from "../domain/geometry";
 import type { Canvas } from "../domain/project";
 
 // Element mutations stay canvas-safe here so UI handlers can work with raw deltas.
 const PASTE_OFFSET = 20;
+export const MIN_SHAPE_SIZE = 5;
 const CURVE_SAMPLE_STEPS = 32;
 
 const defaultNames: Record<ElementType, string> = {
@@ -110,7 +111,69 @@ export function createRectElement(point: Point, elements: Element[]): RectElemen
 		y: Math.round(point.y),
 		width: 120,
 		height: 80,
-		fill: "#000000",
+		fill: "#e5e5e5",
+		stroke: "#000000",
+		strokeWidth: 0
+	};
+}
+
+export function getShapeDragBox(start: Point, end: Point, options: { square?: boolean } = {}) {
+	let x = Math.min(start.x, end.x);
+	let y = Math.min(start.y, end.y);
+	let width = Math.abs(end.x - start.x);
+	let height = Math.abs(end.y - start.y);
+
+	if (options.square) {
+		const size = Math.max(width, height);
+		x = end.x < start.x ? start.x - size : start.x;
+		y = end.y < start.y ? start.y - size : start.y;
+		width = size;
+		height = size;
+	}
+
+	if (width < MIN_SHAPE_SIZE || height < MIN_SHAPE_SIZE) return null;
+
+	return { x, y, width, height };
+}
+
+export function createRectElementFromDrag(
+	start: Point,
+	end: Point,
+	elements: Element[],
+	options: { square?: boolean } = {}
+): RectElement | null {
+	const box = getShapeDragBox(start, end, options);
+	if (!box) return null;
+
+	return {
+		id: createElementId(),
+		name: nextElementName("rect", elements),
+		type: "rect",
+		x: Math.round(box.x),
+		y: Math.round(box.y),
+		width: Math.round(box.width),
+		height: Math.round(box.height),
+		fill: "#e5e5e5",
+		stroke: "#000000",
+		strokeWidth: 0
+	};
+}
+
+export function createCircleElementFromDrag(start: Point, end: Point, elements: Element[]): CircleElement | null {
+	const box = getShapeDragBox(start, end);
+	if (!box) return null;
+
+	const diameter = Math.min(box.width, box.height);
+	const radius = diameter / 2;
+
+	return {
+		id: createElementId(),
+		name: nextElementName("circle", elements),
+		type: "circle",
+		cx: Math.round(box.x + radius),
+		cy: Math.round(box.y + radius),
+		r: Math.round(radius),
+		fill: "#e5e5e5",
 		stroke: "#000000",
 		strokeWidth: 0
 	};

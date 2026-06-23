@@ -1,6 +1,11 @@
 <script lang="ts">
-	import { createRectElement, duplicateElement } from "$lib/app/core/element-actions";
-	import { isPointInsideCanvas } from "$lib/app/domain/geometry";
+	import {
+		createCircleElementFromDrag,
+		createRectElementFromDrag,
+		duplicateElement,
+		getShapeDragBox
+	} from "$lib/app/core/element-actions";
+	import { isPointInsideCanvas, type Point } from "$lib/app/domain/geometry";
 	import { canvasState } from "$lib/app/state/canvas.svelte";
 	import { copyElement, getClipboardElement } from "$lib/app/state/clipboard.svelte";
 	import { projectState } from "$lib/app/state/project.svelte";
@@ -23,12 +28,37 @@
 	let isHovering = $state(false);
 	let panStart = $state({ x: 0, y: 0 });
 	let cameraStart = $state({ x: 0, y: 0 });
+	let drawingSession = $state<{
+		tool: "rect" | "circle";
+		start: Point;
+		current: Point;
+		square: boolean;
+	} | null>(null);
 
 	const isHandActive = $derived($toolState.activeTool === "hand" || (isHovering && $toolState.isSpacePressed));
 	const cursorClass = $derived(() => {
 		if (isPanning) return "cursor-grabbing";
 		if (isHandActive) return "cursor-grab";
 		return "cursor-default";
+	});
+	const shapePreview = $derived(() => {
+		if (!drawingSession) return null;
+		const box = getShapeDragBox(drawingSession.start, drawingSession.current, {
+			square: drawingSession.tool === "rect" && drawingSession.square
+		});
+		if (!box) return null;
+
+		if (drawingSession.tool === "rect") {
+			return { type: "rect" as const, ...box };
+		}
+
+		const diameter = Math.min(box.width, box.height);
+		return {
+			type: "circle" as const,
+			cx: box.x + diameter / 2,
+			cy: box.y + diameter / 2,
+			r: diameter / 2
+		};
 	});
 
 	onMount(() => {
@@ -106,6 +136,36 @@
 			isPanning = false;
 		}
 
+		function moveDrawing(event: PointerEvent) {
+			if (!drawingSession) return;
+			const point = clientToSvgPoint(event.clientX, event.clientY);
+			if (!point) return;
+			drawingSession = { ...drawingSession, current: point, square: event.shiftKey };
+		}
+
+		function endDrawing(event: PointerEvent) {
+			if (!drawingSession) return;
+			event.preventDefault();
+			const session = drawingSession;
+			const end = clientToSvgPoint(event.clientX, event.clientY) ?? session.current;
+			drawingSession = null;
+
+			const element =
+				session.tool === "rect"
+					? createRectElementFromDrag(session.start, end, $projectState.elements, {
+							square: event.shiftKey
+						})
+					: createCircleElementFromDrag(session.start, end, $projectState.elements);
+			if (!element) return;
+
+			projectState.addElement(element);
+			toolState.setTool("select");
+		}
+
+		function cancelDrawing() {
+			drawingSession = null;
+		}
+
 		function handleKeyDown(event: KeyboardEvent) {
 			if (event.key !== " ") return;
 			if (!isHovering) return;
@@ -135,6 +195,9 @@
 		viewport.addEventListener("mouseleave", handleMouseLeave);
 		window.addEventListener("mousemove", movePan);
 		window.addEventListener("mouseup", endPan);
+		window.addEventListener("pointermove", moveDrawing);
+		window.addEventListener("pointerup", endDrawing);
+		window.addEventListener("pointercancel", cancelDrawing);
 		window.addEventListener("keydown", handleKeyDown);
 		window.addEventListener("keyup", handleKeyUp);
 
@@ -146,6 +209,9 @@
 			viewport.removeEventListener("mouseleave", handleMouseLeave);
 			window.removeEventListener("mousemove", movePan);
 			window.removeEventListener("mouseup", endPan);
+			window.removeEventListener("pointermove", moveDrawing);
+			window.removeEventListener("pointerup", endDrawing);
+			window.removeEventListener("pointercancel", cancelDrawing);
 			window.removeEventListener("keydown", handleKeyDown);
 			window.removeEventListener("keyup", handleKeyUp);
 		};
@@ -155,6 +221,22 @@
 		`${$canvasState.camera.x} ${$canvasState.camera.y} ${containerWidth / $canvasState.camera.zoom} ${containerHeight / $canvasState.camera.zoom}`
 	);
 
+	function clientToSvgPoint(clientX: number, clientY: number): Point | null {
+		if (!svgRef) return null;
+		const ctm = svgRef.getScreenCTM();
+		if (!ctm) return null;
+
+		const point = svgRef.createSVGPoint();
+		point.x = clientX;
+		point.y = clientY;
+		const svgPoint = point.matrixTransform(ctm.inverse());
+		return { x: svgPoint.x, y: svgPoint.y };
+	}
+
+	function isShapeTool(tool: string): tool is "rect" | "circle" {
+		return tool === "rect" || tool === "circle";
+	}
+
 	function handleSvgPointerDown(event: PointerEvent) {
 		if (event.button !== 0) return;
 		if ($toolState.activeTool === "select") {
@@ -162,19 +244,10 @@
 			return;
 		}
 
-		if ($toolState.activeTool !== "rect") return;
-		if (!svgRef) return;
+		if (!isShapeTool($toolState.activeTool)) return;
 
-		const ctm = svgRef.getScreenCTM();
-		if (!ctm) return;
-
-		const point = svgRef.createSVGPoint();
-		point.x = event.clientX;
-		point.y = event.clientY;
-		// Convert from viewport coordinates into the SVG viewBox coordinate system.
-		const svgPoint = point.matrixTransform(ctm.inverse());
-
-		const drawPoint = { x: svgPoint.x, y: svgPoint.y };
+		const drawPoint = clientToSvgPoint(event.clientX, event.clientY);
+		if (!drawPoint) return;
 		const insideArtboard = isPointInsideCanvas(drawPoint, {
 			x: $canvasState.x,
 			y: $canvasState.y,
@@ -184,10 +257,14 @@
 
 		if (!insideArtboard) return;
 
+		event.preventDefault();
 		event.stopPropagation();
-
-		projectState.addElement(createRectElement(drawPoint, $projectState.elements));
-		toolState.setTool("select");
+		drawingSession = {
+			tool: $toolState.activeTool,
+			start: drawPoint,
+			current: drawPoint,
+			square: event.shiftKey
+		};
 	}
 
 	function handleContextMenu(event: MouseEvent) {
@@ -246,6 +323,33 @@
 				>
 					<Background {containerWidth} {containerHeight} camera={$canvasState.camera} />
 					<Artboard />
+					{#if shapePreview()}
+						{@const preview = shapePreview()!}
+						{#if preview.type === "rect"}
+							<rect
+								x={preview.x}
+								y={preview.y}
+								width={preview.width}
+								height={preview.height}
+								fill="var(--primary)"
+								fill-opacity="0.12"
+								stroke="var(--primary)"
+								stroke-width="1"
+								pointer-events="none"
+							/>
+						{:else}
+							<circle
+								cx={preview.cx}
+								cy={preview.cy}
+								r={preview.r}
+								fill="var(--primary)"
+								fill-opacity="0.12"
+								stroke="var(--primary)"
+								stroke-width="1"
+								pointer-events="none"
+							/>
+						{/if}
+					{/if}
 				</svg>
 			{/if}
 		</div>
