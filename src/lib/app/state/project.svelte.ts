@@ -126,9 +126,9 @@ export const projectState = {
 		this.queueSave();
 	},
 
-	async createNewProject() {
+	async createNewProject(options: { elements?: "sample" | "blank" } = {}) {
 		// The app has one editable project slot, so creating a project resets that slot.
-		const fresh = await resetProdProject();
+		const fresh = await resetProdProject(options);
 		canvasState.setSize(fresh.canvas.width, fresh.canvas.height);
 		canvasState.setPosition(fresh.canvas.x, fresh.canvas.y);
 		if (fresh.camera) {

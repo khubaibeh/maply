@@ -129,15 +129,21 @@ export async function saveProject(project: Project): Promise<void> {
 	await putProject(db, project);
 }
 
-export async function resetProdProject(): Promise<Project> {
+export async function resetProdProject(options: { elements?: "sample" | "blank" } = {}): Promise<Project> {
 	const prodId = DEFAULTS.prodProjId;
 
-	if (typeof indexedDB === "undefined") return createDefaultProject(prodId);
+	if (typeof indexedDB === "undefined") {
+		const fallback = createDefaultProject(prodId);
+		return options.elements === "blank" ? { ...fallback, elements: [] } : fallback;
+	}
 
 	const db = await openDB();
 	await deleteProjectRecord(db, prodId);
 
 	const proj = createDefaultProject(prodId);
+	if (options.elements === "blank") {
+		proj.elements = [];
+	}
 	await putProject(db, proj);
 	return proj;
 }

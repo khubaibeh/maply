@@ -43,8 +43,8 @@
 		image: Image
 	};
 
-	async function handleCreateNewProject() {
-		await projectState.createNewProject();
+	async function handleCreateNewProject(elements: "sample" | "blank" = "sample") {
+		await projectState.createNewProject({ elements });
 		newProjectDialogOpen = false;
 	}
 
@@ -380,7 +380,27 @@
 		</AlertDialog.Header>
 		<AlertDialog.Footer>
 			<AlertDialog.Cancel onclick={() => (newProjectDialogOpen = false)}>Cancel</AlertDialog.Cancel>
-			<AlertDialog.Action onclick={handleCreateNewProject}>Create</AlertDialog.Action>
+			<div class="flex items-center">
+				<AlertDialog.Action class="rounded-r-none" onclick={() => handleCreateNewProject()}>
+					Create
+				</AlertDialog.Action>
+				<DropdownMenu.Root>
+					<DropdownMenu.Trigger
+						class="{buttonVariants({
+							variant: 'default',
+							size: 'default'
+						})} border-primary-foreground/20 -ml-1 rounded-l-none border-l px-1!"
+						aria-label="Create new project options"
+					>
+						<ChevronDown />
+					</DropdownMenu.Trigger>
+					<DropdownMenu.Content align="end">
+						<DropdownMenu.Item onclick={() => handleCreateNewProject("blank")} class="text-xs">
+							Blank canvas
+						</DropdownMenu.Item>
+					</DropdownMenu.Content>
+				</DropdownMenu.Root>
+			</div>
 		</AlertDialog.Footer>
 	</AlertDialog.Content>
 </AlertDialog.Root>
