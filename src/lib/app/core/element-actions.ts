@@ -65,6 +65,12 @@ export function translateElementWithinCanvas(element: Element, dx: number, dy: n
 	return clampElementToCanvas(translateElement(element, dx, dy), canvas);
 }
 
+export function setElementPosition(element: Element, x: number, y: number, canvas: Canvas): Element {
+	const dx = x - (element.type === "circle" ? element.cx : element.x);
+	const dy = y - (element.type === "circle" ? element.cy : element.y);
+	return translateElementWithinCanvas(element, dx, dy, canvas);
+}
+
 export function getPathRenderTransform(element: PathElement): Point {
 	// Path x/y stores the padded visual box, while SVG path data keeps its own local origin.
 	const bounds = getPathDataBounds(element.d);

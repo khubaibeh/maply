@@ -1,7 +1,12 @@
 import { get, writable } from "svelte/store";
 
 import { fetchProject, DEFAULTS, resetProdProject } from "../core/db";
-import { clampElementToCanvas, normalizeElements, translateElementWithinCanvas } from "../core/element-actions";
+import {
+	clampElementToCanvas,
+	normalizeElements,
+	setElementPosition,
+	translateElementWithinCanvas
+} from "../core/element-actions";
 import type { Element } from "../domain/elements";
 import type { Project } from "../domain/project";
 import { queueProjectSave, saveProjectNow } from "./autosave.svelte";
@@ -177,6 +182,19 @@ export const projectState = {
 			elements: state.elements.map((element) => {
 				if (element.id !== id) return element;
 				return translateElementWithinCanvas(element, dx, dy, canvas);
+			})
+		}));
+		this.queueSave();
+	},
+
+	setElementPosition(id: string, x: number, y: number) {
+		const canvas = canvasState.getSnapshot();
+
+		store.update((state) => ({
+			...state,
+			elements: state.elements.map((element) => {
+				if (element.id !== id) return element;
+				return setElementPosition(element, x, y, canvas);
 			})
 		}));
 		this.queueSave();

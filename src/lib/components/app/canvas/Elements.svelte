@@ -1,27 +1,74 @@
 <script lang="ts">
 	import { getPathRenderTransform } from "$lib/app/core/element-actions";
-	import { canvasState } from "$lib/app/state/canvas.svelte";
 	import { projectState } from "$lib/app/state/project.svelte";
 	import { toolState } from "$lib/app/state/tool.svelte";
 	import { onMount } from "svelte";
 
-	let dragState = $state<{ id: string; clientX: number; clientY: number } | null>(null);
+	let dragState = $state<{
+		id: string;
+		elementX: number;
+		elementY: number;
+		grabX: number;
+		grabY: number;
+	} | null>(null);
+
+	function getSvgRoot(target: EventTarget | null): SVGSVGElement | null {
+		if (!(target instanceof Element)) return null;
+		const node = target.closest("svg");
+		return node instanceof SVGSVGElement ? node : null;
+	}
+
+	function clientToSvgPoint(svg: SVGSVGElement, clientX: number, clientY: number) {
+		const ctm = svg.getScreenCTM();
+		if (!ctm) return null;
+		const point = svg.createSVGPoint();
+		point.x = clientX;
+		point.y = clientY;
+		return point.matrixTransform(ctm.inverse());
+	}
+
+	function getElementOrigin(element: (typeof $projectState.elements)[number]) {
+		if (element.type === "circle") return { x: element.cx, y: element.cy };
+		return { x: element.x, y: element.y };
+	}
 
 	function selectElement(event: PointerEvent, id: string) {
 		if ($toolState.activeTool !== "select") return;
 		event.stopPropagation();
 		projectState.selectElement(id);
-		dragState = { id, clientX: event.clientX, clientY: event.clientY };
+
+		const element = $projectState.elements.find((e) => e.id === id);
+		if (!element) return;
+
+		const svg = getSvgRoot(event.target);
+		if (!svg) return;
+
+		const svgPoint = clientToSvgPoint(svg, event.clientX, event.clientY);
+		if (!svgPoint) return;
+
+		const origin = getElementOrigin(element);
+		dragState = {
+			id,
+			elementX: origin.x,
+			elementY: origin.y,
+			grabX: svgPoint.x,
+			grabY: svgPoint.y
+		};
 	}
 
 	onMount(() => {
 		function handlePointerMove(event: PointerEvent) {
 			if (!dragState) return;
 
-			const dx = (event.clientX - dragState.clientX) / $canvasState.camera.zoom;
-			const dy = (event.clientY - dragState.clientY) / $canvasState.camera.zoom;
-			dragState = { id: dragState.id, clientX: event.clientX, clientY: event.clientY };
-			projectState.translateElement(dragState.id, dx, dy);
+			const svg = getSvgRoot(event.target);
+			if (!svg) return;
+
+			const svgPoint = clientToSvgPoint(svg, event.clientX, event.clientY);
+			if (!svgPoint) return;
+
+			const nextX = dragState.elementX + (svgPoint.x - dragState.grabX);
+			const nextY = dragState.elementY + (svgPoint.y - dragState.grabY);
+			projectState.setElementPosition(dragState.id, nextX, nextY);
 		}
 
 		function stopDragging() {
