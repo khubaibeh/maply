@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { canvasState } from "$lib/app/state/canvas.svelte";
+	import { projectState } from "$lib/app/state/project.svelte";
 
 	import "./layout.css";
 	import "./selections.css";
-	import { projectState } from "$lib/app/state/project.svelte";
 	import { getTheme } from "$lib/app/theme.svelte";
 	import favicon from "$lib/assets/favicon.svg";
+	import * as Tooltip from "$lib/components/ui/tooltip";
 	import { onMount } from "svelte";
 
 	let { children } = $props();
@@ -64,4 +65,6 @@
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
-{@render children()}
+<Tooltip.Provider delayDuration={150}>
+	{@render children()}
+</Tooltip.Provider>

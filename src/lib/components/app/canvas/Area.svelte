@@ -297,7 +297,7 @@
 	function handlePaste() {
 		const copied = getClipboardElement();
 		if (!copied) return;
-		projectState.addElement(duplicateElement(copied));
+		projectState.addElement(duplicateElement(copied, $projectState.elements));
 	}
 </script>
 

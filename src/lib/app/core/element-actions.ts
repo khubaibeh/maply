@@ -1,6 +1,7 @@
 import type { CircleElement, Element, ElementType, PathElement, RectElement } from "../domain/elements";
 import type { Point } from "../domain/geometry";
 import type { Canvas } from "../domain/project";
+import { createUniqueElementName } from "./element-name-validation";
 
 // Element mutations stay canvas-safe here so UI handlers can work with raw deltas.
 const PASTE_OFFSET = 20;
@@ -29,13 +30,13 @@ export function defaultElementName(type: ElementType): string {
 
 export function nextElementName(type: ElementType, elements: Element[]): string {
 	const count = elements.filter((element) => element.type === type).length;
-	return `${defaultElementName(type)}${count + 1}`;
+	return createUniqueElementName(`${defaultElementName(type)}${count + 1}`, elements);
 }
 
 export function normalizeElement(element: Element): Element {
 	const normalized: Element = {
 		...element,
-		name: element.name?.trim() || defaultElementName(element.type)
+		name: typeof element.name === "string" ? element.name : defaultElementName(element.type)
 	};
 
 	if (normalized.type === "path" && (typeof normalized.x !== "number" || typeof normalized.y !== "number")) {
@@ -93,12 +94,12 @@ export function clampElementToCanvas(element: Element, canvas: Canvas): Element 
 	return dx === 0 && dy === 0 ? resized : translateElement(resized, dx, dy);
 }
 
-export function duplicateElement(element: Element, offset = PASTE_OFFSET): Element {
+export function duplicateElement(element: Element, elements: Element[] = [], offset = PASTE_OFFSET): Element {
 	const next = translateElement(structuredClone(element), offset, offset);
 	return {
 		...next,
 		id: createElementId(),
-		name: `${next.name} copy`
+		name: createUniqueElementName(`${next.name}-copy`, elements)
 	} as Element;
 }
 

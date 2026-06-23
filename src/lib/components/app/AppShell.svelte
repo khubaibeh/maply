@@ -45,7 +45,7 @@
 				if (!copied) return;
 
 				event.preventDefault();
-				projectState.addElement(duplicateElement(copied));
+				projectState.addElement(duplicateElement(copied, $projectState.elements));
 			}
 		}
 

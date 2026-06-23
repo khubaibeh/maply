@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { duplicateElement } from "$lib/app/core/element-actions";
+	import { validateElementNames } from "$lib/app/core/element-name-validation";
 	import type { Element } from "$lib/app/domain/elements";
 	import { copyElement, getClipboardElement } from "$lib/app/state/clipboard.svelte";
 	import { projectState } from "$lib/app/state/project.svelte";
@@ -23,6 +24,8 @@
 	import Upload from "@lucide/svelte/icons/upload";
 	import type { Component } from "svelte";
 
+	import ElementNameValidation from "./ElementNameValidation.svelte";
+
 	let editName = $state("");
 	let isEditing = $state(false);
 	let inputRef: HTMLInputElement | null = $state(null);
@@ -34,6 +37,7 @@
 	let editingElementInputRef: HTMLInputElement | null = $state(null);
 
 	const hasClipboardElement = $derived(!!getClipboardElement());
+	const elementNameValidations = $derived(validateElementNames($projectState.elements));
 
 	const elementIcons: Record<Element["type"], Component> = {
 		rect: Square,
@@ -89,10 +93,14 @@
 
 	function saveElementEdit() {
 		const trimmed = editingElementName.trim();
-		if (editingElementId && trimmed) {
+		if (editingElementId) {
 			projectState.renameElement(editingElementId, trimmed);
 		}
 		editingElementId = null;
+	}
+
+	function autofixElementName(elementId: string, suggestion: string) {
+		projectState.renameElement(elementId, suggestion);
 	}
 
 	function cancelElementEdit() {
@@ -272,12 +280,16 @@
 									{@const Icon = elementIcons[element.type]}
 									{@const isSelected = $projectState.selectedElementId === element.id}
 									{@const isEditingElement = editingElementId === element.id}
+									{@const nameValidation = elementNameValidations.get(element.id)}
+									{@const isInvalidName = !!nameValidation && !nameValidation.valid}
 									<ContextMenu.Root>
 										<ContextMenu.Trigger class="contents">
 											<div
-												class="group flex w-full items-center rounded-lg {isSelected
-													? 'bg-sidebar-accent text-sidebar-accent-foreground'
-													: 'text-sidebar-foreground hover:bg-sidebar-accent/50'}"
+												class="group flex w-full items-center rounded-lg {isInvalidName
+													? 'bg-destructive/10 text-destructive hover:bg-destructive/15'
+													: isSelected
+														? 'bg-sidebar-accent text-sidebar-accent-foreground'
+														: 'text-sidebar-foreground hover:bg-sidebar-accent/50'}"
 											>
 												<button
 													type="button"
@@ -285,7 +297,11 @@
 													onclick={() => projectState.selectElement(element.id)}
 													ondblclick={() => startEditingElement(element)}
 												>
-													<Icon class="text-muted-foreground size-3 shrink-0" />
+													<Icon
+														class="size-3 shrink-0 {isInvalidName
+															? 'text-destructive'
+															: 'text-muted-foreground'}"
+													/>
 													{#if isEditingElement}
 														<Input
 															bind:ref={
@@ -303,6 +319,14 @@
 														>
 													{/if}
 												</button>
+												{#if isInvalidName && nameValidation}
+													<ElementNameValidation
+														validation={nameValidation}
+														onAutofix={(suggestion) =>
+															autofixElementName(element.id, suggestion)}
+														class={isEditingElement ? "mr-1" : ""}
+													/>
+												{/if}
 												<button
 													type="button"
 													class="text-sidebar-foreground/60 hover:text-destructive px-2 py-1.5 opacity-0 transition-opacity duration-150 outline-none group-hover:opacity-100 focus-visible:opacity-100 {isEditingElement
@@ -342,7 +366,7 @@
 							onclick={() => {
 								const copied = getClipboardElement();
 								if (!copied) return;
-								projectState.addElement(duplicateElement(copied));
+								projectState.addElement(duplicateElement(copied, $projectState.elements));
 							}}
 						>
 							Paste
