@@ -45,6 +45,7 @@
 		{#if element.type === "rect"}
 			<rect
 				id="element-{element.id}"
+				data-canvas-element={element.id}
 				role="button"
 				tabindex="-1"
 				aria-label="Select {element.name}"
@@ -61,6 +62,7 @@
 		{:else if element.type === "circle"}
 			<circle
 				id="element-{element.id}"
+				data-canvas-element={element.id}
 				role="button"
 				tabindex="-1"
 				aria-label="Select {element.name}"
@@ -77,6 +79,7 @@
 			{@const transform = getPathRenderTransform(element)}
 			<path
 				id="element-{element.id}"
+				data-canvas-element={element.id}
 				role="button"
 				tabindex="-1"
 				aria-label="Select {element.name}"
@@ -91,6 +94,7 @@
 		{:else if element.type === "text"}
 			<text
 				id="element-{element.id}"
+				data-canvas-element={element.id}
 				role="button"
 				tabindex="-1"
 				aria-label="Select {element.name}"
@@ -106,6 +110,7 @@
 		{:else if element.type === "image"}
 			<image
 				id="element-{element.id}"
+				data-canvas-element={element.id}
 				role="button"
 				tabindex="-1"
 				aria-label="Select {element.name}"

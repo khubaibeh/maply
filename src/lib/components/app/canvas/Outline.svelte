@@ -92,6 +92,7 @@
 
 <rect
 	role="button"
+	data-canvas-element={element.id}
 	tabindex="-1"
 	aria-label="Move {element.name}"
 	x={bbox.x}

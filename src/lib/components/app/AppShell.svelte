@@ -18,6 +18,16 @@
 
 	onMount(() => {
 		function handleKeyDown(event: KeyboardEvent) {
+			if (event.key === "Delete" || event.key === "Backspace") {
+				if (isEditingText(event)) return;
+				const selectedId = $projectState.selectedElementId;
+				if (!selectedId) return;
+
+				event.preventDefault();
+				projectState.deleteElement(selectedId);
+				return;
+			}
+
 			if (!(event.ctrlKey || event.metaKey)) return;
 
 			if (event.key === "c") {

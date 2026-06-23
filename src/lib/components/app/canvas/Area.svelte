@@ -1,15 +1,21 @@
 <script lang="ts">
-	import { createRectElement } from "$lib/app/core/element-actions";
+	import { createRectElement, duplicateElement } from "$lib/app/core/element-actions";
 	import { isPointInsideCanvas } from "$lib/app/domain/geometry";
 	import { canvasState } from "$lib/app/state/canvas.svelte";
+	import { copyElement, getClipboardElement } from "$lib/app/state/clipboard.svelte";
 	import { projectState } from "$lib/app/state/project.svelte";
 	import { toolState } from "$lib/app/state/tool.svelte";
+	import * as ContextMenu from "$lib/components/ui/context-menu";
 	import { onMount } from "svelte";
 
 	import Artboard from "./Artboard.svelte";
 	import Background from "./Background.svelte";
 
 	let container: HTMLDivElement | null = $state(null);
+	let contextMenuTarget: "element" | "empty" = $state("empty");
+	let contextMenuElementId: string | null = $state(null);
+
+	const hasClipboardElement = $derived(!!getClipboardElement());
 	let svgRef: SVGSVGElement | null = $state(null);
 	let containerWidth = $state(0);
 	let containerHeight = $state(0);
@@ -183,27 +189,73 @@
 		projectState.addElement(createRectElement(drawPoint, $projectState.elements));
 		toolState.setTool("select");
 	}
+
+	function handleContextMenu(event: MouseEvent) {
+		const target = event.target as Element | null;
+		const elementNode = target?.closest("[data-canvas-element]");
+		if (elementNode instanceof Element) {
+			const id = elementNode.getAttribute("data-canvas-element");
+			if (id) {
+				contextMenuTarget = "element";
+				contextMenuElementId = id;
+				projectState.selectElement(id);
+				return;
+			}
+		}
+		contextMenuTarget = "empty";
+		contextMenuElementId = null;
+	}
+
+	function handleCopy() {
+		if (!contextMenuElementId) return;
+		const element = $projectState.elements.find((e) => e.id === contextMenuElementId);
+		if (element) copyElement(element);
+	}
+
+	function handleDelete() {
+		if (!contextMenuElementId) return;
+		projectState.deleteElement(contextMenuElementId);
+	}
+
+	function handlePaste() {
+		const copied = getClipboardElement();
+		if (!copied) return;
+		projectState.addElement(duplicateElement(copied));
+	}
 </script>
 
-<div
-	bind:this={container}
-	class="canvas-viewport bg-muted relative min-h-0 flex-1 overflow-hidden outline-none {cursorClass()}"
-	role="application"
-	aria-label="Canvas workspace"
-	tabindex="-1"
->
-	{#if containerWidth > 0 && containerHeight > 0}
-		<svg
-			bind:this={svgRef}
-			width="100%"
-			height="100%"
-			{viewBox}
-			role="img"
+<ContextMenu.Root>
+	<ContextMenu.Trigger class="contents">
+		<div
+			bind:this={container}
+			class="canvas-viewport bg-muted relative min-h-0 flex-1 overflow-hidden outline-none {cursorClass()}"
+			role="application"
 			aria-label="Canvas workspace"
-			onpointerdown={handleSvgPointerDown}
+			tabindex="-1"
+			oncontextmenu={handleContextMenu}
 		>
-			<Background {containerWidth} {containerHeight} camera={$canvasState.camera} />
-			<Artboard />
-		</svg>
-	{/if}
-</div>
+			{#if containerWidth > 0 && containerHeight > 0}
+				<svg
+					bind:this={svgRef}
+					width="100%"
+					height="100%"
+					{viewBox}
+					role="img"
+					aria-label="Canvas workspace"
+					onpointerdown={handleSvgPointerDown}
+				>
+					<Background {containerWidth} {containerHeight} camera={$canvasState.camera} />
+					<Artboard />
+				</svg>
+			{/if}
+		</div>
+	</ContextMenu.Trigger>
+	<ContextMenu.Content>
+		{#if contextMenuTarget === "element"}
+			<ContextMenu.Item onclick={handleCopy}>Copy</ContextMenu.Item>
+			<ContextMenu.Item variant="destructive" onclick={handleDelete}>Delete</ContextMenu.Item>
+		{:else}
+			<ContextMenu.Item disabled={!hasClipboardElement} onclick={handlePaste}>Paste</ContextMenu.Item>
+		{/if}
+	</ContextMenu.Content>
+</ContextMenu.Root>
