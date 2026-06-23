@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { createRectElement } from "$lib/app/core/element-actions";
 	import { isPointInsideCanvas } from "$lib/app/domain/geometry";
-	import { isDrawingTool } from "$lib/app/domain/tools";
 	import { canvasState } from "$lib/app/state/canvas.svelte";
 	import { projectState } from "$lib/app/state/project.svelte";
 	import { toolState } from "$lib/app/state/tool.svelte";
@@ -20,11 +19,9 @@
 	let cameraStart = $state({ x: 0, y: 0 });
 
 	const isHandActive = $derived($toolState.activeTool === "hand" || (isHovering && $toolState.isSpacePressed));
-	const drawingToolActive = $derived(isDrawingTool($toolState.activeTool));
 	const cursorClass = $derived(() => {
 		if (isPanning) return "cursor-grabbing";
 		if (isHandActive) return "cursor-grab";
-		if (drawingToolActive) return "cursor-crosshair";
 		return "cursor-default";
 	});
 
@@ -51,7 +48,7 @@
 
 			if (event.ctrlKey || event.metaKey) {
 				// Zoom around the pointer so the world point under the cursor stays fixed.
-				const ZOOM_SENSITIVITY = 0.005;
+				const ZOOM_SENSITIVITY = 0.0025;
 				const nextZoom = Math.min(
 					$canvasState.maxZoom,
 					Math.max(
