@@ -3,6 +3,7 @@
 	import { projectState } from "$lib/app/state/project.svelte";
 	import { Input } from "$lib/components/ui/input";
 	import { ScrollArea } from "$lib/components/ui/scroll-area";
+	import { Separator } from "$lib/components/ui/separator";
 
 	import ElementProperties from "./Elements.svelte";
 
@@ -20,6 +21,12 @@
 			canvasState.setSize($canvasState.width, value);
 			projectState.clampElementsToCanvas();
 		}
+	}
+
+	function updateElementName(event: Event, id: string) {
+		const value = (event.target as HTMLInputElement).value.trim();
+		if (!value) return;
+		projectState.renameElement(id, value);
 	}
 
 	const selectedElement = $derived(
@@ -65,9 +72,18 @@
 
 			{#if selectedElement}
 				<div class="flex flex-col gap-2">
-					<span class="text-sidebar-foreground/80 text-xs font-semibold tracking-wide">
-						{selectedElement.name}
-					</span>
+					<Separator />
+					<div class="flex flex-col gap-1">
+						<label for="{selectedElement.id}-name" class="text-sidebar-foreground/70 text-xs">Name</label>
+						<Input
+							id="{selectedElement.id}-name"
+							type="text"
+							value={selectedElement.name}
+							onchange={(event) => updateElementName(event, selectedElement.id)}
+							class="h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
+						/>
+					</div>
+
 					<ElementProperties element={selectedElement} />
 				</div>
 			{/if}

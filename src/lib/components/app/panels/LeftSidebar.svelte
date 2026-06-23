@@ -272,65 +272,64 @@
 									{@const Icon = elementIcons[element.type]}
 									{@const isSelected = $projectState.selectedElementId === element.id}
 									{@const isEditingElement = editingElementId === element.id}
-									{#if isEditingElement}
-										<div
-											class="bg-sidebar-accent flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs"
-										>
-											<Icon class="text-muted-foreground size-4 shrink-0" />
-											<Input
-												bind:ref={
-													() => editingElementInputRef, (v) => (editingElementInputRef = v)
-												}
-												bind:value={editingElementName}
-												onblur={saveElementEdit}
-												onkeydown={handleElementEditKeydown}
-												class="h-6 flex-1 border-0 bg-transparent px-0 py-0 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
-											/>
-										</div>
-									{:else}
-										<ContextMenu.Root>
-											<ContextMenu.Trigger class="contents">
-												<div
-													class="group flex w-full items-center rounded-lg {isSelected
-														? 'bg-sidebar-accent text-sidebar-accent-foreground'
-														: 'text-sidebar-foreground hover:bg-sidebar-accent/50'}"
+									<ContextMenu.Root>
+										<ContextMenu.Trigger class="contents">
+											<div
+												class="group flex w-full items-center rounded-lg {isSelected
+													? 'bg-sidebar-accent text-sidebar-accent-foreground'
+													: 'text-sidebar-foreground hover:bg-sidebar-accent/50'}"
+											>
+												<button
+													type="button"
+													class="flex min-w-0 flex-1 items-center gap-2 px-2 py-1.5 text-left text-xs outline-none select-none"
+													onclick={() => projectState.selectElement(element.id)}
+													ondblclick={() => startEditingElement(element)}
 												>
-													<button
-														type="button"
-														class="flex min-w-0 flex-1 items-center gap-2 px-2 py-1.5 text-left text-xs outline-none select-none"
-														onclick={() => projectState.selectElement(element.id)}
-														ondblclick={() => startEditingElement(element)}
-													>
-														<Icon class="text-muted-foreground size-3 shrink-0" />
+													<Icon class="text-muted-foreground size-3 shrink-0" />
+													{#if isEditingElement}
+														<Input
+															bind:ref={
+																() => editingElementInputRef,
+																(v) => (editingElementInputRef = v)
+															}
+															bind:value={editingElementName}
+															onblur={saveElementEdit}
+															onkeydown={handleElementEditKeydown}
+															class="h-4 min-h-0 min-w-0 flex-1 border-0 bg-transparent p-0 text-xs leading-4 shadow-none transition-none focus-visible:ring-0 focus-visible:ring-offset-0"
+															style="font: inherit;"
+														/>
+													{:else}
 														<span class="truncate" title={element.name}>{element.name}</span
 														>
-													</button>
-													<button
-														type="button"
-														class="text-sidebar-foreground/60 hover:text-destructive px-2 py-1.5 opacity-0 transition-opacity duration-150 outline-none group-hover:opacity-100 focus-visible:opacity-100"
-														onclick={(event) => {
-															event.stopPropagation();
-															projectState.deleteElement(element.id);
-														}}
-														aria-label="Delete {element.name}"
-													>
-														<Trash2 class="size-3.5" />
-													</button>
-												</div>
-											</ContextMenu.Trigger>
-											<ContextMenu.Content>
-												<ContextMenu.Item onclick={() => copyElement(element)}>
-													Copy
-												</ContextMenu.Item>
-												<ContextMenu.Item
-													variant="destructive"
-													onclick={() => projectState.deleteElement(element.id)}
+													{/if}
+												</button>
+												<button
+													type="button"
+													class="text-sidebar-foreground/60 hover:text-destructive px-2 py-1.5 opacity-0 transition-opacity duration-150 outline-none group-hover:opacity-100 focus-visible:opacity-100 {isEditingElement
+														? 'hidden'
+														: ''}"
+													onclick={(event) => {
+														event.stopPropagation();
+														projectState.deleteElement(element.id);
+													}}
+													aria-label="Delete {element.name}"
 												>
-													Delete
-												</ContextMenu.Item>
-											</ContextMenu.Content>
-										</ContextMenu.Root>
-									{/if}
+													<Trash2 class="size-3.5" />
+												</button>
+											</div>
+										</ContextMenu.Trigger>
+										<ContextMenu.Content>
+											<ContextMenu.Item onclick={() => copyElement(element)}>
+												Copy
+											</ContextMenu.Item>
+											<ContextMenu.Item
+												variant="destructive"
+												onclick={() => projectState.deleteElement(element.id)}
+											>
+												Delete
+											</ContextMenu.Item>
+										</ContextMenu.Content>
+									</ContextMenu.Root>
 								{:else}
 									<p class="text-muted-foreground px-2 py-1 text-xs">No elements</p>
 								{/each}
