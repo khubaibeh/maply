@@ -247,7 +247,7 @@
 
 <!-- The tree has item-level menus plus a background menu for paste into empty space. -->
 {#snippet sectionElements()}
-	<Collapsible.Root bind:open={elementsOpen} class="flex flex-1 flex-col">
+	<Collapsible.Root bind:open={elementsOpen} class="flex min-h-0 flex-1 flex-col">
 		<Collapsible.Trigger
 			class="border-border hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex h-8 w-full shrink-0 items-center justify-between border-b px-3 text-left outline-none"
 		>
@@ -258,8 +258,8 @@
 					: ''}"
 			/>
 		</Collapsible.Trigger>
-		<Collapsible.Content class="sidebar-collapsible-content flex flex-1 flex-col">
-			<div class="flex flex-1 flex-col">
+		<Collapsible.Content class="sidebar-collapsible-content flex flex-col">
+			<div class="flex min-h-0 flex-1 flex-col">
 				<ContextMenu.Root>
 					<ContextMenu.Trigger class="flex flex-1 flex-col">
 						<ScrollArea class="flex-1">

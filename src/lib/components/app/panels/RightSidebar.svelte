@@ -44,7 +44,7 @@
 							min={1}
 							step={1}
 							value={$canvasState.width}
-							oninput={updateWidth}
+							onchange={updateWidth}
 							class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 						/>
 					</div>
@@ -56,7 +56,7 @@
 							min={1}
 							step={1}
 							value={$canvasState.height}
-							oninput={updateHeight}
+							onchange={updateHeight}
 							class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 						/>
 					</div>

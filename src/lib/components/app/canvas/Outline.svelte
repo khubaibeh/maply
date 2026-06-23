@@ -101,7 +101,6 @@
 	fill="transparent"
 	stroke="var(--primary)"
 	stroke-width="1"
-	stroke-dasharray="4 2"
 	pointer-events="all"
 	class="cursor-inherit"
 	onpointerdown={startSelectionDrag}

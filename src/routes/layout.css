@@ -130,14 +130,12 @@
 	html {
 		@apply font-sans;
 	}
-	*,
-	*::before,
-	*::after {
+	*:not(svg *),
+	*:not(svg *)::before,
+	*:not(svg *)::after {
 		transition:
-			background-color 0.2s ease-out,
-			border-color 0.2s ease-out,
-			color 0.2s ease-out,
-			fill 0.2s ease-out,
-			stroke 0.2s ease-out;
+			background-color 0.25s ease-out,
+			border-color 0.25s ease-out,
+			color 0.25s ease-out;
 	}
 }
