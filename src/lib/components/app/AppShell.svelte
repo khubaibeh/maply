@@ -2,6 +2,7 @@
 	import { duplicateElement } from "$lib/app/core/element-actions";
 	import { getClipboardElement, copyElement } from "$lib/app/state/clipboard.svelte";
 	import { projectState } from "$lib/app/state/project.svelte";
+	import { toolState, type Tool } from "$lib/app/state/tool.svelte";
 	import { onMount } from "svelte";
 
 	import CanvasArea from "./canvas";
@@ -31,8 +32,38 @@
 		}
 	}
 
+	function getShortcutTool(key: string): Tool | null {
+		switch (key.toLowerCase()) {
+			case "v":
+				return "select";
+			case "h":
+				return "hand";
+			case "r":
+				return "rect";
+			case "c":
+				return "circle";
+			case "p":
+				return "path";
+			case "t":
+				return "text";
+			case "i":
+				return "image";
+			default:
+				return null;
+		}
+	}
+
 	onMount(() => {
 		function handleKeyDown(event: KeyboardEvent) {
+			if (!isEditingText(event) && !event.ctrlKey && !event.metaKey && !event.altKey) {
+				const shortcutTool = getShortcutTool(event.key);
+				if (shortcutTool) {
+					event.preventDefault();
+					toolState.setTool(shortcutTool);
+					return;
+				}
+			}
+
 			if (!isEditingText(event)) {
 				const selectedId = $projectState.selectedElementId;
 				const delta = getArrowDelta(event.key, event.shiftKey ? 10 : 1);
