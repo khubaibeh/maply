@@ -16,8 +16,34 @@
 		return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target.isContentEditable;
 	}
 
+	function getArrowDelta(key: string, step: number) {
+		switch (key) {
+			case "ArrowLeft":
+				return { dx: -step, dy: 0 };
+			case "ArrowRight":
+				return { dx: step, dy: 0 };
+			case "ArrowUp":
+				return { dx: 0, dy: -step };
+			case "ArrowDown":
+				return { dx: 0, dy: step };
+			default:
+				return null;
+		}
+	}
+
 	onMount(() => {
 		function handleKeyDown(event: KeyboardEvent) {
+			if (!isEditingText(event)) {
+				const selectedId = $projectState.selectedElementId;
+				const delta = getArrowDelta(event.key, event.shiftKey ? 10 : 1);
+
+				if (selectedId && delta) {
+					event.preventDefault();
+					projectState.translateElement(selectedId, delta.dx, delta.dy);
+					return;
+				}
+			}
+
 			if (event.key === "Delete" || event.key === "Backspace") {
 				if (isEditingText(event)) return;
 				const selectedId = $projectState.selectedElementId;
