@@ -26,8 +26,8 @@
 	$effect(() => {
 		if (id === lastId && value === lastCommittedColor) return;
 		lastId = id;
-		draft = value;
-		lastCommittedColor = value;
+		draft = value.toUpperCase();
+		lastCommittedColor = value.toUpperCase();
 		invalid = false;
 	});
 
@@ -44,17 +44,17 @@
 	}
 
 	function updateDraft(nextDraft: string) {
-		draft = nextDraft;
+		draft = nextDraft.toUpperCase();
 
-		const color = parseHexColor(nextDraft);
+		const color = parseHexColor(draft);
 		if (color === null) {
-			invalid = nextDraft.trim().length > 0;
+			invalid = draft.trim().length > 0;
 			return;
 		}
 
 		invalid = false;
-		lastCommittedColor = color;
-		onChange(color);
+		lastCommittedColor = color.toUpperCase();
+		onChange(color.toUpperCase());
 	}
 
 	function updateFromNativePicker(event: Event) {
@@ -94,7 +94,7 @@
 			oninput={updateFromTextInput}
 			onblur={restoreCommittedColor}
 			aria-invalid={invalid}
-			class="h-7 font-mono text-xs focus-visible:ring-0 focus-visible:ring-offset-0 {invalid
+			class="h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0 {invalid
 				? 'border-destructive text-destructive aria-invalid:ring-0 dark:aria-invalid:ring-0'
 				: ''}"
 		/>

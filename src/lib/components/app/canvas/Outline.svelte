@@ -166,7 +166,7 @@
 	height={bbox.height}
 	fill="transparent"
 	stroke="var(--primary)"
-	stroke-width="1"
+	stroke-width="0.25"
 	pointer-events="all"
 	class="cursor-inherit"
 	onpointerdown={startSelectionDrag}

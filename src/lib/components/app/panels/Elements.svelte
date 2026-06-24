@@ -315,7 +315,7 @@
 			onblur={commitTextDraft}
 			onkeydown={handleTextKeydown}
 			rows={3}
-			class="text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
+			class="min-h-24 resize-y text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 		/>
 	</div>
 {:else if element.type === "path"}
