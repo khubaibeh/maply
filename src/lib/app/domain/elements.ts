@@ -41,6 +41,8 @@ export type TextElement = {
 	type: "text";
 	x: number;
 	y: number;
+	width: number;
+	height: number;
 	text: string;
 	fontSize: number;
 	fill: string;

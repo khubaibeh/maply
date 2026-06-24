@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getElementBounds, getTextLayoutMetrics, getWrappedTextMetrics } from "$lib/app/core/element-actions";
 	import type { Element } from "$lib/app/domain/elements";
 	import { parseIntNumber, parseNonNegativeNumber, parsePositiveInt } from "$lib/app/domain/validation";
 	import { projectState } from "$lib/app/state/project.svelte";
@@ -12,7 +13,6 @@
 	}
 
 	let { element }: Props = $props();
-	const TEXT_TOP_OFFSET_RATIO = 1;
 
 	function updateNumber(key: string, value: string) {
 		const parsed = parseIntNumber(value);
@@ -37,6 +37,17 @@
 	}
 
 	function updateText(value: string) {
+		if (element.type === "text") {
+			const currentBounds = getElementBounds(element);
+			const { left, ascent } = getTextLayoutMetrics(value, element.fontSize, element.width);
+			projectState.updateElement(element.id, {
+				text: value,
+				x: Math.round(currentBounds.x + left),
+				y: Math.round(currentBounds.y + ascent)
+			} as Partial<Element>);
+			return;
+		}
+
 		projectState.updateElement(element.id, { text: value } as Partial<Element>);
 	}
 
@@ -48,18 +59,85 @@
 		projectState.updateElement(element.id, { href: value } as Partial<Element>);
 	}
 
+	function getTextVisualX() {
+		if (element.type !== "text") return 0;
+		return getElementBounds(element).x;
+	}
+
 	function getTextVisualY() {
 		if (element.type !== "text") return 0;
-		return element.y - Math.round(element.fontSize * TEXT_TOP_OFFSET_RATIO);
+		return getElementBounds(element).y;
+	}
+
+	function updateTextVisualX(value: string) {
+		if (element.type !== "text") return;
+		const parsed = parseIntNumber(value);
+		if (parsed === null) return;
+		const { left } = getWrappedTextMetrics(element);
+		projectState.updateElement(element.id, {
+			x: Math.round(parsed + left)
+		} as Partial<Element>);
 	}
 
 	function updateTextVisualY(value: string) {
 		if (element.type !== "text") return;
 		const parsed = parseIntNumber(value);
 		if (parsed === null) return;
+		const { ascent } = getWrappedTextMetrics(element);
 		projectState.updateElement(element.id, {
-			y: parsed + Math.round(element.fontSize * TEXT_TOP_OFFSET_RATIO)
+			y: Math.round(parsed + ascent)
 		} as Partial<Element>);
+	}
+
+	function getTextWidth() {
+		if (element.type !== "text") return 1;
+		return element.width;
+	}
+
+	function getTextHeight() {
+		if (element.type !== "text") return 1;
+		return element.height;
+	}
+
+	function updateTextDimension(axis: "width" | "height", value: string) {
+		if (element.type !== "text") return;
+		const parsed = parsePositiveInt(value);
+		if (parsed === null) return;
+
+		if (axis === "width") {
+			projectState.updateElement(element.id, { width: parsed } as Partial<Element>);
+			return;
+		}
+		projectState.updateElement(element.id, {
+			height: parsed
+		} as Partial<Element>);
+	}
+
+	function updateTextFontSize(value: string) {
+		if (element.type !== "text") return;
+		const parsed = parsePositiveInt(value);
+		if (parsed === null) return;
+		const currentBounds = getElementBounds(element);
+		const { left, ascent } = getTextLayoutMetrics(element.text, parsed, element.width);
+		projectState.updateElement(element.id, {
+			fontSize: parsed,
+			x: Math.round(currentBounds.x + left),
+			y: Math.round(currentBounds.y + ascent)
+		} as Partial<Element>);
+	}
+
+	function commitTextDraft(event: Event) {
+		if (element.type !== "text") return;
+		const value = (event.currentTarget as HTMLTextAreaElement).value;
+		if (value === element.text) return;
+		updateText(value);
+	}
+
+	function handleTextKeydown(event: KeyboardEvent) {
+		if (event.key !== "Enter" || event.shiftKey) return;
+		event.preventDefault();
+		commitTextDraft(event);
+		(event.currentTarget as HTMLTextAreaElement).blur();
 	}
 </script>
 
@@ -71,8 +149,8 @@
 				id="{element.id}-x"
 				type="number"
 				step={1}
-				value={element.x}
-				onchange={(event) => updateNumber("x", (event.target as HTMLInputElement).value)}
+				value={getTextVisualX()}
+				onchange={(event) => updateTextVisualX((event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
@@ -82,8 +160,8 @@
 				id="{element.id}-y"
 				type="number"
 				step={1}
-				value={getTextVisualY()}
-				onchange={(event) => updateTextVisualY((event.target as HTMLInputElement).value)}
+				value={element.y}
+				onchange={(event) => updateNumber("y", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
@@ -180,8 +258,33 @@
 				id="{element.id}-y"
 				type="number"
 				step={1}
-				value={element.y}
-				onchange={(event) => updateNumber("y", (event.target as HTMLInputElement).value)}
+				value={getTextVisualY()}
+				onchange={(event) => updateTextVisualY((event.target as HTMLInputElement).value)}
+				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
+			/>
+		</div>
+
+		<div class="flex flex-col gap-1">
+			<label for="{element.id}-width" class="text-sidebar-foreground/70 text-xs">Width</label>
+			<Input
+				id="{element.id}-width"
+				type="number"
+				min={1}
+				step={1}
+				value={getTextWidth()}
+				onchange={(event) => updateTextDimension("width", (event.target as HTMLInputElement).value)}
+				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
+			/>
+		</div>
+		<div class="flex flex-col gap-1">
+			<label for="{element.id}-height" class="text-sidebar-foreground/70 text-xs">Height</label>
+			<Input
+				id="{element.id}-height"
+				type="number"
+				min={1}
+				step={1}
+				value={getTextHeight()}
+				onchange={(event) => updateTextDimension("height", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
@@ -193,7 +296,7 @@
 				min={1}
 				step={1}
 				value={element.fontSize}
-				onchange={(event) => updatePositiveInt("fontSize", (event.target as HTMLInputElement).value)}
+				onchange={(event) => updateTextFontSize((event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
@@ -209,7 +312,8 @@
 		<Textarea
 			id="{element.id}-text"
 			value={element.text}
-			onchange={(event) => updateText((event.target as HTMLTextAreaElement).value)}
+			onblur={commitTextDraft}
+			onkeydown={handleTextKeydown}
 			rows={3}
 			class="text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 		/>

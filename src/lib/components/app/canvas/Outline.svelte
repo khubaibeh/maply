@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getElementBounds } from "$lib/app/core/element-actions";
 	import type { Element } from "$lib/app/domain/elements";
 	import { projectState } from "$lib/app/state/project.svelte";
 	import { toolState } from "$lib/app/state/tool.svelte";
@@ -21,6 +22,18 @@
 	} | null>(null);
 
 	$effect(() => {
+		if (element.type === "text") {
+			const padding = 0.5;
+			const textBounds = getElementBounds(element);
+			bbox = {
+				x: textBounds.x - padding,
+				y: textBounds.y - padding,
+				width: textBounds.width + padding * 2,
+				height: textBounds.height + padding * 2
+			};
+			return;
+		}
+
 		if (typeof document === "undefined") return;
 		const el = document.getElementById(`element-${element.id}`);
 		if (!(el instanceof SVGGraphicsElement)) return;

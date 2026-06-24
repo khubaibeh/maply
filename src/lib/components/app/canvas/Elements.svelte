@@ -1,5 +1,10 @@
 <script lang="ts">
-	import { getPathRenderTransform } from "$lib/app/core/element-actions";
+	import {
+		getPathRenderTransform,
+		getWrappedTextLineHeight,
+		getWrappedTextLines,
+		getWrappedTextMetrics
+	} from "$lib/app/core/element-actions";
 	import { projectState } from "$lib/app/state/project.svelte";
 	import { toolState } from "$lib/app/state/tool.svelte";
 	import { onMount } from "svelte";
@@ -151,6 +156,19 @@
 				onpointerdown={(event) => selectElement(event, element.id)}
 			/>
 		{:else if element.type === "text"}
+			{@const wrappedLines = getWrappedTextLines(element)}
+			{@const lineHeight = getWrappedTextLineHeight(element)}
+			{@const textMetrics = getWrappedTextMetrics(element)}
+			<defs>
+				<clipPath id="text-clip-{element.id}">
+					<rect
+						x={element.x - textMetrics.left}
+						y={element.y - textMetrics.ascent}
+						width={element.width}
+						height={element.height}
+					/>
+				</clipPath>
+			</defs>
 			<text
 				id="element-{element.id}"
 				data-canvas-element={element.id}
@@ -160,11 +178,18 @@
 				x={element.x}
 				y={element.y}
 				font-size={element.fontSize}
+				font-family="Inter Variable, sans-serif"
 				fill={element.fill}
+				xml:space="preserve"
+				clip-path="url(#text-clip-{element.id})"
 				class="canvas-element outline-none select-none"
 				onpointerdown={(event) => selectElement(event, element.id)}
 			>
-				{element.text}
+				{#each wrappedLines as line, index (index)}
+					<tspan x={element.x} dy={index === 0 ? 0 : `${lineHeight}px`}>
+						{line || " "}
+					</tspan>
+				{/each}
 			</text>
 		{:else if element.type === "image"}
 			<image

@@ -30,6 +30,8 @@ const defaultElements: Element[] = [
 		type: "text",
 		x: 120,
 		y: 80,
+		width: 220,
+		height: 80,
 		text: "Maply",
 		fontSize: 32,
 		fill: "#171717"
