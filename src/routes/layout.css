@@ -127,6 +127,10 @@
 	body {
 		@apply bg-background text-foreground;
 	}
+	[data-canvas-element]:focus,
+	[data-canvas-element]:focus-visible {
+		outline: none;
+	}
 	html {
 		@apply font-sans;
 	}

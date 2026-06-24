@@ -16,6 +16,8 @@
 		elementY: number;
 		grabX: number;
 		grabY: number;
+		wasSelected: boolean;
+		didMove: boolean;
 	} | null>(null);
 
 	$effect(() => {
@@ -83,7 +85,10 @@
 		if ($toolState.activeTool !== "select") return;
 
 		event.stopPropagation();
-		projectState.selectElement(element.id);
+		const wasSelected = $projectState.selectedElementId === element.id;
+		if (!wasSelected) {
+			projectState.selectElement(element.id);
+		}
 
 		const svg = getSvgRoot(event.target);
 		if (!svg) return;
@@ -96,7 +101,9 @@
 			elementX: origin.x,
 			elementY: origin.y,
 			grabX: svgPoint.x,
-			grabY: svgPoint.y
+			grabY: svgPoint.y,
+			wasSelected,
+			didMove: false
 		};
 	}
 
@@ -112,10 +119,14 @@
 
 			const nextX = dragState.elementX + (svgPoint.x - dragState.grabX);
 			const nextY = dragState.elementY + (svgPoint.y - dragState.grabY);
+			dragState.didMove = true;
 			projectState.setElementPosition(element.id, nextX, nextY);
 		}
 
 		function stopDragging() {
+			if (dragState && dragState.wasSelected && !dragState.didMove) {
+				projectState.selectElement(null);
+			}
 			dragState = null;
 		}
 
