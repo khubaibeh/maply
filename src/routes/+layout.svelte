@@ -7,9 +7,17 @@
 	import { getTheme } from "$lib/app/theme.svelte";
 	import favicon from "$lib/assets/favicon.svg";
 	import * as Tooltip from "$lib/components/ui/tooltip";
+	import Monitor from "@lucide/svelte/icons/monitor";
 	import { onMount } from "svelte";
 
 	let { children } = $props();
+
+	let innerWidth = $state(0);
+	let innerHeight = $state(0);
+	let isClient = $state(false);
+	let MIN_DIM = [950, 750];
+
+	let isTooSmall = $derived(isClient && (innerWidth < MIN_DIM[0] || innerHeight < MIN_DIM[1]));
 
 	getTheme();
 
@@ -41,6 +49,8 @@
 	});
 
 	onMount(() => {
+		isClient = true;
+
 		const flushProjectSave = () => {
 			void projectState.saveNow();
 		};
@@ -65,7 +75,22 @@
 	});
 </script>
 
+<svelte:window bind:innerWidth bind:innerHeight />
+
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
-<Tooltip.Provider delayDuration={150}>
-	{@render children()}
-</Tooltip.Provider>
+
+{#if !isTooSmall}
+	<Tooltip.Provider delayDuration={150}>
+		{@render children()}
+	</Tooltip.Provider>
+{:else}
+	<div
+		class="bg-background/95 fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 p-6 text-center backdrop-blur-sm"
+	>
+		<Monitor class="text-muted-foreground size-12" />
+		<h1 class="text-foreground text-xl font-semibold">Screen size not supported</h1>
+		<p class="text-muted-foreground max-w-xs">
+			This application requires a viewport of at least {MIN_DIM[0]}x{MIN_DIM[1]} pixels.
+		</p>
+	</div>
+{/if}
