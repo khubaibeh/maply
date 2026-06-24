@@ -84,26 +84,25 @@
 					<Separator />
 					<div class="flex flex-col gap-1">
 						<label for="{selectedElement.id}-name" class="text-sidebar-foreground/70 text-xs">Name</label>
-						<div class="relative flex items-center">
-							<Input
-								id="{selectedElement.id}-name"
-								type="text"
-								value={selectedElement.name}
-								onchange={(event) => updateElementName(event, selectedElement.id)}
-								aria-invalid={selectedElementNameValidation && !selectedElementNameValidation.valid}
-								class="h-7 text-xs {selectedElementNameValidation &&
-								!selectedElementNameValidation.valid
-									? 'border-destructive bg-destructive/10 text-destructive pr-8 focus-visible:ring-0 focus-visible:ring-offset-0 aria-invalid:ring-0 dark:aria-invalid:ring-0'
-									: 'focus-visible:ring-0 focus-visible:ring-offset-0'}"
+						<Input
+							id="{selectedElement.id}-name"
+							type="text"
+							value={selectedElement.name}
+							onchange={(event) => updateElementName(event, selectedElement.id)}
+							aria-invalid={selectedElementNameValidation && !selectedElementNameValidation.valid}
+							class="h-7 text-xs {selectedElementNameValidation && !selectedElementNameValidation.valid
+								? 'border-destructive bg-destructive/10 text-destructive focus-visible:ring-0 focus-visible:ring-offset-0 aria-invalid:ring-0 dark:aria-invalid:ring-0'
+								: 'focus-visible:ring-0 focus-visible:ring-offset-0'}"
+						/>
+						{#if selectedElementNameValidation && !selectedElementNameValidation.valid}
+							<ElementNameValidation
+								validation={selectedElementNameValidation}
+								onAutofix={(suggestion) => autofixElementName(selectedElement.id, suggestion)}
+								variant="inline"
+								stateKey={selectedElement.id}
+								class="mt-1"
 							/>
-							{#if selectedElementNameValidation && !selectedElementNameValidation.valid}
-								<ElementNameValidation
-									validation={selectedElementNameValidation}
-									onAutofix={(suggestion) => autofixElementName(selectedElement.id, suggestion)}
-									class="absolute right-2 size-5 rounded-none hover:bg-transparent focus-visible:ring-0 [&_svg]:size-3.5"
-								/>
-							{/if}
-						</div>
+						{/if}
 					</div>
 
 					<ElementProperties element={selectedElement} />
