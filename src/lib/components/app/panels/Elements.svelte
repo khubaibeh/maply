@@ -12,6 +12,7 @@
 	}
 
 	let { element }: Props = $props();
+	const TEXT_TOP_OFFSET_RATIO = 1;
 
 	function updateNumber(key: string, value: string) {
 		const parsed = parseIntNumber(value);
@@ -46,6 +47,20 @@
 	function updateHref(value: string) {
 		projectState.updateElement(element.id, { href: value } as Partial<Element>);
 	}
+
+	function getTextVisualY() {
+		if (element.type !== "text") return 0;
+		return element.y - Math.round(element.fontSize * TEXT_TOP_OFFSET_RATIO);
+	}
+
+	function updateTextVisualY(value: string) {
+		if (element.type !== "text") return;
+		const parsed = parseIntNumber(value);
+		if (parsed === null) return;
+		projectState.updateElement(element.id, {
+			y: parsed + Math.round(element.fontSize * TEXT_TOP_OFFSET_RATIO)
+		} as Partial<Element>);
+	}
 </script>
 
 {#if element.type === "rect"}
@@ -67,8 +82,8 @@
 				id="{element.id}-y"
 				type="number"
 				step={1}
-				value={element.y}
-				onchange={(event) => updateNumber("y", (event.target as HTMLInputElement).value)}
+				value={getTextVisualY()}
+				onchange={(event) => updateTextVisualY((event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>

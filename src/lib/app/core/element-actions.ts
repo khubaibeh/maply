@@ -7,6 +7,7 @@ import { createUniqueElementName } from "./element-name-validation";
 const PASTE_OFFSET = 20;
 export const MIN_SHAPE_SIZE = 5;
 const CURVE_SAMPLE_STEPS = 32;
+const TEXT_DESCENT_RATIO = 0.2;
 
 const defaultNames: Record<ElementType, string> = {
 	rect: "rectangle",
@@ -235,12 +236,12 @@ function getElementBounds(element: Element): Bounds {
 			};
 		}
 		case "text":
-			// Canvas text measurement is not available here, so use a stable editor-side estimate.
+			// Text is positioned on its baseline, so reserve a small descender area below it.
 			return {
 				x: element.x,
 				y: element.y - element.fontSize,
 				width: Math.max(1, Math.round(element.text.length * element.fontSize * 0.6)),
-				height: element.fontSize
+				height: Math.ceil(element.fontSize * (1 + TEXT_DESCENT_RATIO))
 			};
 	}
 }
