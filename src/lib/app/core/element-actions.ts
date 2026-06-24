@@ -2,6 +2,7 @@ import type { CircleElement, Element, ElementType, PathElement, RectElement, Tex
 import type { Point } from "../domain/geometry";
 import type { Canvas } from "../domain/project";
 import { createUniqueElementName } from "./element-name-validation";
+import { getPathDataBounds as getPointsBounds, pathDataFromPoints } from "./path-geometry";
 
 // Element mutations stay canvas-safe here so UI handlers can work with raw deltas.
 const PASTE_OFFSET = 20;
@@ -54,9 +55,19 @@ export function normalizeElement(element: Element): Element {
 		name: typeof element.name === "string" ? element.name : defaultElementName(element.type)
 	};
 
-	if (normalized.type === "path" && (typeof normalized.x !== "number" || typeof normalized.y !== "number")) {
-		normalized.x = 0;
-		normalized.y = 0;
+	if (normalized.type === "path") {
+		if (typeof normalized.x !== "number" || typeof normalized.y !== "number") {
+			normalized.x = 0;
+			normalized.y = 0;
+		}
+		if (typeof normalized.closed !== "boolean") {
+			normalized.closed = /\s*[Zz]\s*$/.test(normalized.d);
+		}
+		if (normalized.closed) {
+			normalized.strokeWidth = 0;
+		} else {
+			normalized.fill = "none";
+		}
 	}
 
 	if (normalized.type === "text" && (typeof normalized.width !== "number" || normalized.width < 1)) {
@@ -218,6 +229,27 @@ export function createTextElementFromDrag(start: Point, end: Point, elements: El
 		text: "",
 		fontSize: 24,
 		fill: "#000000"
+	};
+}
+
+export function createPathElementFromPoints(points: Point[], closed: boolean, elements: Element[]): PathElement | null {
+	if (points.length < 2) return null;
+	if (closed && points.length < 3) return null;
+
+	const d = pathDataFromPoints(points, closed);
+	const bounds = getPointsBounds(points);
+
+	return {
+		id: createElementId(),
+		name: nextElementName("path", elements),
+		type: "path",
+		x: Math.round(bounds.x),
+		y: Math.round(bounds.y),
+		d,
+		fill: closed ? "#9ca3af" : "none",
+		stroke: "#000000",
+		strokeWidth: closed ? 0 : 2,
+		closed
 	};
 }
 

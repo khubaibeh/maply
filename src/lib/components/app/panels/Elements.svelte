@@ -52,7 +52,14 @@
 	}
 
 	function updatePath(value: string) {
-		projectState.updateElement(element.id, { d: value } as Partial<Element>);
+		const closed = /\s*[Zz]\s*$/.test(value);
+		const patch: Partial<Element> = { d: value, closed };
+		if (closed) {
+			patch.strokeWidth = 0;
+		} else {
+			patch.fill = "none";
+		}
+		projectState.updateElement(element.id, patch);
 	}
 
 	function updateHref(value: string) {
@@ -353,32 +360,36 @@
 			class="font-mono text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 		/>
 	</div>
-	<div class="grid grid-cols-2 gap-2">
+	{#if element.closed}
 		<ColorPicker
 			id="{element.id}-fill"
 			label="Fill"
 			value={element.fill}
 			onChange={(color) => updateColor("fill", color)}
 		/>
-		<ColorPicker
-			id="{element.id}-stroke"
-			label="Stroke"
-			value={element.stroke}
-			onChange={(color) => updateColor("stroke", color)}
-		/>
-		<div class="flex flex-col gap-1">
-			<label for="{element.id}-strokeWidth" class="text-sidebar-foreground/70 text-xs">Stroke width</label>
-			<Input
-				id="{element.id}-strokeWidth"
-				type="number"
-				min={0}
-				step={1}
-				value={element.strokeWidth}
-				onchange={(event) => updateNonNegativeNumber("strokeWidth", (event.target as HTMLInputElement).value)}
-				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
+	{:else}
+		<div class="grid grid-cols-2 gap-2">
+			<ColorPicker
+				id="{element.id}-stroke"
+				label="Stroke"
+				value={element.stroke}
+				onChange={(color) => updateColor("stroke", color)}
 			/>
+			<div class="flex flex-col gap-1">
+				<label for="{element.id}-strokeWidth" class="text-sidebar-foreground/70 text-xs">Stroke width</label>
+				<Input
+					id="{element.id}-strokeWidth"
+					type="number"
+					min={0}
+					step={1}
+					value={element.strokeWidth}
+					onchange={(event) =>
+						updateNonNegativeNumber("strokeWidth", (event.target as HTMLInputElement).value)}
+					class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
+				/>
+			</div>
 		</div>
-	</div>
+	{/if}
 {:else if element.type === "image"}
 	<div class="grid grid-cols-2 gap-2">
 		<div class="flex flex-col gap-1">

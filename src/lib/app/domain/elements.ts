@@ -33,6 +33,7 @@ export type PathElement = {
 	fill: string;
 	stroke: string;
 	strokeWidth: number;
+	closed: boolean;
 };
 
 export type TextElement = {

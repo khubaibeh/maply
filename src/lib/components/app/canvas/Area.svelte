@@ -1,6 +1,7 @@
 <script lang="ts">
 	import {
 		createCircleElementFromDrag,
+		createPathElementFromPoints,
 		createRectElementFromDrag,
 		createTextElementFromDrag,
 		duplicateElement,
@@ -41,6 +42,21 @@
 		current: Point;
 		square: boolean;
 	} | null>(null);
+	let pathSession = $state<{
+		points: Point[];
+		current: Point;
+		nearFirst: boolean;
+	} | null>(null);
+
+	const CLOSE_THRESHOLD_SCREEN_PX = 12;
+	const VERTEX_DOT_SCREEN_PX = 3;
+	const CLOSE_HANDLE_SCREEN_PX = 6;
+
+	$effect(() => {
+		if ($toolState.activeTool !== "path" && pathSession) {
+			pathSession = null;
+		}
+	});
 
 	const isHandActive = $derived($toolState.activeTool === "hand" || (isHovering && $toolState.isSpacePressed));
 	const cursorClass = $derived(() => {
@@ -67,6 +83,47 @@
 			r: diameter / 2
 		};
 	});
+
+	const pathPreviewRadius = $derived(CLOSE_HANDLE_SCREEN_PX / $canvasState.camera.zoom);
+	const pathVertexRadius = $derived(VERTEX_DOT_SCREEN_PX / $canvasState.camera.zoom);
+
+	function distance(a: Point, b: Point): number {
+		const dx = a.x - b.x;
+		const dy = a.y - b.y;
+		return Math.sqrt(dx * dx + dy * dy);
+	}
+
+	function updatePathSessionCurrent(point: Point) {
+		if (!pathSession) return;
+		const first = pathSession.points[0];
+		const threshold = CLOSE_THRESHOLD_SCREEN_PX / $canvasState.camera.zoom;
+		pathSession = {
+			...pathSession,
+			current: point,
+			nearFirst: first ? distance(first, point) <= threshold : false
+		};
+	}
+
+	function commitPath(closed: boolean) {
+		if (!pathSession) return;
+		const points = pathSession.points;
+		pathSession = null;
+
+		const element = createPathElementFromPoints(points, closed, $projectState.elements);
+		if (!element) return;
+
+		projectState.addElement(element);
+		toolState.setTool("select");
+	}
+
+	function closePath() {
+		if (!pathSession || pathSession.points.length < 3) return;
+		commitPath(true);
+	}
+
+	function cancelPath() {
+		pathSession = null;
+	}
 
 	onMount(() => {
 		if (!container) return;
@@ -150,6 +207,13 @@
 			drawingSession = { ...drawingSession, current: point, square: event.shiftKey };
 		}
 
+		function movePathDrawing(event: PointerEvent) {
+			if (!pathSession) return;
+			const point = clientToSvgPoint(event.clientX, event.clientY);
+			if (!point) return;
+			updatePathSessionCurrent(point);
+		}
+
 		function endDrawing(event: PointerEvent) {
 			if (!drawingSession) return;
 			event.preventDefault();
@@ -178,6 +242,18 @@
 		}
 
 		function handleKeyDown(event: KeyboardEvent) {
+			if (event.key === "Escape" && pathSession) {
+				event.preventDefault();
+				cancelPath();
+				return;
+			}
+
+			if (event.key === "Enter" && pathSession) {
+				event.preventDefault();
+				commitPath(pathSession.nearFirst);
+				return;
+			}
+
 			if (event.key !== " ") return;
 			if (!isHovering) return;
 			event.preventDefault();
@@ -215,6 +291,7 @@
 		window.addEventListener("mousemove", movePan);
 		window.addEventListener("mouseup", endPan);
 		window.addEventListener("pointermove", moveDrawing);
+		window.addEventListener("pointermove", movePathDrawing);
 		window.addEventListener("pointerup", endDrawing);
 		window.addEventListener("pointercancel", cancelDrawing);
 		window.addEventListener("pointerdown", dismissContextMenu, true);
@@ -230,6 +307,7 @@
 			window.removeEventListener("mousemove", movePan);
 			window.removeEventListener("mouseup", endPan);
 			window.removeEventListener("pointermove", moveDrawing);
+			window.removeEventListener("pointermove", movePathDrawing);
 			window.removeEventListener("pointerup", endDrawing);
 			window.removeEventListener("pointercancel", cancelDrawing);
 			window.removeEventListener("pointerdown", dismissContextMenu, true);
@@ -254,7 +332,7 @@
 		return { x: svgPoint.x, y: svgPoint.y };
 	}
 
-	function isDrawingTool(tool: string): tool is "rect" | "circle" | "text" {
+	function isShapeDrawingTool(tool: string): tool is "rect" | "circle" | "text" {
 		return tool === "rect" || tool === "circle" || tool === "text";
 	}
 
@@ -264,8 +342,6 @@
 			projectState.selectElement(null);
 			return;
 		}
-
-		if (!isDrawingTool($toolState.activeTool)) return;
 
 		const drawPoint = clientToSvgPoint(event.clientX, event.clientY);
 		if (!drawPoint) return;
@@ -281,6 +357,30 @@
 
 		event.preventDefault();
 		event.stopPropagation();
+
+		if ($toolState.activeTool === "path") {
+			if (pathSession) {
+				if (pathSession.nearFirst) {
+					closePath();
+				} else {
+					pathSession = {
+						...pathSession,
+						points: [...pathSession.points, drawPoint]
+					};
+					updatePathSessionCurrent(drawPoint);
+				}
+			} else {
+				pathSession = {
+					points: [drawPoint],
+					current: drawPoint,
+					nearFirst: false
+				};
+			}
+			return;
+		}
+
+		if (!isShapeDrawingTool($toolState.activeTool)) return;
+
 		drawingSession = {
 			tool: $toolState.activeTool,
 			start: drawPoint,
@@ -397,6 +497,63 @@
 								stroke="var(--primary)"
 								stroke-width="1"
 								pointer-events="none"
+							/>
+						{/if}
+					{/if}
+					{#if pathSession}
+						{@const points = pathSession.points}
+						{@const last = points[points.length - 1]}
+						<polyline
+							points={points.map((p) => `${p.x},${p.y}`).join(" ")}
+							fill="none"
+							stroke="var(--primary)"
+							stroke-width="1"
+							pointer-events="none"
+						/>
+						{#if points.length > 0}
+							<line
+								x1={last.x}
+								y1={last.y}
+								x2={pathSession.current.x}
+								y2={pathSession.current.y}
+								stroke="var(--primary)"
+								stroke-width="1"
+								stroke-dasharray="4 4"
+								pointer-events="none"
+							/>
+						{/if}
+						{#each points as point, index (index)}
+							{@const isFirst = index === 0}
+							{@const radius = isFirst && pathSession.nearFirst ? pathPreviewRadius : pathVertexRadius}
+							<circle
+								cx={point.x}
+								cy={point.y}
+								r={radius}
+								fill={isFirst && pathSession.nearFirst ? "var(--primary)" : "var(--background)"}
+								stroke="var(--primary)"
+								stroke-width="1"
+								pointer-events="none"
+							/>
+						{/each}
+						{#if pathSession.nearFirst}
+							{@const first = points[0]}
+							<circle
+								cx={first.x}
+								cy={first.y}
+								r={pathPreviewRadius}
+								fill="var(--primary)"
+								fill-opacity="0.2"
+								stroke="var(--primary)"
+								stroke-width="1"
+								role="button"
+								tabindex="-1"
+								aria-label="Close path"
+								class="cursor-pointer"
+								onpointerdown={(event) => {
+									event.preventDefault();
+									event.stopPropagation();
+									closePath();
+								}}
 							/>
 						{/if}
 					{/if}

@@ -1,9 +1,11 @@
 <script lang="ts">
 	import { canvasState } from "$lib/app/state/canvas.svelte";
 	import { projectState } from "$lib/app/state/project.svelte";
+	import { toolState } from "$lib/app/state/tool.svelte";
 
 	import Elements from "./Elements.svelte";
 	import Outline from "./Outline.svelte";
+	import PathHandles from "./PathHandles.svelte";
 
 	const selectedElement = $derived(
 		$projectState.elements.find((element) => element.id === $projectState.selectedElementId) ?? null
@@ -28,6 +30,10 @@
 
 <Elements />
 
-{#if selectedElement}
+{#if selectedElement && selectedElement.type !== "path"}
 	<Outline element={selectedElement} />
+{/if}
+
+{#if selectedElement?.type === "path" && $toolState.activeTool === "select"}
+	<PathHandles element={selectedElement} />
 {/if}

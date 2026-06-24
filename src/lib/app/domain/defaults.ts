@@ -15,14 +15,27 @@ const defaultElements: Element[] = [
 	},
 	{
 		id: "el-path-1",
-		name: "Decorative-path",
+		name: "Demo-closed-path",
 		type: "path",
-		x: 0,
-		y: 0,
-		d: "M50,300 Q150,250 250,300 T450,300",
+		x: 480,
+		y: 480,
+		d: "M500,500 L600,480 L620,560 L560,620 L480,580 Z",
+		fill: "#9ca3af",
+		stroke: "#000000",
+		strokeWidth: 0,
+		closed: true
+	},
+	{
+		id: "el-path-2",
+		name: "Demo-open-path",
+		type: "path",
+		x: 100,
+		y: 450,
+		d: "M100,500 L150,450 L200,520 L250,480",
 		fill: "none",
-		stroke: "#f97316",
-		strokeWidth: 4
+		stroke: "#000000",
+		strokeWidth: 3,
+		closed: false
 	},
 	{
 		id: "el-text-1",
