@@ -240,6 +240,30 @@ export const projectState = {
 		this.queueSave();
 	},
 
+	moveElementToFront(id: string) {
+		const project = get(store);
+		const index = project.elements.findIndex((element) => element.id === id);
+		this.reorderElements(index, project.elements.length - 1);
+	},
+
+	moveElementForward(id: string) {
+		const project = get(store);
+		const index = project.elements.findIndex((element) => element.id === id);
+		this.reorderElements(index, index + 1);
+	},
+
+	moveElementBackward(id: string) {
+		const project = get(store);
+		const index = project.elements.findIndex((element) => element.id === id);
+		this.reorderElements(index, index - 1);
+	},
+
+	moveElementToBack(id: string) {
+		const project = get(store);
+		const index = project.elements.findIndex((element) => element.id === id);
+		this.reorderElements(index, 0);
+	},
+
 	deleteElement(id: string) {
 		store.update((state) => ({
 			...state,

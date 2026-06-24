@@ -23,6 +23,11 @@
 	let contextMenuElementId: string | null = $state(null);
 
 	const hasClipboardElement = $derived(!!getClipboardElement());
+	const contextMenuElementLayerIndex = $derived(
+		contextMenuElementId ? $projectState.elements.findIndex((element) => element.id === contextMenuElementId) : -1
+	);
+	const contextMenuElementIsFrontmost = $derived(contextMenuElementLayerIndex === $projectState.elements.length - 1);
+	const contextMenuElementIsBackmost = $derived(contextMenuElementLayerIndex === 0);
 	let svgRef: SVGSVGElement | null = $state(null);
 	let containerWidth = $state(0);
 	let containerHeight = $state(0);
@@ -196,6 +201,9 @@
 
 		function dismissContextMenu(event: PointerEvent) {
 			if (event.button !== 0 || !contextMenuOpen) return;
+			if (event.target instanceof Element && event.target.closest('[data-slot="context-menu-content"]')) {
+				return;
+			}
 			contextMenuOpen = false;
 		}
 
@@ -301,17 +309,44 @@
 		if (!contextMenuElementId) return;
 		const element = $projectState.elements.find((e) => e.id === contextMenuElementId);
 		if (element) copyElement(element);
+		contextMenuOpen = false;
 	}
 
 	function handleDelete() {
 		if (!contextMenuElementId) return;
 		projectState.deleteElement(contextMenuElementId);
+		contextMenuOpen = false;
+	}
+
+	function handleBringToFront() {
+		if (!contextMenuElementId) return;
+		projectState.moveElementToFront(contextMenuElementId);
+		contextMenuOpen = false;
+	}
+
+	function handleBringForward() {
+		if (!contextMenuElementId) return;
+		projectState.moveElementForward(contextMenuElementId);
+		contextMenuOpen = false;
+	}
+
+	function handleSendBackward() {
+		if (!contextMenuElementId) return;
+		projectState.moveElementBackward(contextMenuElementId);
+		contextMenuOpen = false;
+	}
+
+	function handleSendToBack() {
+		if (!contextMenuElementId) return;
+		projectState.moveElementToBack(contextMenuElementId);
+		contextMenuOpen = false;
 	}
 
 	function handlePaste() {
 		const copied = getClipboardElement();
 		if (!copied) return;
 		projectState.addElement(duplicateElement(copied, $projectState.elements));
+		contextMenuOpen = false;
 	}
 </script>
 
@@ -372,6 +407,20 @@
 	<ContextMenu.Content>
 		{#if contextMenuTarget === "element"}
 			<ContextMenu.Item onclick={handleCopy}>Copy</ContextMenu.Item>
+			<ContextMenu.Separator />
+			<ContextMenu.Item disabled={contextMenuElementIsFrontmost} onclick={handleBringToFront}>
+				Bring to front
+			</ContextMenu.Item>
+			<ContextMenu.Item disabled={contextMenuElementIsFrontmost} onclick={handleBringForward}>
+				Bring forward
+			</ContextMenu.Item>
+			<ContextMenu.Item disabled={contextMenuElementIsBackmost} onclick={handleSendBackward}>
+				Send backward
+			</ContextMenu.Item>
+			<ContextMenu.Item disabled={contextMenuElementIsBackmost} onclick={handleSendToBack}>
+				Send to back
+			</ContextMenu.Item>
+			<ContextMenu.Separator />
 			<ContextMenu.Item variant="destructive" onclick={handleDelete}>Delete</ContextMenu.Item>
 		{:else}
 			<ContextMenu.Item disabled={!hasClipboardElement} onclick={handlePaste}>Paste</ContextMenu.Item>

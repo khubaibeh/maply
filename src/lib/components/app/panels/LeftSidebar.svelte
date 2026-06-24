@@ -52,6 +52,7 @@
 		lastClientY: number;
 		timer: ReturnType<typeof setTimeout>;
 	} | null = null;
+	let openElementContextMenuId: string | null = $state(null);
 	let autoScrollFrame: number | null = null;
 	let autoScrollVelocity = 0;
 	let suppressNextElementClick = false;
@@ -153,6 +154,18 @@
 	function handleElementTreeBackgroundPointerDown(event: PointerEvent) {
 		if (event.target !== event.currentTarget) return;
 		projectState.selectElement(null);
+	}
+
+	function setElementContextMenuOpen(elementId: string, open: boolean) {
+		openElementContextMenuId = open
+			? elementId
+			: openElementContextMenuId === elementId
+				? null
+				: openElementContextMenuId;
+	}
+
+	function closeElementContextMenu() {
+		openElementContextMenuId = null;
 	}
 
 	function getInsertionIndex(clientY: number) {
@@ -484,7 +497,15 @@
 									{@const nameValidation = elementNameValidations.get(element.id)}
 									{@const isInvalidName = !!nameValidation && !nameValidation.valid}
 									{@const isReordering = reorderState?.elementId === element.id}
-									<ContextMenu.Root>
+									{@const projectLayerIndex = $projectState.elements.findIndex(
+										(e) => e.id === element.id
+									)}
+									{@const isFrontmost = projectLayerIndex === $projectState.elements.length - 1}
+									{@const isBackmost = projectLayerIndex === 0}
+									<ContextMenu.Root
+										open={openElementContextMenuId === element.id}
+										onOpenChange={(open) => setElementContextMenuOpen(element.id, open)}
+									>
 										<ContextMenu.Trigger class="contents">
 											<div
 												data-element-row
@@ -551,12 +572,58 @@
 											</div>
 										</ContextMenu.Trigger>
 										<ContextMenu.Content>
-											<ContextMenu.Item onclick={() => copyElement(element)}>
+											<ContextMenu.Item
+												onclick={() => {
+													copyElement(element);
+													closeElementContextMenu();
+												}}
+											>
 												Copy
 											</ContextMenu.Item>
+											<ContextMenu.Separator />
+											<ContextMenu.Item
+												disabled={isFrontmost}
+												onclick={() => {
+													projectState.moveElementToFront(element.id);
+													closeElementContextMenu();
+												}}
+											>
+												Bring to front
+											</ContextMenu.Item>
+											<ContextMenu.Item
+												disabled={isFrontmost}
+												onclick={() => {
+													projectState.moveElementForward(element.id);
+													closeElementContextMenu();
+												}}
+											>
+												Bring forward
+											</ContextMenu.Item>
+											<ContextMenu.Item
+												disabled={isBackmost}
+												onclick={() => {
+													projectState.moveElementBackward(element.id);
+													closeElementContextMenu();
+												}}
+											>
+												Send backward
+											</ContextMenu.Item>
+											<ContextMenu.Item
+												disabled={isBackmost}
+												onclick={() => {
+													projectState.moveElementToBack(element.id);
+													closeElementContextMenu();
+												}}
+											>
+												Send to back
+											</ContextMenu.Item>
+											<ContextMenu.Separator />
 											<ContextMenu.Item
 												variant="destructive"
-												onclick={() => projectState.deleteElement(element.id)}
+												onclick={() => {
+													projectState.deleteElement(element.id);
+													closeElementContextMenu();
+												}}
 											>
 												Delete
 											</ContextMenu.Item>
