@@ -48,6 +48,7 @@
 		points: Point[];
 		current: Point;
 		nearFirst: boolean;
+		nearLast: boolean;
 	} | null>(null);
 
 	const CLOSE_THRESHOLD_SCREEN_PX = 12;
@@ -112,11 +113,16 @@
 	function updatePathSessionCurrent(point: Point) {
 		if (!pathSession) return;
 		const first = pathSession.points[0];
+		const last = pathSession.points[pathSession.points.length - 1];
 		const threshold = CLOSE_THRESHOLD_SCREEN_PX / $canvasState.camera.zoom;
+		const nearFirst = first ? distance(first, point) <= threshold : false;
+		const nearLast =
+			!nearFirst && pathSession.points.length >= 2 && last ? distance(last, point) <= threshold : false;
 		pathSession = {
 			...pathSession,
 			current: point,
-			nearFirst: first ? distance(first, point) <= threshold : false
+			nearFirst,
+			nearLast
 		};
 	}
 
@@ -378,6 +384,8 @@
 			if (pathSession) {
 				if (pathSession.nearFirst) {
 					closePath();
+				} else if (pathSession.nearLast) {
+					commitPath(false);
 				} else {
 					pathSession = {
 						...pathSession,
@@ -389,7 +397,8 @@
 				pathSession = {
 					points: [drawPoint],
 					current: drawPoint,
-					nearFirst: false
+					nearFirst: false,
+					nearLast: false
 				};
 			}
 			return;
@@ -541,12 +550,15 @@
 						{/if}
 						{#each points as point, index (index)}
 							{@const isFirst = index === 0}
-							{@const radius = isFirst && pathSession.nearFirst ? pathPreviewRadius : pathVertexRadius}
+							{@const isLast = index === points.length - 1}
+							{@const highlighted =
+								(isFirst && pathSession.nearFirst) || (isLast && pathSession.nearLast)}
+							{@const radius = highlighted ? pathPreviewRadius : pathVertexRadius}
 							<circle
 								cx={point.x}
 								cy={point.y}
 								r={radius}
-								fill={isFirst && pathSession.nearFirst ? "var(--primary)" : "var(--background)"}
+								fill={highlighted ? "var(--primary)" : "var(--background)"}
 								stroke="var(--primary)"
 								stroke-width="1"
 								pointer-events="none"
