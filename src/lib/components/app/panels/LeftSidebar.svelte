@@ -466,11 +466,11 @@
 					: ''}"
 			/>
 		</Collapsible.Trigger>
-		<Collapsible.Content class="sidebar-collapsible-content flex flex-col">
+		<Collapsible.Content class="sidebar-collapsible-content flex min-h-0 flex-col">
 			<div class="flex min-h-0 flex-1 flex-col">
 				<ContextMenu.Root>
-					<ContextMenu.Trigger class="flex flex-1 flex-col">
-						<ScrollArea class="flex-1" bind:viewportRef={elementScrollViewport}>
+					<ContextMenu.Trigger class="flex min-h-0 flex-1 flex-col">
+						<ScrollArea class="min-h-0 flex-1" bind:viewportRef={elementScrollViewport}>
 							<div
 								bind:this={elementListRef}
 								class="flex min-h-full flex-col gap-0.5 p-2"
