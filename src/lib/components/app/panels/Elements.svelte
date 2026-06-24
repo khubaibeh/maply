@@ -1,14 +1,11 @@
 <script lang="ts">
 	import type { Element } from "$lib/app/domain/elements";
-	import {
-		parseHexColor,
-		parseIntNumber,
-		parseNonNegativeNumber,
-		parsePositiveInt
-	} from "$lib/app/domain/validation";
+	import { parseIntNumber, parseNonNegativeNumber, parsePositiveInt } from "$lib/app/domain/validation";
 	import { projectState } from "$lib/app/state/project.svelte";
 	import { Input } from "$lib/components/ui/input";
 	import { Textarea } from "$lib/components/ui/textarea";
+
+	import ColorPicker from "./ColorPicker.svelte";
 
 	interface Props {
 		element: Element;
@@ -35,9 +32,7 @@
 	}
 
 	function updateColor(key: "fill" | "stroke", value: string) {
-		const color = parseHexColor(value);
-		if (color === null) return;
-		projectState.updateElement(element.id, { [key]: color } as Partial<Element>);
+		projectState.updateElement(element.id, { [key]: value } as Partial<Element>);
 	}
 
 	function updateText(value: string) {
@@ -102,16 +97,12 @@
 			/>
 		</div>
 	</div>
-	<div class="flex flex-col gap-1">
-		<label for="{element.id}-fill" class="text-sidebar-foreground/70 text-xs">Color</label>
-		<Input
-			id="{element.id}-fill"
-			type="text"
-			value={element.fill}
-			onchange={(event) => updateColor("fill", (event.target as HTMLInputElement).value)}
-			class="h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
-		/>
-	</div>
+	<ColorPicker
+		id="{element.id}-fill"
+		label="Color"
+		value={element.fill}
+		onChange={(color) => updateColor("fill", color)}
+	/>
 {:else if element.type === "circle"}
 	<div class="grid grid-cols-2 gap-2">
 		<div class="flex flex-col gap-1">
@@ -148,16 +139,12 @@
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
-		<div class="flex flex-col gap-1">
-			<label for="{element.id}-fill" class="text-sidebar-foreground/70 text-xs">Color</label>
-			<Input
-				id="{element.id}-fill"
-				type="text"
-				value={element.fill}
-				onchange={(event) => updateColor("fill", (event.target as HTMLInputElement).value)}
-				class="h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
-			/>
-		</div>
+		<ColorPicker
+			id="{element.id}-fill"
+			label="Color"
+			value={element.fill}
+			onChange={(color) => updateColor("fill", color)}
+		/>
 	</div>
 {:else if element.type === "text"}
 	<div class="grid grid-cols-2 gap-2">
@@ -195,16 +182,12 @@
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
-		<div class="flex flex-col gap-1">
-			<label for="{element.id}-fill" class="text-sidebar-foreground/70 text-xs">Color</label>
-			<Input
-				id="{element.id}-fill"
-				type="text"
-				value={element.fill}
-				onchange={(event) => updateColor("fill", (event.target as HTMLInputElement).value)}
-				class="h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
-			/>
-		</div>
+		<ColorPicker
+			id="{element.id}-fill"
+			label="Color"
+			value={element.fill}
+			onChange={(color) => updateColor("fill", color)}
+		/>
 	</div>
 	<div class="flex flex-col gap-1">
 		<label for="{element.id}-text" class="text-sidebar-foreground/70 text-xs">Text</label>
@@ -252,26 +235,18 @@
 		/>
 	</div>
 	<div class="grid grid-cols-2 gap-2">
-		<div class="flex flex-col gap-1">
-			<label for="{element.id}-fill" class="text-sidebar-foreground/70 text-xs">Fill</label>
-			<Input
-				id="{element.id}-fill"
-				type="text"
-				value={element.fill}
-				onchange={(event) => updateColor("fill", (event.target as HTMLInputElement).value)}
-				class="h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
-			/>
-		</div>
-		<div class="flex flex-col gap-1">
-			<label for="{element.id}-stroke" class="text-sidebar-foreground/70 text-xs">Stroke</label>
-			<Input
-				id="{element.id}-stroke"
-				type="text"
-				value={element.stroke}
-				onchange={(event) => updateColor("stroke", (event.target as HTMLInputElement).value)}
-				class="h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
-			/>
-		</div>
+		<ColorPicker
+			id="{element.id}-fill"
+			label="Fill"
+			value={element.fill}
+			onChange={(color) => updateColor("fill", color)}
+		/>
+		<ColorPicker
+			id="{element.id}-stroke"
+			label="Stroke"
+			value={element.stroke}
+			onChange={(color) => updateColor("stroke", color)}
+		/>
 		<div class="flex flex-col gap-1">
 			<label for="{element.id}-strokeWidth" class="text-sidebar-foreground/70 text-xs">Stroke width</label>
 			<Input
