@@ -41,7 +41,7 @@
 		const minY = Math.min(...corners.map((point) => point.y));
 		const maxX = Math.max(...corners.map((point) => point.x));
 		const maxY = Math.max(...corners.map((point) => point.y));
-		const padding = 2;
+		const padding = 0.5;
 
 		bbox = {
 			x: minX - padding,
