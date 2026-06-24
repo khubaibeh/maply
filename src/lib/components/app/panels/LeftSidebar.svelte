@@ -26,6 +26,8 @@
 
 	import ElementNameValidation from "./ElementNameValidation.svelte";
 
+	let { width = 240 }: { width?: number } = $props();
+
 	let editName = $state("");
 	let isEditing = $state(false);
 	let inputRef: HTMLInputElement | null = $state(null);
@@ -378,7 +380,7 @@
 	</Collapsible.Root>
 {/snippet}
 
-<aside class="border-border bg-sidebar flex w-60 shrink-0 flex-col border-r">
+<aside class="border-border bg-sidebar flex shrink-0 flex-col border-r" style={`width: ${width}px;`}>
 	<div class="border-border border-b p-3">
 		{@render sectionProject()}
 	</div>

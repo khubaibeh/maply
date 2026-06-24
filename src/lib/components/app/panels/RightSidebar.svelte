@@ -10,6 +10,8 @@
 	import ElementNameValidation from "./ElementNameValidation.svelte";
 	import ElementProperties from "./Elements.svelte";
 
+	let { width = 288 }: { width?: number } = $props();
+
 	function updateWidth(event: Event) {
 		const value = parseInt((event.target as HTMLInputElement).value, 10);
 		if (!Number.isNaN(value)) {
@@ -44,7 +46,7 @@
 	);
 </script>
 
-<aside class="border-border bg-sidebar flex w-72 shrink-0 flex-col border-l">
+<aside class="border-border bg-sidebar flex shrink-0 flex-col border-l" style={`width: ${width}px;`}>
 	<div class="border-border border-b px-3 py-2">
 		<span class="text-sidebar-foreground/80 text-xs font-semibold tracking-wide uppercase">Properties</span>
 	</div>
