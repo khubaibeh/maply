@@ -15,7 +15,7 @@
 	let innerWidth = $state(0);
 	let innerHeight = $state(0);
 	let isClient = $state(false);
-	let MIN_DIM = [950, 750];
+	let MIN_DIM = [800, 600];
 
 	let isTooSmall = $derived(isClient && (innerWidth < MIN_DIM[0] || innerHeight < MIN_DIM[1]));
 
