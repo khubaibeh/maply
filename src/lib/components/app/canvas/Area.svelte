@@ -2,6 +2,7 @@
 	import {
 		createCircleElementFromDrag,
 		createRectElementFromDrag,
+		createTextElementFromDrag,
 		duplicateElement,
 		getShapeDragBox
 	} from "$lib/app/core/element-actions";
@@ -29,7 +30,7 @@
 	let panStart = $state({ x: 0, y: 0 });
 	let cameraStart = $state({ x: 0, y: 0 });
 	let drawingSession = $state<{
-		tool: "rect" | "circle";
+		tool: "rect" | "circle" | "text";
 		start: Point;
 		current: Point;
 		square: boolean;
@@ -48,8 +49,8 @@
 		});
 		if (!box) return null;
 
-		if (drawingSession.tool === "rect") {
-			return { type: "rect" as const, ...box };
+		if (drawingSession.tool === "rect" || drawingSession.tool === "text") {
+			return { type: drawingSession.tool, ...box };
 		}
 
 		const diameter = Math.min(box.width, box.height);
@@ -150,12 +151,16 @@
 			const end = clientToSvgPoint(event.clientX, event.clientY) ?? session.current;
 			drawingSession = null;
 
-			const element =
-				session.tool === "rect"
-					? createRectElementFromDrag(session.start, end, $projectState.elements, {
-							square: event.shiftKey
-						})
-					: createCircleElementFromDrag(session.start, end, $projectState.elements);
+			let element = null;
+			if (session.tool === "rect") {
+				element = createRectElementFromDrag(session.start, end, $projectState.elements, {
+					square: event.shiftKey
+				});
+			} else if (session.tool === "circle") {
+				element = createCircleElementFromDrag(session.start, end, $projectState.elements);
+			} else if (session.tool === "text") {
+				element = createTextElementFromDrag(session.start, end, $projectState.elements);
+			}
 			if (!element) return;
 
 			projectState.addElement(element);
@@ -233,8 +238,8 @@
 		return { x: svgPoint.x, y: svgPoint.y };
 	}
 
-	function isShapeTool(tool: string): tool is "rect" | "circle" {
-		return tool === "rect" || tool === "circle";
+	function isDrawingTool(tool: string): tool is "rect" | "circle" | "text" {
+		return tool === "rect" || tool === "circle" || tool === "text";
 	}
 
 	function handleSvgPointerDown(event: PointerEvent) {
@@ -244,7 +249,7 @@
 			return;
 		}
 
-		if (!isShapeTool($toolState.activeTool)) return;
+		if (!isDrawingTool($toolState.activeTool)) return;
 
 		const drawPoint = clientToSvgPoint(event.clientX, event.clientY);
 		if (!drawPoint) return;
@@ -326,7 +331,7 @@
 					<Artboard />
 					{#if shapePreview()}
 						{@const preview = shapePreview()!}
-						{#if preview.type === "rect"}
+						{#if preview.type === "rect" || preview.type === "text"}
 							<rect
 								x={preview.x}
 								y={preview.y}
@@ -336,6 +341,7 @@
 								fill-opacity="0.12"
 								stroke="var(--primary)"
 								stroke-width="1"
+								stroke-dasharray={preview.type === "text" ? "4 4" : undefined}
 								pointer-events="none"
 							/>
 						{:else}

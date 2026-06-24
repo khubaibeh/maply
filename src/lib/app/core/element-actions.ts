@@ -203,6 +203,24 @@ export function createCircleElementFromDrag(start: Point, end: Point, elements: 
 	};
 }
 
+export function createTextElementFromDrag(start: Point, end: Point, elements: Element[]): TextElement | null {
+	const box = getShapeDragBox(start, end);
+	if (!box) return null;
+
+	return {
+		id: createElementId(),
+		name: nextElementName("text", elements),
+		type: "text",
+		x: Math.round(box.x),
+		y: Math.round(box.y),
+		width: Math.round(box.width),
+		height: Math.round(box.height),
+		text: "",
+		fontSize: 24,
+		fill: "#000000"
+	};
+}
+
 type Bounds = {
 	x: number;
 	y: number;
