@@ -252,7 +252,8 @@
 			x: $canvasState.x,
 			y: $canvasState.y,
 			width: $canvasState.width,
-			height: $canvasState.height
+			height: $canvasState.height,
+			color: $canvasState.color
 		});
 
 		if (!insideArtboard) return;

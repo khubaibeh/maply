@@ -45,6 +45,7 @@ function toProject(): Project {
 		canvas: {
 			width: canvas.width,
 			height: canvas.height,
+			color: canvas.color,
 			x: canvas.x,
 			y: canvas.y
 		},
@@ -83,6 +84,7 @@ export const projectState = {
 			const record = await fetchProject(projectId);
 			// Canvas is hydrated first so loaded elements can be normalized against current bounds.
 			canvasState.setSize(record.canvas.width, record.canvas.height);
+			canvasState.setColor(record.canvas.color);
 			canvasState.setPosition(record.canvas.x, record.canvas.y);
 			if (record.camera) {
 				canvasState.setCamera(record.camera);
@@ -130,6 +132,7 @@ export const projectState = {
 		// The app has one editable project slot, so creating a project resets that slot.
 		const fresh = await resetProdProject(options);
 		canvasState.setSize(fresh.canvas.width, fresh.canvas.height);
+		canvasState.setColor(fresh.canvas.color);
 		canvasState.setPosition(fresh.canvas.x, fresh.canvas.y);
 		if (fresh.camera) {
 			canvasState.setCamera(fresh.camera);

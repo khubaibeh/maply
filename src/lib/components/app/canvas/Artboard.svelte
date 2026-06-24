@@ -21,7 +21,7 @@
 	y={$canvasState.y}
 	width={$canvasState.width}
 	height={$canvasState.height}
-	fill="#ffffff"
+	fill={$canvasState.color}
 	stroke="var(--border)"
 	filter="url(#canvas-shadow)"
 />

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { validateElementNames } from "$lib/app/core/element-name-validation";
+	import { parseHexColor } from "$lib/app/domain/validation";
 	import { canvasState } from "$lib/app/state/canvas.svelte";
 	import { projectState } from "$lib/app/state/project.svelte";
 	import { Input } from "$lib/components/ui/input";
@@ -23,6 +24,12 @@
 			canvasState.setSize($canvasState.width, value);
 			projectState.clampElementsToCanvas();
 		}
+	}
+
+	function updateCanvasColor(event: Event) {
+		const color = parseHexColor((event.target as HTMLInputElement).value);
+		if (color === null) return;
+		canvasState.setColor(color);
 	}
 
 	function updateElementName(event: Event, id: string) {
@@ -76,6 +83,16 @@
 							class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 						/>
 					</div>
+				</div>
+				<div class="flex flex-col gap-1">
+					<label for="canvas-color" class="text-sidebar-foreground/70 text-xs">Color</label>
+					<Input
+						id="canvas-color"
+						type="text"
+						value={$canvasState.color}
+						onchange={updateCanvasColor}
+						class="h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
+					/>
 				</div>
 			</div>
 

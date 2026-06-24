@@ -23,6 +23,7 @@
 			canvas: {
 				width: $canvasState.width,
 				height: $canvasState.height,
+				color: $canvasState.color,
 				x: $canvasState.x,
 				y: $canvasState.y
 			},

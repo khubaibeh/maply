@@ -64,6 +64,7 @@ export const defaultProject: Project = {
 	canvas: {
 		width: 800,
 		height: 800,
+		color: "#ffffff",
 		x: 0,
 		y: 0
 	},

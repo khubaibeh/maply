@@ -3,6 +3,7 @@ import type { Element } from "./elements";
 export type Canvas = {
 	width: number;
 	height: number;
+	color: string;
 	x: number;
 	y: number;
 };

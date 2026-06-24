@@ -6,6 +6,7 @@ import type { Camera } from "../domain/project";
 type CanvasState = {
 	width: number;
 	height: number;
+	color: string;
 	x: number;
 	y: number;
 	camera: Camera;
@@ -16,6 +17,7 @@ type CanvasState = {
 const store = writable<CanvasState>({
 	width: CONSTANTS.width,
 	height: CONSTANTS.height,
+	color: "#ffffff",
 	x: 0,
 	y: 0,
 	camera: { x: 0, y: 0, zoom: CONSTANTS.zoom },
@@ -36,6 +38,10 @@ export const canvasState = {
 			width: sanitizeCanvasSize(nextWidth),
 			height: sanitizeCanvasSize(nextHeight)
 		}));
+	},
+
+	setColor(nextColor: string) {
+		store.update((state) => ({ ...state, color: nextColor }));
 	},
 
 	setPosition(nextX: number, nextY: number) {
