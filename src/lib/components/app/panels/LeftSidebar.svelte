@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { duplicateElement } from "$lib/app/core/element-actions";
 	import { validateElementNames } from "$lib/app/core/element-name-validation";
 	import type { Element } from "$lib/app/domain/elements";
 	import { copyElement, getClipboardElement } from "$lib/app/state/clipboard.svelte";
@@ -641,7 +640,7 @@
 							onclick={() => {
 								const copied = getClipboardElement();
 								if (!copied) return;
-								projectState.addElement(duplicateElement(copied, $projectState.elements));
+								void projectState.pasteClipboardElement();
 							}}
 						>
 							Paste

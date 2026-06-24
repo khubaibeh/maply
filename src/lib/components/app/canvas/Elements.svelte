@@ -5,11 +5,14 @@
 		getWrappedTextLines,
 		getWrappedTextMetrics
 	} from "$lib/app/core/element-actions";
+	import { getImageRenderRect } from "$lib/app/core/image-assets";
+	import { imageAssetState } from "$lib/app/state/image-assets.svelte";
 	import { projectState } from "$lib/app/state/project.svelte";
 	import { toolState } from "$lib/app/state/tool.svelte";
 	import { onMount } from "svelte";
 
 	let dragState = $state<{
+		kind: "move";
 		id: string;
 		elementX: number;
 		elementY: number;
@@ -59,6 +62,7 @@
 
 		const origin = getElementOrigin(element);
 		dragState = {
+			kind: "move",
 			id,
 			elementX: origin.x,
 			elementY: origin.y,
@@ -79,9 +83,9 @@
 			const svgPoint = clientToSvgPoint(svg, event.clientX, event.clientY);
 			if (!svgPoint) return;
 
+			dragState.didMove = true;
 			const nextX = dragState.elementX + (svgPoint.x - dragState.grabX);
 			const nextY = dragState.elementY + (svgPoint.y - dragState.grabY);
-			dragState.didMove = true;
 			projectState.setElementPosition(dragState.id, nextX, nextY);
 		}
 
@@ -192,20 +196,85 @@
 				{/each}
 			</text>
 		{:else if element.type === "image"}
-			<image
+			{@const imageAsset = element.assetId ? $imageAssetState[element.assetId] : null}
+			{@const imageHref = imageAsset?.dataUrl ?? element.href ?? ""}
+			<g
 				id="element-{element.id}"
 				data-canvas-element={element.id}
 				role="button"
 				tabindex="-1"
 				aria-label="Select {element.name}"
-				x={element.x}
-				y={element.y}
-				width={element.width}
-				height={element.height}
-				href={element.href}
 				class="canvas-element outline-none"
 				onpointerdown={(event) => selectElement(event, element.id)}
-			/>
+			>
+				<rect x={element.x} y={element.y} width={element.width} height={element.height} fill="var(--muted)" />
+				{#if imageHref}
+					{@const renderRect = imageAsset
+						? getImageRenderRect({
+								x: 0,
+								y: 0,
+								width: element.width,
+								height: element.height,
+								assetWidth: imageAsset.width,
+								assetHeight: imageAsset.height,
+								cropX: element.cropX,
+								cropY: element.cropY,
+								cropScale: element.cropScale
+							})
+						: null}
+					<svg
+						x={element.x}
+						y={element.y}
+						width={element.width}
+						height={element.height}
+						viewBox={`0 0 ${element.width} ${element.height}`}
+						overflow="hidden"
+						pointer-events="none"
+					>
+						{#if imageAsset && renderRect}
+							<image
+								x={renderRect.x}
+								y={renderRect.y}
+								width={renderRect.width}
+								height={renderRect.height}
+								href={imageHref}
+								preserveAspectRatio="none"
+							/>
+						{:else}
+							<image
+								x="0"
+								y="0"
+								width={element.width}
+								height={element.height}
+								href={imageHref}
+								preserveAspectRatio="xMidYMid slice"
+							/>
+						{/if}
+					</svg>
+				{:else}
+					<path
+						d="M0 0h18l5 6h13v18H0z"
+						fill="none"
+						stroke="var(--muted-foreground)"
+						stroke-width="1.5"
+						transform="translate({element.x + element.width / 2 - 18}, {element.y +
+							element.height / 2 -
+							16})"
+						pointer-events="none"
+					/>
+					<line
+						x1={element.x + 14}
+						y1={element.y + element.height - 14}
+						x2={element.x + element.width - 14}
+						y2={element.y + 14}
+						stroke="var(--muted-foreground)"
+						stroke-opacity="0.35"
+						stroke-width="2"
+						stroke-linecap="round"
+						pointer-events="none"
+					/>
+				{/if}
+			</g>
 		{/if}
 	{/each}
 </g>

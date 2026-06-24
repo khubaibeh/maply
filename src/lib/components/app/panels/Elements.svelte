@@ -62,10 +62,6 @@
 		projectState.updateElement(element.id, patch);
 	}
 
-	function updateHref(value: string) {
-		projectState.updateElement(element.id, { href: value } as Partial<Element>);
-	}
-
 	function getTextVisualX() {
 		if (element.type !== "text") return 0;
 		return getElementBounds(element).x;
@@ -438,15 +434,5 @@
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
-	</div>
-	<div class="flex flex-col gap-1">
-		<label for="{element.id}-href" class="text-sidebar-foreground/70 text-xs">Source URL</label>
-		<Input
-			id="{element.id}-href"
-			type="text"
-			value={element.href}
-			onchange={(event) => updateHref((event.target as HTMLInputElement).value)}
-			class="h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
-		/>
 	</div>
 {/if}

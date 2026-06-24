@@ -57,7 +57,11 @@ export type ImageElement = {
 	y: number;
 	width: number;
 	height: number;
-	href: string;
+	assetId: string | null;
+	href?: string;
+	cropX: number;
+	cropY: number;
+	cropScale: number;
 };
 
 export type Element = RectElement | CircleElement | PathElement | TextElement | ImageElement;

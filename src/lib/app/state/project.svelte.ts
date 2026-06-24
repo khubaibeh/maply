@@ -1,16 +1,27 @@
 import { get, writable } from "svelte/store";
 
-import { fetchProject, DEFAULTS, resetProdProject } from "../core/db";
+import { deleteImageAsset, fetchProject, DEFAULTS, resetProdProject, saveImageAsset } from "../core/db";
 import {
 	clampElementToCanvas,
+	duplicateElement,
 	normalizeElements,
+	resizeImageFrameWithinCanvas,
 	setElementPosition,
 	translateElementWithinCanvas
 } from "../core/element-actions";
+import type { ResizeHandle } from "../core/element-actions";
+import {
+	cloneStoredImageAsset,
+	getImageCropStateForFrameResize,
+	importImageFile,
+	translateImageCrop
+} from "../core/image-assets";
 import type { Element } from "../domain/elements";
 import type { Project } from "../domain/project";
 import { queueProjectSave, saveProjectNow } from "./autosave.svelte";
 import { canvasState } from "./canvas.svelte";
+import { getClipboardElement } from "./clipboard.svelte";
+import { imageAssetState } from "./image-assets.svelte";
 
 // Project state owns document data while canvasState owns viewport and artboard geometry.
 type ProjectState = {
@@ -20,6 +31,7 @@ type ProjectState = {
 	importExportState: Project["importExportState"];
 	initialized: boolean;
 	selectedElementId: string | null;
+	cropEditingElementId: string | null;
 };
 
 const store = writable<ProjectState>({
@@ -31,7 +43,8 @@ const store = writable<ProjectState>({
 		elementsOpen: true
 	},
 	initialized: false,
-	selectedElementId: null
+	selectedElementId: null,
+	cropEditingElementId: null
 });
 
 function toProject(): Project {
@@ -97,12 +110,14 @@ export const projectState = {
 				elements: normalizeElements(record.elements).map((element) => clampElementToCanvas(element, canvas)),
 				importExportState: record.importExportState
 			}));
+			await imageAssetState.loadForElements(record.elements);
 		} catch (error) {
 			console.warn("Failed to load project, using defaults:", error);
+			imageAssetState.clear();
 		}
 
 		// Autosave is enabled only after the initial load path has finished.
-		store.update((state) => ({ ...state, selectedElementId: null, initialized: true }));
+		store.update((state) => ({ ...state, selectedElementId: null, cropEditingElementId: null, initialized: true }));
 	},
 
 	setName(nextName: string) {
@@ -146,8 +161,10 @@ export const projectState = {
 			name: fresh.name,
 			elements: fresh.elements.map((element) => clampElementToCanvas(element, canvas)),
 			importExportState: fresh.importExportState,
-			selectedElementId: null
+			selectedElementId: null,
+			cropEditingElementId: null
 		}));
+		await imageAssetState.loadForElements(fresh.elements);
 		this.queueSave();
 	},
 
@@ -159,6 +176,122 @@ export const projectState = {
 			...state,
 			elements: [...state.elements, nextElement],
 			selectedElementId: nextElement.id
+		}));
+		this.queueSave();
+	},
+
+	async setImageAssetFromFile(id: string, file: File) {
+		const projectId = get(store).id;
+		const nextAsset = await importImageFile(file, projectId);
+		await saveImageAsset(nextAsset);
+		imageAssetState.setAsset(nextAsset);
+
+		const current = get(store).elements.find((element) => element.id === id);
+		if (current?.type === "image" && current.assetId && current.assetId !== nextAsset.id) {
+			await deleteImageAsset(current.assetId);
+			imageAssetState.removeAsset(current.assetId);
+		}
+
+		this.updateElement(id, {
+			assetId: nextAsset.id,
+			href: undefined,
+			cropX: 0,
+			cropY: 0,
+			cropScale: 100
+		} as Partial<Element>);
+	},
+
+	async clearImageAsset(id: string) {
+		const current = get(store).elements.find((element) => element.id === id);
+		if (current?.type !== "image") return;
+
+		if (current.assetId) {
+			await deleteImageAsset(current.assetId);
+			imageAssetState.removeAsset(current.assetId);
+		}
+
+		this.updateElement(id, {
+			assetId: null,
+			href: "",
+			cropX: 0,
+			cropY: 0,
+			cropScale: 100
+		} as Partial<Element>);
+	},
+
+	resetImageCrop(id: string) {
+		this.updateElement(id, {
+			cropX: 0,
+			cropY: 0,
+			cropScale: 100
+		} as Partial<Element>);
+	},
+
+	translateImageCrop(id: string, dx: number, dy: number) {
+		const current = get(store).elements.find((element) => element.id === id);
+		if (!current || current.type !== "image" || !current.assetId) return;
+
+		const asset = imageAssetState.getAsset(current.assetId);
+		if (!asset) return;
+
+		const nextCrop = translateImageCrop(
+			{ cropX: current.cropX, cropY: current.cropY, cropScale: current.cropScale },
+			dx,
+			dy,
+			{
+				width: current.width,
+				height: current.height,
+				assetWidth: asset.width,
+				assetHeight: asset.height,
+				cropScale: current.cropScale
+			}
+		);
+
+		this.updateElement(id, nextCrop as Partial<Element>);
+	},
+
+	setImageCropScale(id: string, cropScale: number) {
+		this.updateElement(id, {
+			cropScale: Math.max(100, Math.min(800, Math.round(cropScale)))
+		} as Partial<Element>);
+	},
+
+	resizeImageFrame(id: string, handle: ResizeHandle, dx: number, dy: number) {
+		const canvas = canvasState.getSnapshot();
+
+		store.update((state) => ({
+			...state,
+			elements: state.elements.map((element) => {
+				if (element.id !== id || element.type !== "image") return element;
+
+				const nextFrame = resizeImageFrameWithinCanvas(element, handle, dx, dy, canvas);
+				if (!element.assetId) return nextFrame;
+
+				const asset = imageAssetState.getAsset(element.assetId);
+				if (!asset) return nextFrame;
+
+				const nextCrop = getImageCropStateForFrameResize(
+					{ cropX: element.cropX, cropY: element.cropY, cropScale: element.cropScale },
+					{
+						previousFrame: {
+							x: element.x,
+							y: element.y,
+							width: element.width,
+							height: element.height
+						},
+						nextFrame: {
+							x: nextFrame.x,
+							y: nextFrame.y,
+							width: nextFrame.width,
+							height: nextFrame.height
+						},
+						assetWidth: asset.width,
+						assetHeight: asset.height
+					}
+				);
+
+				return { ...nextFrame, ...nextCrop };
+			})
 		}));
 		this.queueSave();
 	},
@@ -217,8 +350,44 @@ export const projectState = {
 		this.updateElement(id, { name: nextName });
 	},
 
+	setCropEditingElement(id: string | null) {
+		store.update((state) => ({ ...state, cropEditingElementId: id }));
+	},
+
+	toggleCropEditingElement(id: string) {
+		store.update((state) => ({
+			...state,
+			selectedElementId: id,
+			cropEditingElementId: state.cropEditingElementId === id ? null : id
+		}));
+	},
+
+	async pasteClipboardElement() {
+		const copied = getClipboardElement();
+		if (!copied) return;
+
+		const nextElement = duplicateElement(copied, get(store).elements);
+		if (nextElement.type === "image" && nextElement.assetId) {
+			const asset = imageAssetState.getAsset(nextElement.assetId);
+			if (asset) {
+				const clonedAsset = cloneStoredImageAsset(asset, get(store).id);
+				await saveImageAsset(clonedAsset);
+				imageAssetState.setAsset(clonedAsset);
+				nextElement.assetId = clonedAsset.id;
+			} else {
+				nextElement.assetId = null;
+			}
+		}
+
+		this.addElement(nextElement);
+	},
+
 	selectElement(id: string | null) {
-		store.update((state) => ({ ...state, selectedElementId: id }));
+		store.update((state) => ({
+			...state,
+			selectedElementId: id,
+			cropEditingElementId: state.cropEditingElementId === id ? state.cropEditingElementId : null
+		}));
 	},
 
 	reorderElements(fromIndex: number, toIndex: number) {
@@ -265,11 +434,19 @@ export const projectState = {
 	},
 
 	deleteElement(id: string) {
+		const current = get(store).elements.find((element) => element.id === id);
 		store.update((state) => ({
 			...state,
 			elements: state.elements.filter((element) => element.id !== id),
-			selectedElementId: state.selectedElementId === id ? null : state.selectedElementId
+			selectedElementId: state.selectedElementId === id ? null : state.selectedElementId,
+			cropEditingElementId: state.cropEditingElementId === id ? null : state.cropEditingElementId
 		}));
+		if (current?.type === "image" && current.assetId) {
+			deleteImageAsset(current.assetId).catch((error) => {
+				console.warn("Failed to delete image asset:", error);
+			});
+			imageAssetState.removeAsset(current.assetId);
+		}
 		this.queueSave();
 	}
 };

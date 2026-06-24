@@ -57,7 +57,11 @@ const defaultElements: Element[] = [
 		y: 120,
 		width: 160,
 		height: 120,
-		href: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='120'%3E%3Crect width='160' height='120' fill='%23d4d4d4'/%3E%3Ccircle cx='80' cy='60' r='30' fill='%239ca3af'/%3E%3C/svg%3E"
+		assetId: null,
+		href: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='120'%3E%3Crect width='160' height='120' fill='%23d4d4d4'/%3E%3Ccircle cx='80' cy='60' r='30' fill='%239ca3af'/%3E%3C/svg%3E",
+		cropX: 0,
+		cropY: 0,
+		cropScale: 100
 	},
 	{
 		id: "el-rect-1",

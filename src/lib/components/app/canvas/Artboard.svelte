@@ -4,6 +4,7 @@
 	import { toolState } from "$lib/app/state/tool.svelte";
 
 	import Elements from "./Elements.svelte";
+	import ImageCropOverlay from "./ImageCropOverlay.svelte";
 	import Outline from "./Outline.svelte";
 	import PathHandles from "./PathHandles.svelte";
 
@@ -32,6 +33,13 @@
 
 {#if selectedElement && selectedElement.type !== "path"}
 	<Outline element={selectedElement} />
+{/if}
+
+{#if selectedElement?.type === "image"}
+	<ImageCropOverlay
+		element={selectedElement}
+		cropEditing={$projectState.cropEditingElementId === selectedElement.id}
+	/>
 {/if}
 
 {#if selectedElement?.type === "path" && $toolState.activeTool === "select"}

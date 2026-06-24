@@ -22,7 +22,7 @@
 	} | null>(null);
 
 	$effect(() => {
-		if (element.type === "text") {
+		if (element.type === "text" || element.type === "image") {
 			const padding = 0.5;
 			const textBounds = getElementBounds(element);
 			bbox = {
@@ -167,6 +167,7 @@
 	fill="transparent"
 	stroke="var(--primary)"
 	stroke-width="0.25"
+	stroke-dasharray={element.type === "image" && $projectState.cropEditingElementId === element.id ? "2 1" : undefined}
 	pointer-events="all"
 	class="cursor-inherit"
 	onpointerdown={startSelectionDrag}

@@ -1,4 +1,12 @@
-import type { CircleElement, Element, ElementType, PathElement, RectElement, TextElement } from "../domain/elements";
+import type {
+	CircleElement,
+	Element,
+	ElementType,
+	ImageElement,
+	PathElement,
+	RectElement,
+	TextElement
+} from "../domain/elements";
 import type { Point } from "../domain/geometry";
 import type { Canvas } from "../domain/project";
 import { createUniqueElementName } from "./element-name-validation";
@@ -76,6 +84,13 @@ export function normalizeElement(element: Element): Element {
 
 	if (normalized.type === "text" && (typeof normalized.height !== "number" || normalized.height < 1)) {
 		normalized.height = estimateTextBoxHeight(normalized.fontSize, normalized.text);
+	}
+
+	if (normalized.type === "image") {
+		normalized.assetId = typeof normalized.assetId === "string" ? normalized.assetId : null;
+		normalized.cropX = typeof normalized.cropX === "number" ? Math.min(100, Math.max(-100, normalized.cropX)) : 0;
+		normalized.cropY = typeof normalized.cropY === "number" ? Math.min(100, Math.max(-100, normalized.cropY)) : 0;
+		normalized.cropScale = typeof normalized.cropScale === "number" ? Math.max(100, normalized.cropScale) : 100;
 	}
 
 	return normalized;
@@ -232,6 +247,26 @@ export function createTextElementFromDrag(start: Point, end: Point, elements: El
 	};
 }
 
+export function createImageElementFromDrag(start: Point, end: Point, elements: Element[]): ImageElement | null {
+	const box = getShapeDragBox(start, end);
+	if (!box) return null;
+
+	return {
+		id: createElementId(),
+		name: nextElementName("image", elements),
+		type: "image",
+		x: Math.round(box.x),
+		y: Math.round(box.y),
+		width: Math.round(box.width),
+		height: Math.round(box.height),
+		assetId: null,
+		href: "",
+		cropX: 0,
+		cropY: 0,
+		cropScale: 100
+	};
+}
+
 export function createPathElementFromPoints(points: Point[], closed: boolean, elements: Element[]): PathElement | null {
 	if (points.length < 2) return null;
 	if (closed && points.length < 3) return null;
@@ -259,6 +294,49 @@ type Bounds = {
 	width: number;
 	height: number;
 };
+
+export type ResizeHandle = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw";
+
+export function resizeImageFrameWithinCanvas(
+	element: ImageElement,
+	handle: ResizeHandle,
+	dx: number,
+	dy: number,
+	canvas: Canvas
+): ImageElement {
+	let left = element.x;
+	let top = element.y;
+	let right = element.x + element.width;
+	let bottom = element.y + element.height;
+	const canvasLeft = canvas.x;
+	const canvasTop = canvas.y;
+	const canvasRight = canvas.x + canvas.width;
+	const canvasBottom = canvas.y + canvas.height;
+
+	if (handle.includes("w")) {
+		left = Math.min(right - MIN_SHAPE_SIZE, Math.max(canvasLeft, left + dx));
+	}
+
+	if (handle.includes("e")) {
+		right = Math.max(left + MIN_SHAPE_SIZE, Math.min(canvasRight, right + dx));
+	}
+
+	if (handle.includes("n")) {
+		top = Math.min(bottom - MIN_SHAPE_SIZE, Math.max(canvasTop, top + dy));
+	}
+
+	if (handle.includes("s")) {
+		bottom = Math.max(top + MIN_SHAPE_SIZE, Math.min(canvasBottom, bottom + dy));
+	}
+
+	return {
+		...element,
+		x: Math.round(left),
+		y: Math.round(top),
+		width: Math.round(right - left),
+		height: Math.round(bottom - top)
+	};
+}
 
 function clampElementSize(element: Element, canvas: Canvas): Element {
 	switch (element.type) {

@@ -1,12 +1,13 @@
 <script lang="ts">
 	import {
 		createCircleElementFromDrag,
+		createImageElementFromDrag,
 		createPathElementFromPoints,
 		createRectElementFromDrag,
 		createTextElementFromDrag,
-		duplicateElement,
 		getShapeDragBox
 	} from "$lib/app/core/element-actions";
+	import type { ImageElement } from "$lib/app/domain/elements";
 	import { isPointInsideCanvas, type Point } from "$lib/app/domain/geometry";
 	import { canvasState } from "$lib/app/state/canvas.svelte";
 	import { copyElement, getClipboardElement } from "$lib/app/state/clipboard.svelte";
@@ -19,6 +20,7 @@
 
 	import Artboard from "./Artboard.svelte";
 	import Background from "./Background.svelte";
+	import ImageCropToolbar from "./ImageCropToolbar.svelte";
 
 	let container: HTMLDivElement | null = $state(null);
 	let contextMenuOpen = $state(false);
@@ -31,6 +33,14 @@
 	);
 	const contextMenuElementIsFrontmost = $derived(contextMenuElementLayerIndex === $projectState.elements.length - 1);
 	const contextMenuElementIsBackmost = $derived(contextMenuElementLayerIndex === 0);
+	const selectedImage = $derived(
+		($projectState.elements.find(
+			(element) => element.id === $projectState.selectedElementId && element.type === "image"
+		) ?? null) as ImageElement | null
+	);
+	const cropEditing = $derived(
+		$projectState.cropEditingElementId === $projectState.selectedElementId && selectedImage !== null
+	);
 	let svgRef: SVGSVGElement | null = $state(null);
 	let containerWidth = $state(0);
 	let containerHeight = $state(0);
@@ -39,7 +49,7 @@
 	let panStart = $state({ x: 0, y: 0 });
 	let cameraStart = $state({ x: 0, y: 0 });
 	let drawingSession = $state<{
-		tool: "rect" | "circle" | "text";
+		tool: "rect" | "circle" | "text" | "image";
 		start: Point;
 		current: Point;
 		square: boolean;
@@ -76,7 +86,7 @@
 		if (isPanning || isHandActive) return undefined;
 
 		const tool = $toolState.activeTool;
-		if (tool === "rect" || tool === "circle" || tool === "text") return svgCursorUrl(plusSvg);
+		if (tool === "rect" || tool === "circle" || tool === "text" || tool === "image") return svgCursorUrl(plusSvg);
 		if (tool === "path") return svgCursorUrl(penToolSvg, 6, 6);
 		return undefined;
 	});
@@ -88,7 +98,7 @@
 		});
 		if (!box) return null;
 
-		if (drawingSession.tool === "rect" || drawingSession.tool === "text") {
+		if (drawingSession.tool === "rect" || drawingSession.tool === "text" || drawingSession.tool === "image") {
 			return { type: drawingSession.tool, ...box };
 		}
 
@@ -166,6 +176,24 @@
 		containerHeight = initialRect.height;
 
 		function handleWheel(event: WheelEvent) {
+			const cropEditingElement = $projectState.cropEditingElementId
+				? $projectState.elements.find((element) => element.id === $projectState.cropEditingElementId)
+				: null;
+
+			if (cropEditingElement?.type === "image") {
+				const point = clientToSvgPoint(event.clientX, event.clientY);
+				if (
+					point &&
+					point.x >= cropEditingElement.x &&
+					point.x <= cropEditingElement.x + cropEditingElement.width &&
+					point.y >= cropEditingElement.y &&
+					point.y <= cropEditingElement.y + cropEditingElement.height
+				) {
+					event.preventDefault();
+					return;
+				}
+			}
+
 			event.preventDefault();
 
 			if (event.ctrlKey || event.metaKey) {
@@ -252,6 +280,8 @@
 				element = createCircleElementFromDrag(session.start, end, $projectState.elements);
 			} else if (session.tool === "text") {
 				element = createTextElementFromDrag(session.start, end, $projectState.elements);
+			} else if (session.tool === "image") {
+				element = createImageElementFromDrag(session.start, end, $projectState.elements);
 			}
 			if (!element) return;
 
@@ -354,8 +384,8 @@
 		return { x: svgPoint.x, y: svgPoint.y };
 	}
 
-	function isShapeDrawingTool(tool: string): tool is "rect" | "circle" | "text" {
-		return tool === "rect" || tool === "circle" || tool === "text";
+	function isShapeDrawingTool(tool: string): tool is "rect" | "circle" | "text" | "image" {
+		return tool === "rect" || tool === "circle" || tool === "text" || tool === "image";
 	}
 
 	function handleSvgPointerDown(event: PointerEvent) {
@@ -470,7 +500,7 @@
 	function handlePaste() {
 		const copied = getClipboardElement();
 		if (!copied) return;
-		projectState.addElement(duplicateElement(copied, $projectState.elements));
+		void projectState.pasteClipboardElement();
 		contextMenuOpen = false;
 	}
 </script>
@@ -500,7 +530,7 @@
 					<Artboard />
 					{#if shapePreview()}
 						{@const preview = shapePreview()!}
-						{#if preview.type === "rect" || preview.type === "text"}
+						{#if preview.type === "rect" || preview.type === "text" || preview.type === "image"}
 							<rect
 								x={preview.x}
 								y={preview.y}
@@ -510,7 +540,11 @@
 								fill-opacity="0.12"
 								stroke="var(--primary)"
 								stroke-width="1"
-								stroke-dasharray={preview.type === "text" ? "4 4" : undefined}
+								stroke-dasharray={preview.type === "image"
+									? "10 6"
+									: preview.type === "text"
+										? "4 4"
+										: undefined}
 								pointer-events="none"
 							/>
 						{:else}
@@ -586,6 +620,9 @@
 						{/if}
 					{/if}
 				</svg>
+			{/if}
+			{#if selectedImage && containerWidth > 0 && containerHeight > 0}
+				<ImageCropToolbar element={selectedImage} {cropEditing} {containerWidth} {containerHeight} />
 			{/if}
 		</div>
 	</ContextMenu.Trigger>

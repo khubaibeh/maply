@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { duplicateElement } from "$lib/app/core/element-actions";
 	import { getClipboardElement, copyElement } from "$lib/app/state/clipboard.svelte";
 	import { projectState } from "$lib/app/state/project.svelte";
 	import { toolState, type Tool } from "$lib/app/state/tool.svelte";
@@ -156,7 +155,7 @@
 				if (!copied) return;
 
 				event.preventDefault();
-				projectState.addElement(duplicateElement(copied, $projectState.elements));
+				void projectState.pasteClipboardElement();
 			}
 		}
 
