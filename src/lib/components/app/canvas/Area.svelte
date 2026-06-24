@@ -18,6 +18,7 @@
 	import Background from "./Background.svelte";
 
 	let container: HTMLDivElement | null = $state(null);
+	let contextMenuOpen = $state(false);
 	let contextMenuTarget: "element" | "empty" = $state("empty");
 	let contextMenuElementId: string | null = $state(null);
 
@@ -193,6 +194,11 @@
 			toolState.setSpacePressed(false);
 		}
 
+		function dismissContextMenu(event: PointerEvent) {
+			if (event.button !== 0 || !contextMenuOpen) return;
+			contextMenuOpen = false;
+		}
+
 		// Global move/up handlers keep panning stable after the pointer leaves the viewport.
 		viewport.addEventListener("wheel", handleWheel, { passive: false });
 		viewport.addEventListener("mousedown", startPan);
@@ -203,6 +209,7 @@
 		window.addEventListener("pointermove", moveDrawing);
 		window.addEventListener("pointerup", endDrawing);
 		window.addEventListener("pointercancel", cancelDrawing);
+		window.addEventListener("pointerdown", dismissContextMenu, true);
 		window.addEventListener("keydown", handleKeyDown);
 		window.addEventListener("keyup", handleKeyUp);
 
@@ -217,6 +224,7 @@
 			window.removeEventListener("pointermove", moveDrawing);
 			window.removeEventListener("pointerup", endDrawing);
 			window.removeEventListener("pointercancel", cancelDrawing);
+			window.removeEventListener("pointerdown", dismissContextMenu, true);
 			window.removeEventListener("keydown", handleKeyDown);
 			window.removeEventListener("keyup", handleKeyUp);
 		};
@@ -307,7 +315,7 @@
 	}
 </script>
 
-<ContextMenu.Root>
+<ContextMenu.Root bind:open={contextMenuOpen}>
 	<ContextMenu.Trigger class="contents">
 		<div
 			bind:this={container}
