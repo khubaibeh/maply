@@ -22,6 +22,7 @@
 	import Trash2 from "@lucide/svelte/icons/trash-2";
 	import Type from "@lucide/svelte/icons/type";
 	import Upload from "@lucide/svelte/icons/upload";
+	import { onDestroy } from "svelte";
 	import type { Component } from "svelte";
 
 	import ElementNameValidation from "./ElementNameValidation.svelte";
@@ -37,9 +38,41 @@
 	let editingElementId = $state<string | null>(null);
 	let editingElementName = $state("");
 	let editingElementInputRef: HTMLInputElement | null = $state(null);
+	let elementListRef: HTMLDivElement | null = $state(null);
+	let elementScrollViewport: HTMLElement | null = $state(null);
+	let reorderState = $state<{
+		elementId: string;
+		fromSidebarIndex: number;
+		insertionIndex: number;
+		lastClientY: number;
+	} | null>(null);
+	let pendingReorderState: {
+		elementId: string;
+		fromSidebarIndex: number;
+		lastClientY: number;
+		timer: ReturnType<typeof setTimeout>;
+	} | null = null;
+	let autoScrollFrame: number | null = null;
+	let autoScrollVelocity = 0;
+	let suppressNextElementClick = false;
+
+	const REORDER_HOLD_DELAY_MS = 220;
 
 	const hasClipboardElement = $derived(!!getClipboardElement());
 	const elementNameValidations = $derived(validateElementNames($projectState.elements));
+	const sidebarElements = $derived(() => {
+		const elements = [...$projectState.elements].reverse();
+		const activeReorder = reorderState;
+		if (!activeReorder) return elements;
+
+		const fromIndex = elements.findIndex((element) => element.id === activeReorder.elementId);
+		if (fromIndex === -1) return elements;
+
+		const previewElements = [...elements];
+		const [movedElement] = previewElements.splice(fromIndex, 1);
+		previewElements.splice(activeReorder.insertionIndex, 0, movedElement);
+		return previewElements;
+	});
 
 	const elementIcons: Record<Element["type"], Component> = {
 		rect: Square,
@@ -122,6 +155,167 @@
 		projectState.selectElement(null);
 	}
 
+	function getInsertionIndex(clientY: number) {
+		if (!elementListRef || !reorderState) return reorderState?.insertionIndex ?? 0;
+
+		const rows = Array.from(elementListRef.querySelectorAll<HTMLElement>("[data-element-row]")).filter(
+			(row) => row.dataset.elementId !== reorderState?.elementId
+		);
+
+		for (const [index, row] of rows.entries()) {
+			const bounds = row.getBoundingClientRect();
+			if (clientY < bounds.top + bounds.height / 2) return index;
+		}
+
+		return rows.length;
+	}
+
+	function updateAutoScroll(clientY: number) {
+		if (!elementScrollViewport || !reorderState) return;
+
+		const bounds = elementScrollViewport.getBoundingClientRect();
+		const edgeSize = 36;
+		const maxVelocity = 10;
+
+		if (clientY < bounds.top + edgeSize) {
+			autoScrollVelocity = -maxVelocity * (1 - (clientY - bounds.top) / edgeSize);
+		} else if (clientY > bounds.bottom - edgeSize) {
+			autoScrollVelocity = maxVelocity * (1 - (bounds.bottom - clientY) / edgeSize);
+		} else {
+			autoScrollVelocity = 0;
+		}
+
+		if (autoScrollVelocity !== 0 && autoScrollFrame === null) {
+			autoScrollFrame = requestAnimationFrame(runAutoScroll);
+		}
+	}
+
+	function runAutoScroll() {
+		autoScrollFrame = null;
+		if (!elementScrollViewport || !reorderState || autoScrollVelocity === 0) return;
+
+		elementScrollViewport.scrollBy({ top: autoScrollVelocity });
+		reorderState.insertionIndex = getInsertionIndex(reorderState.lastClientY);
+		autoScrollFrame = requestAnimationFrame(runAutoScroll);
+	}
+
+	function stopAutoScroll() {
+		autoScrollVelocity = 0;
+		if (autoScrollFrame !== null && typeof cancelAnimationFrame !== "undefined") {
+			cancelAnimationFrame(autoScrollFrame);
+			autoScrollFrame = null;
+		}
+	}
+
+	function clearPendingReorder() {
+		if (!pendingReorderState) return;
+
+		clearTimeout(pendingReorderState.timer);
+		pendingReorderState = null;
+		if (typeof window === "undefined") return;
+
+		window.removeEventListener("pointermove", handlePendingReorderPointerMove);
+		window.removeEventListener("pointerup", clearPendingReorder);
+		window.removeEventListener("pointercancel", clearPendingReorder);
+	}
+
+	function startPendingReorder(event: PointerEvent, element: Element, sidebarIndex: number) {
+		if (event.button !== 0 || isEditingElementTarget(event.target)) return;
+
+		clearPendingReorder();
+		pendingReorderState = {
+			elementId: element.id,
+			fromSidebarIndex: sidebarIndex,
+			lastClientY: event.clientY,
+			timer: setTimeout(startReorderingFromPending, REORDER_HOLD_DELAY_MS)
+		};
+
+		window.addEventListener("pointermove", handlePendingReorderPointerMove);
+		window.addEventListener("pointerup", clearPendingReorder);
+		window.addEventListener("pointercancel", clearPendingReorder);
+	}
+
+	function isEditingElementTarget(target: EventTarget | null) {
+		return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
+	}
+
+	function handlePendingReorderPointerMove(event: PointerEvent) {
+		if (!pendingReorderState) return;
+
+		pendingReorderState.lastClientY = event.clientY;
+	}
+
+	function startReorderingFromPending() {
+		if (!pendingReorderState) return;
+
+		const pending = pendingReorderState;
+		pendingReorderState = null;
+		suppressNextElementClick = true;
+		reorderState = {
+			elementId: pending.elementId,
+			fromSidebarIndex: pending.fromSidebarIndex,
+			insertionIndex: pending.fromSidebarIndex,
+			lastClientY: pending.lastClientY
+		};
+
+		window.removeEventListener("pointermove", handlePendingReorderPointerMove);
+		window.removeEventListener("pointerup", clearPendingReorder);
+		window.removeEventListener("pointercancel", clearPendingReorder);
+		window.addEventListener("pointermove", handleReorderPointerMove);
+		window.addEventListener("pointerup", stopReordering);
+		window.addEventListener("pointercancel", cancelReordering);
+	}
+
+	function handleElementRowClick(event: MouseEvent, elementId: string) {
+		if (suppressNextElementClick) {
+			event.preventDefault();
+			event.stopPropagation();
+			suppressNextElementClick = false;
+			return;
+		}
+
+		projectState.selectElement(elementId);
+	}
+
+	function handleReorderPointerMove(event: PointerEvent) {
+		if (!reorderState) return;
+
+		reorderState.lastClientY = event.clientY;
+		reorderState.insertionIndex = getInsertionIndex(event.clientY);
+		updateAutoScroll(event.clientY);
+	}
+
+	function removeReorderListeners() {
+		if (typeof window === "undefined") return;
+
+		window.removeEventListener("pointermove", handleReorderPointerMove);
+		window.removeEventListener("pointerup", stopReordering);
+		window.removeEventListener("pointercancel", cancelReordering);
+		stopAutoScroll();
+	}
+
+	function stopReordering() {
+		if (!reorderState) return;
+
+		const elementCount = $projectState.elements.length;
+		const fromProjectIndex = elementCount - 1 - reorderState.fromSidebarIndex;
+		const toProjectIndex = elementCount - 1 - reorderState.insertionIndex;
+
+		if (fromProjectIndex !== toProjectIndex) {
+			projectState.reorderElements(fromProjectIndex, toProjectIndex);
+		}
+
+		reorderState = null;
+		removeReorderListeners();
+	}
+
+	function cancelReordering() {
+		clearPendingReorder();
+		suppressNextElementClick = false;
+		reorderState = null;
+		removeReorderListeners();
+	}
+
 	$effect(() => {
 		if (editingElementId && editingElementInputRef) {
 			editingElementInputRef.focus();
@@ -142,6 +336,10 @@
 		if (!$projectState.initialized) return;
 		// Collapsible state is part of the persisted project UI state.
 		projectState.setImportExportState({ importsOpen, elementsOpen });
+	});
+
+	onDestroy(() => {
+		cancelReordering();
 	});
 </script>
 
@@ -272,31 +470,39 @@
 			<div class="flex min-h-0 flex-1 flex-col">
 				<ContextMenu.Root>
 					<ContextMenu.Trigger class="flex flex-1 flex-col">
-						<ScrollArea class="flex-1">
+						<ScrollArea class="flex-1" bind:viewportRef={elementScrollViewport}>
 							<div
+								bind:this={elementListRef}
 								class="flex min-h-full flex-col gap-0.5 p-2"
 								onpointerdown={handleElementTreeBackgroundPointerDown}
 								role="presentation"
 							>
-								{#each $projectState.elements as element (element.id)}
+								{#each sidebarElements() as element, sidebarIndex (element.id)}
 									{@const Icon = elementIcons[element.type]}
 									{@const isSelected = $projectState.selectedElementId === element.id}
 									{@const isEditingElement = editingElementId === element.id}
 									{@const nameValidation = elementNameValidations.get(element.id)}
 									{@const isInvalidName = !!nameValidation && !nameValidation.valid}
+									{@const isReordering = reorderState?.elementId === element.id}
 									<ContextMenu.Root>
 										<ContextMenu.Trigger class="contents">
 											<div
+												data-element-row
+												data-element-id={element.id}
 												class="group flex w-full items-center rounded-lg {isInvalidName
 													? 'bg-destructive/10 text-destructive hover:bg-destructive/15'
-													: isSelected
-														? 'bg-sidebar-accent text-sidebar-accent-foreground'
-														: 'text-sidebar-foreground hover:bg-sidebar-accent/50'}"
+													: isReordering
+														? 'ring-sidebar-ring/50 bg-sidebar-accent/80 text-sidebar-accent-foreground shadow-sm ring-1'
+														: isSelected
+															? 'bg-sidebar-accent text-sidebar-accent-foreground'
+															: 'text-sidebar-foreground hover:bg-sidebar-accent/50'}"
 											>
 												<button
 													type="button"
 													class="flex min-w-0 flex-1 items-center gap-2 px-2 py-1.5 text-left text-xs outline-none select-none"
-													onclick={() => projectState.selectElement(element.id)}
+													onpointerdown={(event) =>
+														startPendingReorder(event, element, sidebarIndex)}
+													onclick={(event) => handleElementRowClick(event, element.id)}
 													ondblclick={() => startEditingElement(element)}
 												>
 													<Icon
