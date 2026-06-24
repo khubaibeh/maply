@@ -12,6 +12,8 @@
 	import { copyElement, getClipboardElement } from "$lib/app/state/clipboard.svelte";
 	import { projectState } from "$lib/app/state/project.svelte";
 	import { toolState } from "$lib/app/state/tool.svelte";
+	import penToolSvg from "$lib/assets/pen-tool.svg?raw";
+	import plusSvg from "$lib/assets/plus.svg?raw";
 	import * as ContextMenu from "$lib/components/ui/context-menu";
 	import { onMount } from "svelte";
 
@@ -64,6 +66,20 @@
 		if (isHandActive) return "cursor-grab";
 		return "cursor-default";
 	});
+
+	function svgCursorUrl(svg: string, hotspotX = 12, hotspotY = 12): string {
+		return `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}") ${hotspotX} ${hotspotY}, none`;
+	}
+
+	const toolCursor = $derived(() => {
+		if (isPanning || isHandActive) return undefined;
+
+		const tool = $toolState.activeTool;
+		if (tool === "rect" || tool === "circle" || tool === "text") return svgCursorUrl(plusSvg);
+		if (tool === "path") return svgCursorUrl(penToolSvg, 6, 6);
+		return undefined;
+	});
+
 	const shapePreview = $derived(() => {
 		if (!drawingSession) return null;
 		const box = getShapeDragBox(drawingSession.start, drawingSession.current, {
@@ -455,6 +471,7 @@
 		<div
 			bind:this={container}
 			class="canvas-viewport bg-muted relative min-h-0 flex-1 overflow-hidden outline-none {cursorClass()}"
+			style:cursor={toolCursor()}
 			role="application"
 			aria-label="Canvas workspace"
 			tabindex="-1"
@@ -548,7 +565,6 @@
 								role="button"
 								tabindex="-1"
 								aria-label="Close path"
-								class="cursor-pointer"
 								onpointerdown={(event) => {
 									event.preventDefault();
 									event.stopPropagation();
