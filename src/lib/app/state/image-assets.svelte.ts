@@ -13,6 +13,10 @@ function getImageAssetIds(elements: Element[]) {
 export const imageAssetState = {
 	subscribe: store.subscribe,
 
+	getSnapshot() {
+		return get(store);
+	},
+
 	getAsset(id: string | null | undefined) {
 		if (!id) return null;
 		return get(store)[id] ?? null;
@@ -31,6 +35,10 @@ export const imageAssetState = {
 
 	setAsset(asset: StoredImageAsset) {
 		store.update((assets) => ({ ...assets, [asset.id]: asset }));
+	},
+
+	setAll(nextAssets: StoredImageAsset[]) {
+		store.set(Object.fromEntries(nextAssets.map((asset) => [asset.id, asset])));
 	},
 
 	removeAsset(id: string | null | undefined) {

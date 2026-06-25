@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { validateElementNames } from "$lib/app/core/element-name-validation";
+	import { parseProjectFilePackage, stringifyProjectFilePackage } from "$lib/app/core/project-io";
+	import type { ProjectFilePackage } from "$lib/app/core/project-io";
 	import type { Element } from "$lib/app/domain/elements";
 	import { copyElement, getClipboardElement } from "$lib/app/state/clipboard.svelte";
 	import { projectState } from "$lib/app/state/project.svelte";
@@ -34,6 +36,7 @@
 	let importsOpen = $state(true);
 	let elementsOpen = $state(true);
 	let newProjectDialogOpen = $state(false);
+	let importProjectDialogOpen = $state(false);
 	let editingElementId = $state<string | null>(null);
 	let editingElementName = $state("");
 	let editingElementInputRef: HTMLInputElement | null = $state(null);
@@ -55,6 +58,12 @@
 	let autoScrollFrame: number | null = null;
 	let autoScrollVelocity = 0;
 	let suppressNextElementClick = false;
+	let projectImportInputRef: HTMLInputElement | null = $state(null);
+	let pendingImportedProject: ProjectFilePackage | null = null;
+	let pendingImportedProjectName = $state("");
+	let importExportFeedback = $state<{ tone: "success" | "error"; text: string } | null>(null);
+	let importExportBusy = $state<"project-import" | "project-export" | "svg-export" | null>(null);
+	let importExportFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
 
 	const REORDER_HOLD_DELAY_MS = 220;
 
@@ -89,6 +98,141 @@
 
 	async function handleSave() {
 		await projectState.saveNow();
+	}
+
+	function setImportExportFeedback(tone: "success" | "error", text: string) {
+		if (importExportFeedbackTimer) {
+			clearTimeout(importExportFeedbackTimer);
+			importExportFeedbackTimer = null;
+		}
+
+		importExportFeedback = { tone, text };
+		importExportFeedbackTimer = setTimeout(() => {
+			importExportFeedback = null;
+			importExportFeedbackTimer = null;
+		}, 4000);
+	}
+
+	function formatImportExportError(error: unknown, fallback: string) {
+		const message = error instanceof Error ? error.message : fallback;
+
+		if (/not valid json/i.test(message)) return "This file is not valid JSON.";
+		if (/unsupported project file format/i.test(message)) return "This file is not a Maply project export.";
+		if (/unsupported project file version/i.test(message)) return "This project file uses an unsupported version.";
+		if (/missing image asset data/i.test(message)) {
+			return "This project file is incomplete because one or more image assets are missing.";
+		}
+		if (/duplicate image asset id/i.test(message)) {
+			return "This project file is invalid because it contains duplicate image assets.";
+		}
+
+		return message;
+	}
+
+	function sanitizeDownloadName(name: string, extension: string) {
+		const baseName = name
+			.trim()
+			.toLowerCase()
+			.replace(/[^a-z0-9]+/g, "-")
+			.replace(/^-+|-+$/g, "");
+		return `${baseName || "maply-project"}.${extension}`;
+	}
+
+	function downloadTextFile(name: string, content: string, mimeType: string) {
+		const blob = new Blob([content], { type: mimeType });
+		const url = URL.createObjectURL(blob);
+		const link = document.createElement("a");
+		link.href = url;
+		link.download = name;
+		link.click();
+		URL.revokeObjectURL(url);
+	}
+
+	function handleProjectExport() {
+		if (importExportBusy) return;
+		importExportBusy = "project-export";
+		importExportFeedback = null;
+
+		try {
+			const projectFile = projectState.exportProjectFilePackage();
+			downloadTextFile(
+				sanitizeDownloadName(projectFile.project.name, "json"),
+				stringifyProjectFilePackage(projectFile),
+				"application/json"
+			);
+			setImportExportFeedback("success", "Project exported as a portable JSON file.");
+		} catch (error) {
+			setImportExportFeedback("error", formatImportExportError(error, "Failed to export project."));
+		} finally {
+			importExportBusy = null;
+		}
+	}
+
+	async function handleSvgExport() {
+		if (importExportBusy) return;
+		importExportBusy = "svg-export";
+		importExportFeedback = null;
+
+		try {
+			const svg = await projectState.exportSvg();
+			downloadTextFile(sanitizeDownloadName($projectState.name, "svg"), svg, "image/svg+xml");
+			setImportExportFeedback("success", "Standalone SVG exported with embedded assets and recovery metadata.");
+		} catch (error) {
+			setImportExportFeedback("error", formatImportExportError(error, "Failed to export SVG."));
+		} finally {
+			importExportBusy = null;
+		}
+	}
+
+	function openProjectImportPicker() {
+		projectImportInputRef?.click();
+	}
+
+	async function handleProjectImportFileChange(event: Event) {
+		const input = event.currentTarget as HTMLInputElement;
+		const file = input.files?.[0];
+		if (!file) return;
+		if (importExportBusy) return;
+		importExportBusy = "project-import";
+		importExportFeedback = null;
+
+		try {
+			pendingImportedProject = parseProjectFilePackage(await file.text());
+			pendingImportedProjectName = file.name;
+			importProjectDialogOpen = true;
+		} catch (error) {
+			pendingImportedProject = null;
+			pendingImportedProjectName = "";
+			setImportExportFeedback("error", formatImportExportError(error, "Failed to read project file."));
+		} finally {
+			importExportBusy = null;
+		}
+
+		input.value = "";
+	}
+
+	async function confirmProjectImport() {
+		if (!pendingImportedProject) return;
+		if (importExportBusy) return;
+		importExportBusy = "project-import";
+
+		try {
+			await projectState.importProjectFilePackage(pendingImportedProject);
+			setImportExportFeedback("success", `Imported ${pendingImportedProjectName || "project file"}.`);
+			importProjectDialogOpen = false;
+			pendingImportedProject = null;
+			pendingImportedProjectName = "";
+		} catch (error) {
+			setImportExportFeedback("error", formatImportExportError(error, "Failed to import project file."));
+		} finally {
+			importExportBusy = null;
+		}
+	}
+
+	function cancelProjectImport() {
+		importProjectDialogOpen = false;
+		pendingImportedProject = null;
+		pendingImportedProjectName = "";
 	}
 
 	$effect(() => {
@@ -351,6 +495,10 @@
 	});
 
 	onDestroy(() => {
+		if (importExportFeedbackTimer) {
+			clearTimeout(importExportFeedbackTimer);
+		}
+
 		cancelReordering();
 	});
 </script>
@@ -429,6 +577,13 @@
 		</Collapsible.Trigger>
 		<Collapsible.Content class="sidebar-collapsible-content">
 			<div class="flex flex-col items-center gap-1.5 p-3">
+				<input
+					bind:this={projectImportInputRef}
+					type="file"
+					accept="application/json,.json"
+					onchange={handleProjectImportFileChange}
+					class="hidden"
+				/>
 				<DropdownMenu.Root>
 					<DropdownMenu.Trigger
 						class="{buttonVariants({
@@ -441,7 +596,9 @@
 					</DropdownMenu.Trigger>
 					<DropdownMenu.Content class="min-w-32">
 						<DropdownMenu.Item class="justify-center text-center text-xs">SVG</DropdownMenu.Item>
-						<DropdownMenu.Item class="justify-center text-center text-xs">Project</DropdownMenu.Item>
+						<DropdownMenu.Item class="justify-center text-center text-xs" onclick={openProjectImportPicker}
+							>Project</DropdownMenu.Item
+						>
 					</DropdownMenu.Content>
 				</DropdownMenu.Root>
 
@@ -456,10 +613,25 @@
 						Export
 					</DropdownMenu.Trigger>
 					<DropdownMenu.Content class="min-w-32">
-						<DropdownMenu.Item class="justify-center text-center text-xs">SVG</DropdownMenu.Item>
-						<DropdownMenu.Item class="justify-center text-center text-xs">Project</DropdownMenu.Item>
+						<DropdownMenu.Item
+							class="justify-center text-center text-xs"
+							onclick={() => void handleSvgExport()}>SVG</DropdownMenu.Item
+						>
+						<DropdownMenu.Item class="justify-center text-center text-xs" onclick={handleProjectExport}
+							>Project</DropdownMenu.Item
+						>
 					</DropdownMenu.Content>
 				</DropdownMenu.Root>
+
+				{#if importExportFeedback}
+					<p
+						class="px-1 text-center text-[11px] leading-4 {importExportFeedback.tone === 'error'
+							? 'text-destructive'
+							: 'text-muted-foreground'}"
+					>
+						{importExportFeedback.text}
+					</p>
+				{/if}
 			</div>
 		</Collapsible.Content>
 	</Collapsible.Root>
@@ -698,6 +870,28 @@
 					</DropdownMenu.Content>
 				</DropdownMenu.Root>
 			</div>
+		</AlertDialog.Footer>
+	</AlertDialog.Content>
+</AlertDialog.Root>
+
+<AlertDialog.Root bind:open={importProjectDialogOpen}>
+	<AlertDialog.Content>
+		<AlertDialog.Header>
+			<AlertDialog.Title>Replace current project?</AlertDialog.Title>
+			<AlertDialog.Description>
+				Importing {pendingImportedProjectName || "this project file"} will replace your current project. Save the
+				existing project first if you want to keep it.
+			</AlertDialog.Description>
+		</AlertDialog.Header>
+		<AlertDialog.Footer>
+			<AlertDialog.Cancel onclick={cancelProjectImport} disabled={importExportBusy === "project-import"}
+				>Cancel</AlertDialog.Cancel
+			>
+			<AlertDialog.Action
+				onclick={() => void confirmProjectImport()}
+				disabled={importExportBusy === "project-import"}
+				>{importExportBusy === "project-import" ? "Importing..." : "Replace project"}</AlertDialog.Action
+			>
 		</AlertDialog.Footer>
 	</AlertDialog.Content>
 </AlertDialog.Root>

@@ -1,6 +1,6 @@
 import { get, writable } from "svelte/store";
 
-import { deleteImageAsset, fetchProject, DEFAULTS, resetProdProject, saveImageAsset } from "../core/db";
+import { deleteImageAsset, fetchProject, DEFAULTS, replaceProject, resetProdProject, saveImageAsset } from "../core/db";
 import {
 	clampElementToCanvas,
 	duplicateElement,
@@ -16,7 +16,10 @@ import {
 	importImageFile,
 	translateImageCrop
 } from "../core/image-assets";
+import { createProjectFilePackage, type ProjectFilePackage, toImportedProject } from "../core/project-io";
+import { exportProjectSvg } from "../core/svg-export";
 import type { Element } from "../domain/elements";
+import type { StoredImageAsset } from "../domain/image-assets";
 import type { Project } from "../domain/project";
 import { queueProjectSave, saveProjectNow } from "./autosave.svelte";
 import { canvasState } from "./canvas.svelte";
@@ -48,6 +51,49 @@ const store = writable<ProjectState>({
 	hoveredElementId: null,
 	cropEditingElementId: null
 });
+
+async function applyProjectRecord(record: Project) {
+	canvasState.setSize(record.canvas.width, record.canvas.height);
+	canvasState.setColor(record.canvas.color);
+	canvasState.setPosition(record.canvas.x, record.canvas.y);
+	if (record.camera) {
+		canvasState.setCamera(record.camera);
+	} else {
+		canvasState.resetCamera();
+	}
+
+	const canvas = canvasState.getSnapshot();
+	store.update((state) => ({
+		...state,
+		name: record.name,
+		elements: normalizeElements(record.elements).map((element) => clampElementToCanvas(element, canvas)),
+		importExportState: record.importExportState,
+		selectedElementId: null,
+		hoveredElementId: null,
+		cropEditingElementId: null
+	}));
+	await imageAssetState.loadForElements(record.elements);
+}
+
+function getReferencedImageAssets(project: Project): StoredImageAsset[] {
+	const assets = imageAssetState.getSnapshot();
+	const referencedIds = Array.from(
+		new Set(
+			project.elements.flatMap((element) =>
+				element.type === "image" && element.assetId ? [element.assetId] : []
+			)
+		)
+	);
+
+	return referencedIds.map((assetId) => {
+		const asset = assets[assetId];
+		if (!asset) {
+			throw new Error(`Project export is missing image asset data for assetId ${assetId}.`);
+		}
+
+		return asset;
+	});
+}
 
 function toProject(): Project {
 	// Persisted projects are assembled from both state stores.
@@ -97,22 +143,7 @@ export const projectState = {
 
 		try {
 			const record = await fetchProject(projectId);
-			// Canvas is hydrated first so loaded elements can be normalized against current bounds.
-			canvasState.setSize(record.canvas.width, record.canvas.height);
-			canvasState.setColor(record.canvas.color);
-			canvasState.setPosition(record.canvas.x, record.canvas.y);
-			if (record.camera) {
-				canvasState.setCamera(record.camera);
-			}
-
-			const canvas = canvasState.getSnapshot();
-			store.update((state) => ({
-				...state,
-				name: record.name,
-				elements: normalizeElements(record.elements).map((element) => clampElementToCanvas(element, canvas)),
-				importExportState: record.importExportState
-			}));
-			await imageAssetState.loadForElements(record.elements);
+			await applyProjectRecord(record);
 		} catch (error) {
 			console.warn("Failed to load project, using defaults:", error);
 			imageAssetState.clear();
@@ -154,27 +185,28 @@ export const projectState = {
 	async createNewProject(options: { elements?: "sample" | "blank" } = {}) {
 		// The app has one editable project slot, so creating a project resets that slot.
 		const fresh = await resetProdProject(options);
-		canvasState.setSize(fresh.canvas.width, fresh.canvas.height);
-		canvasState.setColor(fresh.canvas.color);
-		canvasState.setPosition(fresh.canvas.x, fresh.canvas.y);
-		if (fresh.camera) {
-			canvasState.setCamera(fresh.camera);
-		} else {
-			canvasState.resetCamera();
-		}
-
-		const canvas = canvasState.getSnapshot();
-		store.update((state) => ({
-			...state,
-			name: fresh.name,
-			elements: fresh.elements.map((element) => clampElementToCanvas(element, canvas)),
-			importExportState: fresh.importExportState,
-			selectedElementId: null,
-			hoveredElementId: null,
-			cropEditingElementId: null
-		}));
-		await imageAssetState.loadForElements(fresh.elements);
+		await applyProjectRecord(fresh);
 		this.queueSave();
+	},
+
+	exportProjectFilePackage(): ProjectFilePackage {
+		const project = toProject();
+		return createProjectFilePackage(project, getReferencedImageAssets(project));
+	},
+
+	async exportSvg() {
+		const project = toProject();
+		return exportProjectSvg(project, getReferencedImageAssets(project));
+	},
+
+	async importProjectFilePackage(projectFile: ProjectFilePackage) {
+		const activeProjectId = get(store).id;
+		const imported = toImportedProject(projectFile, activeProjectId);
+		await replaceProject(imported.project, imported.imageAssets);
+
+		imageAssetState.setAll(imported.imageAssets);
+		await applyProjectRecord(imported.project);
+		store.update((state) => ({ ...state, initialized: true }));
 	},
 
 	addElement(element: Element) {

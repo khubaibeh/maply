@@ -133,6 +133,12 @@ async function deleteImageAssetsForProject(db: IDBDatabase, projectId: string): 
 	});
 }
 
+async function putImageAssets(db: IDBDatabase, imageAssets: StoredImageAsset[]): Promise<void> {
+	for (const asset of imageAssets) {
+		await putImageAssetRecord(db, asset);
+	}
+}
+
 async function deleteProjectRecord(db: IDBDatabase, id: string): Promise<void> {
 	await new Promise<void>((resolve, reject) => {
 		const txn = db.transaction(DEFAULTS.store, "readwrite");
@@ -225,6 +231,16 @@ export async function saveImageAsset(asset: StoredImageAsset): Promise<void> {
 
 	const db = await openDB();
 	await putImageAssetRecord(db, asset);
+}
+
+export async function replaceProject(project: Project, imageAssets: StoredImageAsset[]): Promise<void> {
+	if (typeof indexedDB === "undefined") return;
+	if (project.id === DEFAULTS.projectId) return;
+
+	const db = await openDB();
+	await putProject(db, project);
+	await deleteImageAssetsForProject(db, project.id);
+	await putImageAssets(db, imageAssets);
 }
 
 export async function deleteImageAsset(id: string): Promise<void> {

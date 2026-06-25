@@ -15,4 +15,9 @@ declare module "*.svg?raw" {
 	export default content;
 }
 
+declare module "*.woff2?url" {
+	const content: string;
+	export default content;
+}
+
 export {};

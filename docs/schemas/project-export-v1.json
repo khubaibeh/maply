@@ -1,0 +1,185 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://maply.app/schemas/project-export-v1.json",
+	"title": "Maply Project Export v1",
+	"type": "object",
+	"additionalProperties": false,
+	"required": ["format", "version", "project", "imageAssets"],
+	"properties": {
+		"format": {
+			"const": "maply-project"
+		},
+		"version": {
+			"const": 1
+		},
+		"project": {
+			"$ref": "#/$defs/project"
+		},
+		"imageAssets": {
+			"type": "array",
+			"items": {
+				"$ref": "#/$defs/imageAsset"
+			}
+		}
+	},
+	"$defs": {
+		"project": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["id", "name", "canvas", "elements", "importExportState"],
+			"properties": {
+				"id": { "type": "string" },
+				"name": { "type": "string" },
+				"canvas": { "$ref": "#/$defs/canvas" },
+				"camera": { "$ref": "#/$defs/camera" },
+				"elements": {
+					"type": "array",
+					"items": { "$ref": "#/$defs/element" }
+				},
+				"importExportState": { "$ref": "#/$defs/importExportState" }
+			}
+		},
+		"canvas": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["width", "height", "color", "x", "y"],
+			"properties": {
+				"width": { "type": "number" },
+				"height": { "type": "number" },
+				"color": { "type": "string" },
+				"x": { "type": "number" },
+				"y": { "type": "number" }
+			}
+		},
+		"camera": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["x", "y", "zoom"],
+			"properties": {
+				"x": { "type": "number" },
+				"y": { "type": "number" },
+				"zoom": { "type": "number" }
+			}
+		},
+		"importExportState": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["importsOpen", "elementsOpen"],
+			"properties": {
+				"importsOpen": { "type": "boolean" },
+				"elementsOpen": { "type": "boolean" }
+			}
+		},
+		"imageAsset": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["id", "projectId", "name", "mimeType", "dataUrl", "width", "height"],
+			"properties": {
+				"id": { "type": "string" },
+				"projectId": { "type": "string" },
+				"name": { "type": "string" },
+				"mimeType": { "type": "string" },
+				"dataUrl": { "type": "string" },
+				"width": { "type": "number" },
+				"height": { "type": "number" }
+			}
+		},
+		"element": {
+			"oneOf": [
+				{ "$ref": "#/$defs/rectElement" },
+				{ "$ref": "#/$defs/circleElement" },
+				{ "$ref": "#/$defs/pathElement" },
+				{ "$ref": "#/$defs/textElement" },
+				{ "$ref": "#/$defs/imageElement" }
+			]
+		},
+		"rectElement": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["id", "name", "type", "x", "y", "width", "height", "fill", "stroke", "strokeWidth"],
+			"properties": {
+				"id": { "type": "string" },
+				"name": { "type": "string" },
+				"type": { "const": "rect" },
+				"x": { "type": "number" },
+				"y": { "type": "number" },
+				"width": { "type": "number" },
+				"height": { "type": "number" },
+				"fill": { "type": "string" },
+				"stroke": { "type": "string" },
+				"strokeWidth": { "type": "number" }
+			}
+		},
+		"circleElement": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["id", "name", "type", "cx", "cy", "r", "fill", "stroke", "strokeWidth"],
+			"properties": {
+				"id": { "type": "string" },
+				"name": { "type": "string" },
+				"type": { "const": "circle" },
+				"cx": { "type": "number" },
+				"cy": { "type": "number" },
+				"r": { "type": "number" },
+				"fill": { "type": "string" },
+				"stroke": { "type": "string" },
+				"strokeWidth": { "type": "number" }
+			}
+		},
+		"pathElement": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["id", "name", "type", "x", "y", "d", "fill", "stroke", "strokeWidth", "closed"],
+			"properties": {
+				"id": { "type": "string" },
+				"name": { "type": "string" },
+				"type": { "const": "path" },
+				"x": { "type": "number" },
+				"y": { "type": "number" },
+				"d": { "type": "string" },
+				"fill": { "type": "string" },
+				"stroke": { "type": "string" },
+				"strokeWidth": { "type": "number" },
+				"closed": { "type": "boolean" }
+			}
+		},
+		"textElement": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["id", "name", "type", "x", "y", "width", "height", "text", "fontSize", "fill"],
+			"properties": {
+				"id": { "type": "string" },
+				"name": { "type": "string" },
+				"type": { "const": "text" },
+				"x": { "type": "number" },
+				"y": { "type": "number" },
+				"width": { "type": "number" },
+				"height": { "type": "number" },
+				"text": { "type": "string" },
+				"fontSize": { "type": "number" },
+				"fill": { "type": "string" }
+			}
+		},
+		"imageElement": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["id", "name", "type", "x", "y", "width", "height", "assetId", "cropX", "cropY", "cropScale"],
+			"properties": {
+				"id": { "type": "string" },
+				"name": { "type": "string" },
+				"type": { "const": "image" },
+				"x": { "type": "number" },
+				"y": { "type": "number" },
+				"width": { "type": "number" },
+				"height": { "type": "number" },
+				"assetId": {
+					"type": ["string", "null"]
+				},
+				"href": { "type": "string" },
+				"cropX": { "type": "number" },
+				"cropY": { "type": "number" },
+				"cropScale": { "type": "number" }
+			}
+		}
+	}
+}
