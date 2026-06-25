@@ -399,6 +399,7 @@
 
 	function handleSvgPointerDown(event: PointerEvent) {
 		if (event.button !== 0) return;
+		if (isHandActive) return;
 		if ($toolState.activeTool === "select") {
 			projectState.selectElement(null);
 			return;
