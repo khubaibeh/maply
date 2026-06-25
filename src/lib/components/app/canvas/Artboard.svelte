@@ -7,6 +7,7 @@
 	import ImageCropOverlay from "./ImageCropOverlay.svelte";
 	import Outline from "./Outline.svelte";
 	import PathHandles from "./PathHandles.svelte";
+	import PathOutline from "./PathOutline.svelte";
 
 	const selectedElement = $derived(
 		$projectState.elements.find((element) => element.id === $projectState.selectedElementId) ?? null
@@ -42,8 +43,16 @@
 	<Outline element={hoveredElement} interactive={false} />
 {/if}
 
+{#if hoveredElement?.type === "path"}
+	<PathOutline element={hoveredElement} />
+{/if}
+
 {#if selectedElement && selectedElement.type !== "path"}
 	<Outline element={selectedElement} />
+{/if}
+
+{#if selectedElement?.type === "path"}
+	<PathOutline element={selectedElement} />
 {/if}
 
 {#if selectedElement?.type === "image"}
