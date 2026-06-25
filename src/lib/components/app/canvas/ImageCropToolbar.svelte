@@ -30,6 +30,7 @@
 	const imageAsset = $derived(element.assetId ? ($imageAssetState[element.assetId] ?? null) : null);
 	const imageHref = $derived(imageAsset?.dataUrl ?? element.href ?? "");
 	const downloadName = $derived(imageAsset?.name ?? `${element.name || "image"}.svg`);
+	const hasImage = $derived(!!imageHref);
 
 	const toolbarScale = $derived(Math.max(0.9, Math.min(1.1, Math.pow($canvasState.camera.zoom, 0.12))));
 	const toolbarWidth = $derived((cropEditing ? CROP_TOOLBAR_WIDTH : DEFAULT_TOOLBAR_WIDTH) * toolbarScale);
@@ -71,6 +72,7 @@
 	}
 
 	function startCrop() {
+		if (!hasImage) return;
 		projectState.setCropEditingElement(element.id);
 		projectState.selectElement(element.id);
 	}
@@ -177,6 +179,7 @@
 			title="Edit crop"
 			style:width="{toolbarButtonSize}px"
 			style:height="{toolbarButtonSize}px"
+			disabled={!hasImage}
 		>
 			<Crop style={`width:${toolbarIconSize}px;height:${toolbarIconSize}px`} />
 		</button>
@@ -188,6 +191,7 @@
 			title="Download image"
 			style:width="{toolbarButtonSize}px"
 			style:height="{toolbarButtonSize}px"
+			disabled={!hasImage}
 		>
 			<Download style={`width:${toolbarIconSize}px;height:${toolbarIconSize}px`} />
 		</button>
@@ -216,6 +220,15 @@
 	.toolbar-button:focus-visible {
 		outline: 2px solid color-mix(in oklab, var(--ring) 72%, transparent);
 		outline-offset: 1px;
+	}
+
+	.toolbar-button:disabled {
+		opacity: 0.4;
+		cursor: default;
+	}
+
+	.toolbar-button:disabled:hover {
+		background: transparent;
 	}
 
 	.crop-slider::-webkit-slider-runnable-track {
