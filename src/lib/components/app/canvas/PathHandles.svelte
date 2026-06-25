@@ -19,6 +19,7 @@
 		index: number;
 		startPoint: Point;
 		grabPoint: Point;
+		svg: SVGSVGElement;
 	} | null>(null);
 
 	const points = $derived(getPathPoints(element.d));
@@ -55,7 +56,19 @@
 		dragState = {
 			index,
 			startPoint: points[index],
-			grabPoint: svgPoint
+			grabPoint: svgPoint,
+			svg
+		};
+	}
+
+	function clampPathPoint(point: Point, offsetX: number, offsetY: number) {
+		const strokePadding = Math.ceil(element.strokeWidth / 2);
+		const canvasRight = $canvasState.x + $canvasState.width;
+		const canvasBottom = $canvasState.y + $canvasState.height;
+
+		return {
+			x: Math.max($canvasState.x - offsetX, Math.min(canvasRight - offsetX - strokePadding * 2, point.x)),
+			y: Math.max($canvasState.y - offsetY, Math.min(canvasBottom - offsetY - strokePadding * 2, point.y))
 		};
 	}
 
@@ -63,20 +76,23 @@
 		function handlePointerMove(event: PointerEvent) {
 			if (!dragState) return;
 
-			const svg = getSvgRoot(event.target);
-			if (!svg) return;
-			const svgPoint = clientToSvgPoint(svg, event.clientX, event.clientY);
+			const svgPoint = clientToSvgPoint(dragState.svg, event.clientX, event.clientY);
 			if (!svgPoint) return;
 
-			const nextPoint = {
-				x: dragState.startPoint.x + (svgPoint.x - dragState.grabPoint.x),
-				y: dragState.startPoint.y + (svgPoint.y - dragState.grabPoint.y)
-			};
-
 			const oldBounds = getPathDataBounds(points);
-			const { d, bounds } = updatePathVertex(element.d, dragState.index, nextPoint);
 			const offsetX = element.x - oldBounds.x;
 			const offsetY = element.y - oldBounds.y;
+
+			const nextPoint = clampPathPoint(
+				{
+					x: dragState.startPoint.x + (svgPoint.x - dragState.grabPoint.x),
+					y: dragState.startPoint.y + (svgPoint.y - dragState.grabPoint.y)
+				},
+				offsetX,
+				offsetY
+			);
+
+			const { d, bounds } = updatePathVertex(element.d, dragState.index, nextPoint);
 
 			projectState.updateElement(element.id, {
 				d,
