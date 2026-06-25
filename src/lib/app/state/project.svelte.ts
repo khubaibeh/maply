@@ -31,6 +31,7 @@ type ProjectState = {
 	importExportState: Project["importExportState"];
 	initialized: boolean;
 	selectedElementId: string | null;
+	hoveredElementId: string | null;
 	cropEditingElementId: string | null;
 };
 
@@ -44,6 +45,7 @@ const store = writable<ProjectState>({
 	},
 	initialized: false,
 	selectedElementId: null,
+	hoveredElementId: null,
 	cropEditingElementId: null
 });
 
@@ -117,7 +119,13 @@ export const projectState = {
 		}
 
 		// Autosave is enabled only after the initial load path has finished.
-		store.update((state) => ({ ...state, selectedElementId: null, cropEditingElementId: null, initialized: true }));
+		store.update((state) => ({
+			...state,
+			selectedElementId: null,
+			hoveredElementId: null,
+			cropEditingElementId: null,
+			initialized: true
+		}));
 	},
 
 	setName(nextName: string) {
@@ -162,6 +170,7 @@ export const projectState = {
 			elements: fresh.elements.map((element) => clampElementToCanvas(element, canvas)),
 			importExportState: fresh.importExportState,
 			selectedElementId: null,
+			hoveredElementId: null,
 			cropEditingElementId: null
 		}));
 		await imageAssetState.loadForElements(fresh.elements);
@@ -354,6 +363,10 @@ export const projectState = {
 		store.update((state) => ({ ...state, cropEditingElementId: id }));
 	},
 
+	setHoveredElement(id: string | null) {
+		store.update((state) => (state.hoveredElementId === id ? state : { ...state, hoveredElementId: id }));
+	},
+
 	toggleCropEditingElement(id: string) {
 		store.update((state) => ({
 			...state,
@@ -386,6 +399,7 @@ export const projectState = {
 		store.update((state) => ({
 			...state,
 			selectedElementId: id,
+			hoveredElementId: id === null ? state.hoveredElementId : id,
 			cropEditingElementId: state.cropEditingElementId === id ? state.cropEditingElementId : null
 		}));
 	},

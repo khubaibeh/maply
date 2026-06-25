@@ -11,6 +11,13 @@
 	const selectedElement = $derived(
 		$projectState.elements.find((element) => element.id === $projectState.selectedElementId) ?? null
 	);
+	const hoveredElement = $derived(
+		$toolState.activeTool === "select" &&
+			$projectState.hoveredElementId &&
+			$projectState.hoveredElementId !== $projectState.selectedElementId
+			? ($projectState.elements.find((element) => element.id === $projectState.hoveredElementId) ?? null)
+			: null
+	);
 </script>
 
 <defs>
@@ -30,6 +37,10 @@
 />
 
 <Elements />
+
+{#if hoveredElement && hoveredElement.type !== "path"}
+	<Outline element={hoveredElement} interactive={false} />
+{/if}
 
 {#if selectedElement && selectedElement.type !== "path"}
 	<Outline element={selectedElement} />

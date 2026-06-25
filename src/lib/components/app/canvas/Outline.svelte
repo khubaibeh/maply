@@ -7,9 +7,10 @@
 
 	interface Props {
 		element: Element;
+		interactive?: boolean;
 	}
 
-	let { element }: Props = $props();
+	let { element, interactive = true }: Props = $props();
 
 	let bbox = $state({ x: 0, y: 0, width: 0, height: 0 });
 	let dragState = $state<{
@@ -168,7 +169,7 @@
 	stroke="var(--primary)"
 	stroke-width="0.25"
 	stroke-dasharray={element.type === "image" && $projectState.cropEditingElementId === element.id ? "2 1" : undefined}
-	pointer-events="all"
+	pointer-events={interactive ? "all" : "none"}
 	class="cursor-inherit"
 	onpointerdown={startSelectionDrag}
 />

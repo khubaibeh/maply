@@ -73,6 +73,16 @@
 		};
 	}
 
+	function hoverElement(id: string) {
+		if ($toolState.activeTool !== "select") return;
+		projectState.setHoveredElement(id);
+	}
+
+	function clearHoveredElement(id: string) {
+		if ($projectState.hoveredElementId !== id) return;
+		projectState.setHoveredElement(null);
+	}
+
 	onMount(() => {
 		function handlePointerMove(event: PointerEvent) {
 			if (!dragState) return;
@@ -126,6 +136,8 @@
 				stroke-width={element.strokeWidth}
 				class="canvas-element outline-none"
 				onpointerdown={(event) => selectElement(event, element.id)}
+				onpointerenter={() => hoverElement(element.id)}
+				onpointerleave={() => clearHoveredElement(element.id)}
 			/>
 		{:else if element.type === "circle"}
 			<circle
@@ -142,6 +154,8 @@
 				stroke-width={element.strokeWidth}
 				class="canvas-element outline-none"
 				onpointerdown={(event) => selectElement(event, element.id)}
+				onpointerenter={() => hoverElement(element.id)}
+				onpointerleave={() => clearHoveredElement(element.id)}
 			/>
 		{:else if element.type === "path"}
 			{@const transform = getPathRenderTransform(element)}
@@ -158,6 +172,8 @@
 				stroke-width={element.strokeWidth}
 				class="canvas-element outline-none"
 				onpointerdown={(event) => selectElement(event, element.id)}
+				onpointerenter={() => hoverElement(element.id)}
+				onpointerleave={() => clearHoveredElement(element.id)}
 			/>
 		{:else if element.type === "text"}
 			{@const wrappedLines = getWrappedTextLines(element)}
@@ -188,6 +204,8 @@
 				clip-path="url(#text-clip-{element.id})"
 				class="canvas-element outline-none select-none"
 				onpointerdown={(event) => selectElement(event, element.id)}
+				onpointerenter={() => hoverElement(element.id)}
+				onpointerleave={() => clearHoveredElement(element.id)}
 			>
 				{#each wrappedLines as line, index (index)}
 					<tspan x={element.x} dy={index === 0 ? 0 : `${lineHeight}px`}>
@@ -206,6 +224,8 @@
 				aria-label="Select {element.name}"
 				class="canvas-element outline-none"
 				onpointerdown={(event) => selectElement(event, element.id)}
+				onpointerenter={() => hoverElement(element.id)}
+				onpointerleave={() => clearHoveredElement(element.id)}
 			>
 				<rect x={element.x} y={element.y} width={element.width} height={element.height} fill="var(--muted)" />
 				{#if imageHref}
