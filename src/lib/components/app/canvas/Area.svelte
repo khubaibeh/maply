@@ -120,17 +120,25 @@
 		return Math.sqrt(dx * dx + dy * dy);
 	}
 
+	function clampPointToCanvas(point: Point): Point {
+		return {
+			x: Math.max($canvasState.x, Math.min($canvasState.x + $canvasState.width, point.x)),
+			y: Math.max($canvasState.y, Math.min($canvasState.y + $canvasState.height, point.y))
+		};
+	}
+
 	function updatePathSessionCurrent(point: Point) {
 		if (!pathSession) return;
+		const clampedPoint = clampPointToCanvas(point);
 		const first = pathSession.points[0];
 		const last = pathSession.points[pathSession.points.length - 1];
 		const threshold = CLOSE_THRESHOLD_SCREEN_PX / $canvasState.camera.zoom;
-		const nearFirst = first ? distance(first, point) <= threshold : false;
+		const nearFirst = first ? distance(first, clampedPoint) <= threshold : false;
 		const nearLast =
-			!nearFirst && pathSession.points.length >= 2 && last ? distance(last, point) <= threshold : false;
+			!nearFirst && pathSession.points.length >= 2 && last ? distance(last, clampedPoint) <= threshold : false;
 		pathSession = {
 			...pathSession,
-			current: point,
+			current: clampedPoint,
 			nearFirst,
 			nearLast
 		};
@@ -254,7 +262,7 @@
 			if (!drawingSession) return;
 			const point = clientToSvgPoint(event.clientX, event.clientY);
 			if (!point) return;
-			drawingSession = { ...drawingSession, current: point, square: event.shiftKey };
+			drawingSession = { ...drawingSession, current: clampPointToCanvas(point), square: event.shiftKey };
 		}
 
 		function movePathDrawing(event: PointerEvent) {
@@ -268,7 +276,8 @@
 			if (!drawingSession) return;
 			event.preventDefault();
 			const session = drawingSession;
-			const end = clientToSvgPoint(event.clientX, event.clientY) ?? session.current;
+			const endPoint = clientToSvgPoint(event.clientX, event.clientY);
+			const end = endPoint ? clampPointToCanvas(endPoint) : session.current;
 			drawingSession = null;
 
 			let element = null;
