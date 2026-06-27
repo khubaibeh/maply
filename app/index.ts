@@ -1,6 +1,7 @@
 import { loadApp, startAppLifecycle } from "./internal/lifecycle";
 import { createProject, exportProject, importProject, svgProject } from "./internal/project";
 import { parseProjectFilePackage, stringifyProjectFilePackage } from "./internal/project-file";
+import { flushProjectSave, queueProjectSave } from "./internal/save";
 import { runApp } from "./runtime/browser-runtime";
 import type { ProjectFilePackage } from "./types";
 
@@ -28,6 +29,16 @@ export const App = {
 
 		svg() {
 			return runApp(svgProject());
+		}
+	},
+
+	save: {
+		queue() {
+			return runApp(queueProjectSave());
+		},
+
+		flush() {
+			return runApp(flushProjectSave());
 		}
 	},
 
