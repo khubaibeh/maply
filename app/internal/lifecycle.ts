@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 
-import { runApp } from "./runtime/browser-runtime";
-import { ProjectRepo } from "./services/project-repo";
+import { runApp } from "../runtime/browser-runtime";
+import { ProjectRepo } from "../services/project-repo";
 
 const DEFAULT_PROJECT_ID = "prod";
 

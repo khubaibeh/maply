@@ -1,5 +1,5 @@
-import type { StoredImageAsset } from "./domain/image-assets";
-import type { Project } from "./domain/project";
+import type { StoredImageAsset } from "../domain/image-assets";
+import type { Project } from "../domain/project";
 
 export const PROJECT_FILE_FORMAT = "maply-project";
 export const PROJECT_FILE_VERSION = 1;

@@ -1,7 +1,7 @@
-import type { Element, ImageElement, PathElement, TextElement } from "./domain/elements";
-import type { Point } from "./domain/geometry";
-import type { StoredImageAsset } from "./domain/image-assets";
-import type { Project } from "./domain/project";
+import type { Element, ImageElement, PathElement, TextElement } from "../domain/elements";
+import type { Point } from "../domain/geometry";
+import type { StoredImageAsset } from "../domain/image-assets";
+import type { Project } from "../domain/project";
 import { createProjectFilePackage } from "./project-file";
 
 const SVG_XMLNS = "http://www.w3.org/2000/svg";

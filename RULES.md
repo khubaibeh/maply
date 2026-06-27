@@ -1,6 +1,7 @@
 # Rules
 
 - Keep `@app` curated. Do not turn `app/index.ts` into a barrel. Shared types go in `@app/types`.
+- Keep `@app/effect` Effect-native. Export only Effect-facing workflows, tagged errors, services, layers, and runtime pieces from it.
 - Keep local names short when context is obvious: `db`, `req`, `txn`. Reserve long names for public services, errors, and exported types.
 - Prefer plain variable names over narrated ones when the scope already tells the story.
 - Do not repeat enclosing context in names. If the file/module already provides the context, drop it from locals and private helpers.

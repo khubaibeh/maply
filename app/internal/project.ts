@@ -1,10 +1,10 @@
 import { Effect } from "effect";
 
-import type { StoredImageAsset } from "./domain/image-assets";
-import type { Project } from "./domain/project";
-import { ProjectExportError, ProjectSvgError } from "./errors/project-errors";
+import type { StoredImageAsset } from "../domain/image-assets";
+import type { Project } from "../domain/project";
+import { ProjectExportError, ProjectSvgError } from "../errors/project-errors";
+import { ProjectRepo, type ResetProjectOptions } from "../services/project-repo";
 import { createProjectFilePackage } from "./project-file";
-import { ProjectRepo, type ResetProjectOptions } from "./services/project-repo";
 import { exportProjectSvg } from "./svg-export";
 
 const PROD_ID = "prod";

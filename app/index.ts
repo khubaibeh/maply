@@ -1,5 +1,5 @@
-import { loadApp, startAppLifecycle } from "./lifecycle";
-import { createProject, exportProject, svgProject } from "./project";
+import { loadApp, startAppLifecycle } from "./internal/lifecycle";
+import { createProject, exportProject, svgProject } from "./internal/project";
 import { runApp } from "./runtime/browser-runtime";
 
 export const App = {
