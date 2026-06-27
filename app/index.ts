@@ -1,6 +1,7 @@
 import { loadApp, startAppLifecycle } from "./internal/lifecycle";
-import { createProject, exportProject, svgProject } from "./internal/project";
+import { createProject, exportProject, importProject, svgProject } from "./internal/project";
 import { runApp } from "./runtime/browser-runtime";
+import type { ProjectFilePackage } from "./types";
 
 export const App = {
 	start() {
@@ -14,6 +15,10 @@ export const App = {
 	project: {
 		create(options?: { elements?: "sample" | "blank" }) {
 			return runApp(createProject(options));
+		},
+
+		import(projectFile: ProjectFilePackage) {
+			return runApp(importProject(projectFile));
 		},
 
 		export() {

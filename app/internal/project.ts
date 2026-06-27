@@ -2,9 +2,9 @@ import { Effect } from "effect";
 
 import type { StoredImageAsset } from "../domain/image-assets";
 import type { Project } from "../domain/project";
-import { ProjectExportError, ProjectSvgError } from "../errors/project-errors";
+import { ProjectExportError, ProjectImportError, ProjectSvgError } from "../errors/project-errors";
 import { ProjectRepo, type ResetProjectOptions } from "../services/project-repo";
-import { createProjectFilePackage } from "./project-file";
+import { createProjectFilePackage, type ProjectFilePackage, toImportedProject } from "./project-file";
 import { exportProjectSvg } from "./svg-export";
 
 const PROD_ID = "prod";
@@ -40,6 +40,22 @@ export function createProject(options?: ResetProjectOptions) {
 	return Effect.gen(function* () {
 		const repo = yield* ProjectRepo;
 		return yield* repo.resetProject(options);
+	});
+}
+
+export function importProject(projectFile: ProjectFilePackage) {
+	return Effect.gen(function* () {
+		const repo = yield* ProjectRepo;
+		const imported = yield* Effect.try({
+			try: () => toImportedProject(projectFile, PROD_ID),
+			catch: (error) =>
+				new ProjectImportError({
+					message: error instanceof Error ? error.message : String(error)
+				})
+		});
+
+		yield* repo.replaceProject(imported.project, imported.imageAssets);
+		return imported.project;
 	});
 }
 
