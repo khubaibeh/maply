@@ -1,5 +1,5 @@
 import { loadApp, startAppLifecycle } from "./lifecycle";
-import { createProject, exportProject } from "./project";
+import { createProject, exportProject, svgProject } from "./project";
 import { runApp } from "./runtime/browser-runtime";
 
 export const App = {
@@ -18,6 +18,10 @@ export const App = {
 
 		export() {
 			return runApp(exportProject());
+		},
+
+		svg() {
+			return runApp(svgProject());
 		}
 	}
 } as const;
