@@ -1,4 +1,5 @@
 import { loadApp, startAppLifecycle } from "./lifecycle";
+import { createProject, exportProject } from "./project";
 import { runApp } from "./runtime/browser-runtime";
 
 export const App = {
@@ -8,6 +9,16 @@ export const App = {
 
 	load(projectId?: string) {
 		return runApp(loadApp(projectId));
+	},
+
+	project: {
+		create(options?: { elements?: "sample" | "blank" }) {
+			return runApp(createProject(options));
+		},
+
+		export() {
+			return runApp(exportProject());
+		}
 	}
 } as const;
 
