@@ -1,5 +1,6 @@
 allowBuilds:
     "@tailwindcss/oxide": true
     esbuild: true
+    msgpackr-extract: true
 
 minReleaseAge: 4320 # 3 days
