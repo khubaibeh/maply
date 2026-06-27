@@ -281,6 +281,42 @@ export function createProjectFilePackage(project: Project, imageAssets: StoredIm
 	};
 }
 
+export function stringifyProjectFilePackage(projectFile: ProjectFilePackage): string {
+	const normalized = createProjectFilePackage(projectFile.project, projectFile.imageAssets);
+	return JSON.stringify(normalized, null, 2);
+}
+
+export function parseProjectFilePackage(text: string): ProjectFilePackage {
+	let parsed: unknown;
+
+	try {
+		parsed = JSON.parse(text);
+	} catch {
+		throw new Error("Project file is not valid JSON.");
+	}
+
+	if (!isRecord(parsed)) throw new Error("Project file root must be an object.");
+	if (parsed.format !== PROJECT_FILE_FORMAT) {
+		throw new Error("Unsupported project file format.");
+	}
+	if (parsed.version !== PROJECT_FILE_VERSION) {
+		throw new Error(`Unsupported project file version: ${String(parsed.version)}.`);
+	}
+
+	const project = validateProject(parsed.project);
+	const imageAssets = requireArray(parsed.imageAssets, "Project imageAssets must be an array.").map((asset) =>
+		validateImageAsset(asset)
+	);
+	validateReferencedAssets(project, imageAssets);
+
+	return {
+		format: PROJECT_FILE_FORMAT,
+		version: PROJECT_FILE_VERSION,
+		project,
+		imageAssets
+	};
+}
+
 export function toImportedProject(projectFile: ProjectFilePackage, projectId: string): ProjectFilePackage {
 	const normalized = createProjectFilePackage(projectFile.project, projectFile.imageAssets);
 	const project = structuredClone(normalized.project);

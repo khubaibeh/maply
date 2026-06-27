@@ -1,5 +1,6 @@
 import { loadApp, startAppLifecycle } from "./internal/lifecycle";
 import { createProject, exportProject, importProject, svgProject } from "./internal/project";
+import { parseProjectFilePackage, stringifyProjectFilePackage } from "./internal/project-file";
 import { runApp } from "./runtime/browser-runtime";
 import type { ProjectFilePackage } from "./types";
 
@@ -27,6 +28,18 @@ export const App = {
 
 		svg() {
 			return runApp(svgProject());
+		}
+	},
+
+	codec: {
+		project: {
+			parse(text: string) {
+				return parseProjectFilePackage(text);
+			},
+
+			stringify(projectFile: ProjectFilePackage) {
+				return stringifyProjectFilePackage(projectFile);
+			}
 		}
 	}
 } as const;
