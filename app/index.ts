@@ -1,3 +1,4 @@
+import { appActions } from "./internal/actions";
 import { deleteElement, pasteElement, replaceElementImage } from "./internal/element";
 import { loadApp, startAppLifecycle } from "./internal/lifecycle";
 import { createProject, exportProject, importProject, svgProject } from "./internal/project";
@@ -49,6 +50,8 @@ export const App = {
 	},
 
 	state: appState,
+
+	actions: appActions,
 
 	save: {
 		queue() {
