@@ -1,18 +1,9 @@
 <script lang="ts">
-	import {
-		createCircleElementFromDrag,
-		createImageElementFromDrag,
-		createPathElementFromPoints,
-		createRectElementFromDrag,
-		createTextElementFromDrag,
-		getShapeDragBox
-	} from "$lib/app/core/element-actions";
-	import { isPointInsideCanvas, type Point } from "$lib/app/domain/geometry";
 	import penToolSvg from "$lib/assets/pen-tool.svg?raw";
 	import plusSvg from "$lib/assets/plus.svg?raw";
 	import * as ContextMenu from "$lib/components/ui/context-menu";
 	import { App } from "@app";
-	import type { ImageElement } from "@app/types";
+	import type { ImageElement, Point } from "@app/types";
 	import { onMount } from "svelte";
 
 	import Artboard from "./Artboard.svelte";
@@ -95,7 +86,7 @@
 
 	const shapePreview = $derived(() => {
 		if (!drawingSession) return null;
-		const box = getShapeDragBox(drawingSession.start, drawingSession.current, {
+		const box = App.geometry.shapeDragBox(drawingSession.start, drawingSession.current, {
 			square: drawingSession.tool === "rect" && drawingSession.square
 		});
 		if (!box) return null;
@@ -151,7 +142,7 @@
 		const points = pathSession.points;
 		pathSession = null;
 
-		const element = createPathElementFromPoints(points, closed, $project.elements);
+		const element = App.create.pathFromPoints(points, closed, $project.elements);
 		if (!element) return;
 
 		App.actions.project.addElement(element);
@@ -281,15 +272,15 @@
 
 			let element = null;
 			if (session.tool === "rect") {
-				element = createRectElementFromDrag(session.start, end, $project.elements, {
+				element = App.create.rectFromDrag(session.start, end, $project.elements, {
 					square: event.shiftKey
 				});
 			} else if (session.tool === "circle") {
-				element = createCircleElementFromDrag(session.start, end, $project.elements);
+				element = App.create.circleFromDrag(session.start, end, $project.elements);
 			} else if (session.tool === "text") {
-				element = createTextElementFromDrag(session.start, end, $project.elements);
+				element = App.create.textFromDrag(session.start, end, $project.elements);
 			} else if (session.tool === "image") {
-				element = createImageElementFromDrag(session.start, end, $project.elements);
+				element = App.create.imageFromDrag(session.start, end, $project.elements);
 			}
 			if (!element) return;
 
@@ -406,7 +397,7 @@
 
 		const drawPoint = clientToSvgPoint(event.clientX, event.clientY);
 		if (!drawPoint) return;
-		const insideArtboard = isPointInsideCanvas(drawPoint, {
+		const insideArtboard = App.geometry.isPointInsideCanvas(drawPoint, {
 			x: $canvas.x,
 			y: $canvas.y,
 			width: $canvas.width,

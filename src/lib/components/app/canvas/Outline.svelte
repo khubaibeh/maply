@@ -1,7 +1,6 @@
 <script lang="ts">
-	import { getElementBounds } from "$lib/app/core/element-actions";
-	import type { Element } from "$lib/app/domain/elements";
 	import { App } from "@app";
+	import type { Element } from "@app/types";
 	import { onMount } from "svelte";
 
 	interface Props {
@@ -26,7 +25,7 @@
 	$effect(() => {
 		if (element.type === "text" || element.type === "image") {
 			const padding = 0.5;
-			const textBounds = getElementBounds(element);
+			const textBounds = App.geometry.elementBounds(element);
 			bbox = {
 				x: textBounds.x - padding,
 				y: textBounds.y - padding,

@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { parseHexColor } from "$lib/app/domain/validation";
 	import { Input } from "$lib/components/ui/input";
+	import { App } from "@app";
 
 	let {
 		id,
@@ -32,7 +32,7 @@
 	});
 
 	function toSixDigitHex(color: string) {
-		const parsed = parseHexColor(color);
+		const parsed = App.validate.hexColor(color);
 		if (parsed === null) return "#ffffff";
 
 		if (parsed.length === 4) {
@@ -46,7 +46,7 @@
 	function updateDraft(nextDraft: string) {
 		draft = nextDraft.toUpperCase();
 
-		const color = parseHexColor(draft);
+		const color = App.validate.hexColor(draft);
 		if (color === null) {
 			invalid = draft.trim().length > 0;
 			return;
@@ -66,7 +66,7 @@
 	}
 
 	function restoreCommittedColor() {
-		if (parseHexColor(draft) !== null) return;
+		if (App.validate.hexColor(draft) !== null) return;
 		draft = lastCommittedColor;
 		invalid = false;
 	}

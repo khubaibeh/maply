@@ -1,5 +1,7 @@
 import { appActions } from "./internal/actions";
+import { appCreate } from "./internal/create";
 import { deleteElement, pasteElement, replaceElementImage } from "./internal/element";
+import { appGeometry } from "./internal/geometry";
 import { loadApp, startAppLifecycle } from "./internal/lifecycle";
 import {
 	createProjectBridge,
@@ -10,7 +12,9 @@ import {
 import { parseProjectFilePackage, stringifyProjectFilePackage } from "./internal/project-file";
 import { flushProjectSave, queueProjectSave } from "./internal/save";
 import { appState } from "./internal/state";
+import { appText } from "./internal/text";
 import { appTheme } from "./internal/theme";
+import { appValidate } from "./internal/validate";
 import { runApp } from "./runtime/browser-runtime";
 import type { ProjectFilePackage } from "./types";
 
@@ -63,6 +67,14 @@ export const App = {
 	state: appState,
 
 	theme: appTheme,
+
+	create: appCreate,
+
+	geometry: appGeometry,
+
+	text: appText,
+
+	validate: appValidate,
 
 	actions: appActions,
 

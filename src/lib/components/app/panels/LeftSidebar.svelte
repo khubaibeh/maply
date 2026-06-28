@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { validateElementNames } from "$lib/app/core/element-name-validation";
 	import * as AlertDialog from "$lib/components/ui/alert-dialog";
 	import { Button, buttonVariants } from "$lib/components/ui/button";
 	import * as Collapsible from "$lib/components/ui/collapsible";
@@ -67,7 +66,7 @@
 	const REORDER_HOLD_DELAY_MS = 220;
 
 	const hasClipboardElement = $derived(!!App.actions.clipboard.get());
-	const elementNameValidations = $derived(validateElementNames($project.elements));
+	const elementNameValidations = $derived(App.validate.elementNames($project.elements));
 	const sidebarElements = $derived(() => {
 		const elements = [...$project.elements].reverse();
 		const activeReorder = reorderState;

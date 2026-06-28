@@ -1,9 +1,6 @@
 <script lang="ts">
-	import { getPathRenderTransform } from "$lib/app/core/element-actions";
-	import { getPathDataBounds, getPathPoints, updatePathVertex } from "$lib/app/core/path-geometry";
-	import type { Element, PathElement } from "$lib/app/domain/elements";
-	import type { Point } from "$lib/app/domain/geometry";
 	import { App } from "@app";
+	import type { Element, PathElement, Point } from "@app/types";
 	import { onMount } from "svelte";
 
 	interface Props {
@@ -22,8 +19,8 @@
 		svg: SVGSVGElement;
 	} | null>(null);
 
-	const points = $derived(getPathPoints(element.d));
-	const transform = $derived(getPathRenderTransform(element));
+	const points = $derived(App.geometry.pathPoints(element.d));
+	const transform = $derived(App.geometry.pathRenderTransform(element));
 	const handleSize = $derived(HANDLE_SIZE_SCREEN / $canvas.camera.zoom);
 	const halfHandleSize = $derived(handleSize / 2);
 
@@ -79,7 +76,7 @@
 			const svgPoint = clientToSvgPoint(dragState.svg, event.clientX, event.clientY);
 			if (!svgPoint) return;
 
-			const oldBounds = getPathDataBounds(points);
+			const oldBounds = App.geometry.pathBounds(points);
 			const offsetX = element.x - oldBounds.x;
 			const offsetY = element.y - oldBounds.y;
 
@@ -92,7 +89,7 @@
 				offsetY
 			);
 
-			const { d, bounds } = updatePathVertex(element.d, dragState.index, nextPoint);
+			const { d, bounds } = App.geometry.updatePathVertex(element.d, dragState.index, nextPoint);
 
 			App.actions.project.updateElement(element.id, {
 				d,

@@ -1,7 +1,6 @@
 <script lang="ts">
-	import type { ResizeHandle } from "$lib/app/core/element-actions";
 	import { App } from "@app";
-	import type { ImageElement } from "@app/types";
+	import type { ImageElement, ResizeHandle } from "@app/types";
 	import { onMount } from "svelte";
 
 	interface Props {

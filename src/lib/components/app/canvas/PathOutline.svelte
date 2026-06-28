@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { getPathRenderTransform } from "$lib/app/core/element-actions";
 	import { App } from "@app";
 	import type { PathElement } from "@app/types";
 
@@ -10,7 +9,7 @@
 	let { element }: Props = $props();
 	const canvas = App.state.canvas;
 
-	const transform = $derived(getPathRenderTransform(element));
+	const transform = $derived(App.geometry.pathRenderTransform(element));
 	const strokeWidth = $derived(1.25 / $canvas.camera.zoom);
 </script>
 

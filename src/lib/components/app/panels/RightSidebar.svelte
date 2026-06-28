@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { validateElementNames } from "$lib/app/core/element-name-validation";
 	import { Input } from "$lib/components/ui/input";
 	import { ScrollArea } from "$lib/components/ui/scroll-area";
 	import { Separator } from "$lib/components/ui/separator";
@@ -41,7 +40,7 @@
 	const selectedElement = $derived(
 		$project.elements.find((element) => element.id === $project.selectedElementId) ?? null
 	);
-	const elementNameValidations = $derived(validateElementNames($project.elements));
+	const elementNameValidations = $derived(App.validate.elementNames($project.elements));
 	const selectedElementNameValidation = $derived(
 		selectedElement ? (elementNameValidations.get(selectedElement.id) ?? null) : null
 	);

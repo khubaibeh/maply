@@ -1,11 +1,4 @@
 <script lang="ts">
-	import {
-		getPathRenderTransform,
-		getWrappedTextLineHeight,
-		getWrappedTextLines,
-		getWrappedTextMetrics
-	} from "$lib/app/core/element-actions";
-	import { getImageRenderRect } from "$lib/app/core/image-assets";
 	import { App } from "@app";
 	import { onMount } from "svelte";
 
@@ -160,7 +153,7 @@
 				onpointerleave={() => clearHoveredElement(element.id)}
 			/>
 		{:else if element.type === "path"}
-			{@const transform = getPathRenderTransform(element)}
+			{@const transform = App.geometry.pathRenderTransform(element)}
 			<path
 				id="element-{element.id}"
 				data-canvas-element={element.id}
@@ -178,9 +171,9 @@
 				onpointerleave={() => clearHoveredElement(element.id)}
 			/>
 		{:else if element.type === "text"}
-			{@const wrappedLines = getWrappedTextLines(element)}
-			{@const lineHeight = getWrappedTextLineHeight(element)}
-			{@const textMetrics = getWrappedTextMetrics(element)}
+			{@const wrappedLines = App.text.wrappedLines(element)}
+			{@const lineHeight = App.text.wrappedLineHeight(element)}
+			{@const textMetrics = App.text.wrappedMetrics(element)}
 			<defs>
 				<clipPath id="text-clip-{element.id}">
 					<rect
@@ -232,7 +225,7 @@
 				<rect x={element.x} y={element.y} width={element.width} height={element.height} fill="var(--muted)" />
 				{#if imageHref}
 					{@const renderRect = imageAsset
-						? getImageRenderRect({
+						? App.geometry.imageRenderRect({
 								x: 0,
 								y: 0,
 								width: element.width,
