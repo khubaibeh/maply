@@ -1,5 +1,4 @@
 import { createUniqueElementName } from "$lib/app/core/element-name-validation";
-import { getPathDataBounds as getPointsBounds, pathDataFromPoints } from "$lib/app/core/path-geometry";
 
 import type {
 	CircleElement,
@@ -12,6 +11,7 @@ import type {
 } from "../domain/elements";
 import type { Point } from "../domain/geometry";
 import type { Canvas } from "../domain/project";
+import { getPathDataBounds as getPointsBounds, pathDataFromPoints } from "./path-geometry";
 
 // Element mutations stay canvas-safe here so UI handlers can work with raw deltas.
 const PASTE_OFFSET = 20;
