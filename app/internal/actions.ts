@@ -4,7 +4,7 @@ import type { Element } from "../domain/elements";
 import type { Camera, ImportExportState } from "../domain/project";
 import type { Tool } from "../domain/tools";
 import { appCanvasState } from "../store/canvas";
-import { clearClipboard, copyElement, getClipboardElement } from "../store/clipboard";
+import { clearClipboard, copyElement, getClipboardElement } from "../store/clipboard.svelte";
 import { appProjectState } from "../store/project";
 import { appToolState } from "../store/tool";
 

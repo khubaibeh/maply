@@ -30,7 +30,7 @@ import type { StoredImageAsset } from "../domain/image-assets";
 import type { Project } from "../domain/project";
 import { queueProjectSave, saveProjectNow } from "../internal/autosave";
 import { appCanvasState } from "./canvas";
-import { getClipboardElement } from "./clipboard";
+import { getClipboardElement } from "./clipboard.svelte";
 import { appImageAssetState } from "./image-assets";
 
 type ProjectState = {
