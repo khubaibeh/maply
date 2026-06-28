@@ -19,8 +19,8 @@ import {
 	resizeImageFrameWithinCanvas,
 	setElementPosition,
 	translateElementWithinCanvas
-} from "../internal/element";
-import type { ResizeHandle } from "../internal/element";
+} from "../internal/element-actions";
+import type { ResizeHandle } from "../internal/element-actions";
 import {
 	cloneStoredImageAsset,
 	getImageCropStateForFrameResize,

@@ -1,5 +1,5 @@
 import { isPointInsideCanvas, type Point } from "../domain/geometry";
-import { getElementBounds, getPathRenderTransform, getShapeDragBox, type ResizeHandle } from "./element";
+import { getElementBounds, getPathRenderTransform, getShapeDragBox, type ResizeHandle } from "./element-actions";
 import { getImageRenderRect } from "./image-assets";
 import { getPathDataBounds, getPathPoints, updatePathVertex } from "./path-geometry";
 

@@ -25,4 +25,4 @@ export {
 	translateElement,
 	translateElementWithinCanvas,
 	type ResizeHandle
-} from "@app/internal/element";
+} from "@app/internal/element-actions";

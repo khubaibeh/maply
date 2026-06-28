@@ -5,7 +5,7 @@ import { appCanvasState } from "../store/canvas";
 import { clearClipboard, copyElement, getClipboardElement } from "../store/clipboard.svelte";
 import { appProjectState } from "../store/project";
 import { appToolState } from "../store/tool";
-import type { ResizeHandle } from "./element";
+import type { ResizeHandle } from "./element-actions";
 
 type ElementPatch = Partial<Omit<Element, "id" | "type">>;
 

@@ -4,7 +4,7 @@ import {
 	createPathElementFromPoints,
 	createRectElementFromDrag,
 	createTextElementFromDrag
-} from "./element";
+} from "./element-actions";
 
 export const appCreate = {
 	rectFromDrag: createRectElementFromDrag,
