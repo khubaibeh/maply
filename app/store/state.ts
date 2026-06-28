@@ -1,7 +1,7 @@
-import { canvasState } from "$lib/app/state/canvas.svelte";
 import { imageAssetState } from "$lib/app/state/image-assets.svelte";
 import { projectState } from "$lib/app/state/project.svelte";
 
+import { appCanvasState } from "./canvas";
 import { appToolState } from "./tool";
 
 type ReadonlyState<T> = {
@@ -16,7 +16,7 @@ function view<T>(state: ReadonlyState<T>) {
 
 export const appState = {
 	project: view(projectState),
-	canvas: view(canvasState),
+	canvas: view(appCanvasState),
 	tool: view(appToolState),
 	imageAssets: view(imageAssetState)
 } as const;

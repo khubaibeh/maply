@@ -1,11 +1,11 @@
 import type { ResizeHandle } from "$lib/app/core/element-actions";
-import { canvasState } from "$lib/app/state/canvas.svelte";
 import { clearClipboard, copyElement, getClipboardElement } from "$lib/app/state/clipboard.svelte";
 import { projectState } from "$lib/app/state/project.svelte";
 
 import type { Element } from "../domain/elements";
 import type { Camera, ImportExportState } from "../domain/project";
 import type { Tool } from "../domain/tools";
+import { appCanvasState } from "../store/canvas";
 import { appToolState } from "../store/tool";
 
 type ElementPatch = Partial<Omit<Element, "id" | "type">>;
@@ -99,43 +99,43 @@ export const appActions = {
 
 	canvas: {
 		setSize(width: number, height: number) {
-			canvasState.setSize(width, height);
+			appCanvasState.setSize(width, height);
 		},
 
 		setColor(color: string) {
-			canvasState.setColor(color);
+			appCanvasState.setColor(color);
 		},
 
 		setPosition(x: number, y: number) {
-			canvasState.setPosition(x, y);
+			appCanvasState.setPosition(x, y);
 		},
 
 		setCamera(camera: Partial<Camera>) {
-			canvasState.setCamera(camera);
+			appCanvasState.setCamera(camera);
 		},
 
 		pan(dx: number, dy: number) {
-			canvasState.pan(dx, dy);
+			appCanvasState.pan(dx, dy);
 		},
 
 		zoomIn() {
-			canvasState.zoomIn();
+			appCanvasState.zoomIn();
 		},
 
 		zoomOut() {
-			canvasState.zoomOut();
+			appCanvasState.zoomOut();
 		},
 
 		resetZoom() {
-			canvasState.resetZoom();
+			appCanvasState.resetZoom();
 		},
 
 		resetCamera() {
-			canvasState.resetCamera();
+			appCanvasState.resetCamera();
 		},
 
 		centerCamera(containerWidth: number, containerHeight: number) {
-			canvasState.centerCamera(containerWidth, containerHeight);
+			appCanvasState.centerCamera(containerWidth, containerHeight);
 		}
 	},
 
