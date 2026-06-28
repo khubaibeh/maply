@@ -11,11 +11,11 @@ import {
 } from "./internal/project-bridge";
 import { parseProjectFilePackage, stringifyProjectFilePackage } from "./internal/project-file";
 import { flushProjectSave, queueProjectSave } from "./internal/save";
-import { appState } from "./internal/state";
 import { appText } from "./internal/text";
 import { appTheme } from "./internal/theme";
 import { appValidate } from "./internal/validate";
 import { runApp } from "./runtime/browser-runtime";
+import { appState } from "./store/state";
 import type { ProjectFilePackage } from "./types";
 
 export const App = {

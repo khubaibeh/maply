@@ -2,11 +2,11 @@ import type { ResizeHandle } from "$lib/app/core/element-actions";
 import { canvasState } from "$lib/app/state/canvas.svelte";
 import { clearClipboard, copyElement, getClipboardElement } from "$lib/app/state/clipboard.svelte";
 import { projectState } from "$lib/app/state/project.svelte";
-import { toolState } from "$lib/app/state/tool.svelte";
 
 import type { Element } from "../domain/elements";
 import type { Camera, ImportExportState } from "../domain/project";
 import type { Tool } from "../domain/tools";
+import { appToolState } from "../store/tool";
 
 type ElementPatch = Partial<Omit<Element, "id" | "type">>;
 
@@ -141,11 +141,11 @@ export const appActions = {
 
 	tool: {
 		set(tool: Tool) {
-			toolState.setTool(tool);
+			appToolState.setTool(tool);
 		},
 
 		setSpacePressed(value: boolean) {
-			toolState.setSpacePressed(value);
+			appToolState.setSpacePressed(value);
 		}
 	},
 
