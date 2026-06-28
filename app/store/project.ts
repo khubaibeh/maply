@@ -1,3 +1,9 @@
+import { get, writable } from "svelte/store";
+
+import type { Element } from "../domain/elements";
+import type { StoredImageAsset } from "../domain/image-assets";
+import type { Project } from "../domain/project";
+import { queueProjectSave, saveProjectNow } from "../internal/autosave";
 import {
 	deleteImageAsset,
 	fetchProject,
@@ -5,15 +11,7 @@ import {
 	replaceProject,
 	resetProdProject,
 	saveImageAsset
-} from "$lib/app/core/db";
-import { createProjectFilePackage, type ProjectFilePackage, toImportedProject } from "$lib/app/core/project-io";
-import { exportProjectSvg } from "$lib/app/core/svg-export";
-import { get, writable } from "svelte/store";
-
-import type { Element } from "../domain/elements";
-import type { StoredImageAsset } from "../domain/image-assets";
-import type { Project } from "../domain/project";
-import { queueProjectSave, saveProjectNow } from "../internal/autosave";
+} from "../internal/db";
 import {
 	clampElementToCanvas,
 	duplicateElement,
@@ -29,6 +27,8 @@ import {
 	importImageFile,
 	translateImageCrop
 } from "../internal/image-assets";
+import { createProjectFilePackage, type ProjectFilePackage, toImportedProject } from "../internal/project-file";
+import { exportProjectSvg } from "../internal/svg-export";
 import { appCanvasState } from "./canvas";
 import { getClipboardElement } from "./clipboard.svelte";
 import { appImageAssetState } from "./image-assets";

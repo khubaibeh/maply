@@ -1,6 +1,5 @@
-import { saveProject } from "$lib/app/core/db";
-
 import type { Project } from "../domain/project";
+import { saveProject } from "./db";
 
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 

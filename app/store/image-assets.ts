@@ -1,8 +1,8 @@
-import { fetchImageAssets } from "$lib/app/core/db";
 import { get, writable } from "svelte/store";
 
 import type { Element } from "../domain/elements";
 import type { StoredImageAsset } from "../domain/image-assets";
+import { fetchImageAssets } from "../internal/db";
 
 const store = writable<Record<string, StoredImageAsset>>({});
 
