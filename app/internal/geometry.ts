@@ -1,6 +1,6 @@
 import { getImageRenderRect } from "$lib/app/core/image-assets";
-import { isPointInsideCanvas, type Point } from "$lib/app/domain/geometry";
 
+import { isPointInsideCanvas, type Point } from "../domain/geometry";
 import { getElementBounds, getPathRenderTransform, getShapeDragBox, type ResizeHandle } from "./element";
 import { getPathDataBounds, getPathPoints, updatePathVertex } from "./path-geometry";
 

@@ -1,5 +1,6 @@
 import { type ElementNameValidation, validateElementNames } from "$lib/app/core/element-name-validation";
-import { parseHexColor, parseIntNumber, parseNonNegativeNumber, parsePositiveInt } from "$lib/app/domain/validation";
+
+import { parseHexColor, parseIntNumber, parseNonNegativeNumber, parsePositiveInt } from "../domain/validation";
 
 export { type ElementNameValidation };
 
