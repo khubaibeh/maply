@@ -1,10 +1,10 @@
 import type { ResizeHandle } from "$lib/app/core/element-actions";
-import { clearClipboard, copyElement, getClipboardElement } from "$lib/app/state/clipboard.svelte";
 
 import type { Element } from "../domain/elements";
 import type { Camera, ImportExportState } from "../domain/project";
 import type { Tool } from "../domain/tools";
 import { appCanvasState } from "../store/canvas";
+import { clearClipboard, copyElement, getClipboardElement } from "../store/clipboard";
 import { appProjectState } from "../store/project";
 import { appToolState } from "../store/tool";
 

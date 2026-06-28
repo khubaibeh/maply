@@ -23,14 +23,14 @@ import {
 } from "$lib/app/core/image-assets";
 import { createProjectFilePackage, type ProjectFilePackage, toImportedProject } from "$lib/app/core/project-io";
 import { exportProjectSvg } from "$lib/app/core/svg-export";
-import { queueProjectSave, saveProjectNow } from "$lib/app/state/autosave.svelte";
-import { getClipboardElement } from "$lib/app/state/clipboard.svelte";
 import { get, writable } from "svelte/store";
 
 import type { Element } from "../domain/elements";
 import type { StoredImageAsset } from "../domain/image-assets";
 import type { Project } from "../domain/project";
+import { queueProjectSave, saveProjectNow } from "../internal/autosave";
 import { appCanvasState } from "./canvas";
+import { getClipboardElement } from "./clipboard";
 import { appImageAssetState } from "./image-assets";
 
 type ProjectState = {
