@@ -1,3 +1,4 @@
+import { deleteElement, pasteElement, replaceElementImage } from "./internal/element";
 import { loadApp, startAppLifecycle } from "./internal/lifecycle";
 import { createProject, exportProject, importProject, svgProject } from "./internal/project";
 import { parseProjectFilePackage, stringifyProjectFilePackage } from "./internal/project-file";
@@ -29,6 +30,20 @@ export const App = {
 
 		svg() {
 			return runApp(svgProject());
+		}
+	},
+
+	element: {
+		paste() {
+			return runApp(pasteElement());
+		},
+
+		delete(id: string) {
+			return runApp(deleteElement(id));
+		},
+
+		replaceImage(id: string, file: File) {
+			return runApp(replaceElementImage(id, file));
 		}
 	},
 
