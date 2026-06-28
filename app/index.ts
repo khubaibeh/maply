@@ -10,6 +10,7 @@ import {
 import { parseProjectFilePackage, stringifyProjectFilePackage } from "./internal/project-file";
 import { flushProjectSave, queueProjectSave } from "./internal/save";
 import { appState } from "./internal/state";
+import { appTheme } from "./internal/theme";
 import { runApp } from "./runtime/browser-runtime";
 import type { ProjectFilePackage } from "./types";
 
@@ -59,6 +60,8 @@ export const App = {
 	},
 
 	state: appState,
+
+	theme: appTheme,
 
 	actions: appActions,
 

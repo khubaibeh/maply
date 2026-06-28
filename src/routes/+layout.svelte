@@ -16,7 +16,7 @@
 	let MIN_DIM = [800, 600];
 	const canvas = App.state.canvas;
 	const project = App.state.project;
-	const theme = App.state.theme;
+	const theme = App.theme.use();
 
 	let isTooSmall = $derived(isClient && (innerWidth < MIN_DIM[0] || innerHeight < MIN_DIM[1]));
 
