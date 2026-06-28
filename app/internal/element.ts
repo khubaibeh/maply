@@ -1,5 +1,3 @@
-import { createUniqueElementName } from "$lib/app/core/element-name-validation";
-
 import type {
 	CircleElement,
 	Element,
@@ -11,6 +9,7 @@ import type {
 } from "../domain/elements";
 import type { Point } from "../domain/geometry";
 import type { Canvas } from "../domain/project";
+import { createUniqueElementName } from "./element-name-validation";
 import { getPathDataBounds as getPointsBounds, pathDataFromPoints } from "./path-geometry";
 
 // Element mutations stay canvas-safe here so UI handlers can work with raw deltas.
