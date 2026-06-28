@@ -3,6 +3,7 @@ import { loadApp, startAppLifecycle } from "./internal/lifecycle";
 import { createProject, exportProject, importProject, svgProject } from "./internal/project";
 import { parseProjectFilePackage, stringifyProjectFilePackage } from "./internal/project-file";
 import { flushProjectSave, queueProjectSave } from "./internal/save";
+import { appState } from "./internal/state";
 import { runApp } from "./runtime/browser-runtime";
 import type { ProjectFilePackage } from "./types";
 
@@ -46,6 +47,8 @@ export const App = {
 			return runApp(replaceElementImage(id, file));
 		}
 	},
+
+	state: appState,
 
 	save: {
 		queue() {
