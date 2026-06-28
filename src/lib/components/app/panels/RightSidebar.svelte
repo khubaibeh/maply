@@ -1,46 +1,47 @@
 <script lang="ts">
 	import { validateElementNames } from "$lib/app/core/element-name-validation";
-	import { canvasState } from "$lib/app/state/canvas.svelte";
-	import { projectState } from "$lib/app/state/project.svelte";
 	import { Input } from "$lib/components/ui/input";
 	import { ScrollArea } from "$lib/components/ui/scroll-area";
 	import { Separator } from "$lib/components/ui/separator";
+	import { App } from "@app";
 
 	import ColorPicker from "./ColorPicker.svelte";
 	import ElementNameValidation from "./ElementNameValidation.svelte";
 	import ElementProperties from "./Elements.svelte";
 
 	let { width = 288 }: { width?: number } = $props();
+	const canvas = App.state.canvas;
+	const project = App.state.project;
 
 	function updateWidth(event: Event) {
 		const value = parseInt((event.target as HTMLInputElement).value, 10);
 		if (!Number.isNaN(value)) {
-			canvasState.setSize(value, $canvasState.height);
-			projectState.clampElementsToCanvas();
+			App.actions.canvas.setSize(value, $canvas.height);
+			App.actions.project.clampElementsToCanvas();
 		}
 	}
 
 	function updateHeight(event: Event) {
 		const value = parseInt((event.target as HTMLInputElement).value, 10);
 		if (!Number.isNaN(value)) {
-			canvasState.setSize($canvasState.width, value);
-			projectState.clampElementsToCanvas();
+			App.actions.canvas.setSize($canvas.width, value);
+			App.actions.project.clampElementsToCanvas();
 		}
 	}
 
 	function updateElementName(event: Event, id: string) {
 		const value = (event.target as HTMLInputElement).value.trim();
-		projectState.renameElement(id, value);
+		App.actions.project.renameElement(id, value);
 	}
 
 	function autofixElementName(id: string, suggestion: string) {
-		projectState.renameElement(id, suggestion);
+		App.actions.project.renameElement(id, suggestion);
 	}
 
 	const selectedElement = $derived(
-		$projectState.elements.find((element) => element.id === $projectState.selectedElementId) ?? null
+		$project.elements.find((element) => element.id === $project.selectedElementId) ?? null
 	);
-	const elementNameValidations = $derived(validateElementNames($projectState.elements));
+	const elementNameValidations = $derived(validateElementNames($project.elements));
 	const selectedElementNameValidation = $derived(
 		selectedElement ? (elementNameValidations.get(selectedElement.id) ?? null) : null
 	);
@@ -62,7 +63,7 @@
 							type="number"
 							min={1}
 							step={1}
-							value={$canvasState.width}
+							value={$canvas.width}
 							onchange={updateWidth}
 							class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 						/>
@@ -74,7 +75,7 @@
 							type="number"
 							min={1}
 							step={1}
-							value={$canvasState.height}
+							value={$canvas.height}
 							onchange={updateHeight}
 							class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 						/>
@@ -83,8 +84,8 @@
 				<ColorPicker
 					id="canvas-color"
 					label="Color"
-					value={$canvasState.color}
-					onChange={canvasState.setColor}
+					value={$canvas.color}
+					onChange={App.actions.canvas.setColor}
 				/>
 			</div>
 

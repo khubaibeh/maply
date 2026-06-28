@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { getElementBounds } from "$lib/app/core/element-actions";
 	import type { Element } from "$lib/app/domain/elements";
-	import { projectState } from "$lib/app/state/project.svelte";
-	import { toolState } from "$lib/app/state/tool.svelte";
+	import { App } from "@app";
 	import { onMount } from "svelte";
 
 	interface Props {
@@ -11,6 +10,8 @@
 	}
 
 	let { element, interactive = true }: Props = $props();
+	const project = App.state.project;
+	const tool = App.state.tool;
 
 	let bbox = $state({ x: 0, y: 0, width: 0, height: 0 });
 	let dragState = $state<{
@@ -96,12 +97,12 @@
 
 	function startSelectionDrag(event: PointerEvent) {
 		if (event.button !== 0) return;
-		if ($toolState.activeTool !== "select") return;
+		if ($tool.activeTool !== "select") return;
 
 		event.stopPropagation();
-		const wasSelected = $projectState.selectedElementId === element.id;
+		const wasSelected = $project.selectedElementId === element.id;
 		if (!wasSelected) {
-			projectState.selectElement(element.id);
+			App.actions.project.selectElement(element.id);
 		}
 
 		const svg = getSvgRoot(event.target);
@@ -134,12 +135,12 @@
 			const nextX = dragState.elementX + (svgPoint.x - dragState.grabX);
 			const nextY = dragState.elementY + (svgPoint.y - dragState.grabY);
 			dragState.didMove = true;
-			projectState.setElementPosition(element.id, nextX, nextY);
+			App.actions.project.setElementPosition(element.id, nextX, nextY);
 		}
 
 		function stopDragging() {
 			if (dragState && dragState.wasSelected && !dragState.didMove) {
-				projectState.selectElement(null);
+				App.actions.project.selectElement(null);
 			}
 			dragState = null;
 		}
@@ -168,7 +169,7 @@
 	fill="transparent"
 	stroke="var(--primary)"
 	stroke-width="0.25"
-	stroke-dasharray={element.type === "image" && $projectState.cropEditingElementId === element.id ? "2 1" : undefined}
+	stroke-dasharray={element.type === "image" && $project.cropEditingElementId === element.id ? "2 1" : undefined}
 	pointer-events={interactive ? "all" : "none"}
 	class="cursor-inherit"
 	onpointerdown={startSelectionDrag}

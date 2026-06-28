@@ -2,9 +2,9 @@
 	import { getElementBounds, getTextLayoutMetrics, getWrappedTextMetrics } from "$lib/app/core/element-actions";
 	import type { Element } from "$lib/app/domain/elements";
 	import { parseIntNumber, parseNonNegativeNumber, parsePositiveInt } from "$lib/app/domain/validation";
-	import { projectState } from "$lib/app/state/project.svelte";
 	import { Input } from "$lib/components/ui/input";
 	import { Textarea } from "$lib/components/ui/textarea";
+	import { App } from "@app";
 
 	import ColorPicker from "./ColorPicker.svelte";
 
@@ -17,30 +17,30 @@
 	function updateNumber(key: string, value: string) {
 		const parsed = parseIntNumber(value);
 		if (parsed === null) return;
-		projectState.updateElement(element.id, { [key]: parsed } as Partial<Element>);
+		App.actions.project.updateElement(element.id, { [key]: parsed } as Partial<Element>);
 	}
 
 	function updatePositiveInt(key: string, value: string) {
 		const parsed = parsePositiveInt(value);
 		if (parsed === null) return;
-		projectState.updateElement(element.id, { [key]: parsed } as Partial<Element>);
+		App.actions.project.updateElement(element.id, { [key]: parsed } as Partial<Element>);
 	}
 
 	function updateNonNegativeNumber(key: string, value: string) {
 		const parsed = parseNonNegativeNumber(value);
 		if (parsed === null) return;
-		projectState.updateElement(element.id, { [key]: parsed } as Partial<Element>);
+		App.actions.project.updateElement(element.id, { [key]: parsed } as Partial<Element>);
 	}
 
 	function updateColor(key: "fill" | "stroke", value: string) {
-		projectState.updateElement(element.id, { [key]: value } as Partial<Element>);
+		App.actions.project.updateElement(element.id, { [key]: value } as Partial<Element>);
 	}
 
 	function updateText(value: string) {
 		if (element.type === "text") {
 			const currentBounds = getElementBounds(element);
 			const { left, ascent } = getTextLayoutMetrics(value, element.fontSize, element.width);
-			projectState.updateElement(element.id, {
+			App.actions.project.updateElement(element.id, {
 				text: value,
 				x: Math.round(currentBounds.x + left),
 				y: Math.round(currentBounds.y + ascent)
@@ -48,7 +48,7 @@
 			return;
 		}
 
-		projectState.updateElement(element.id, { text: value } as Partial<Element>);
+		App.actions.project.updateElement(element.id, { text: value } as Partial<Element>);
 	}
 
 	function updatePath(value: string) {
@@ -59,7 +59,7 @@
 		} else {
 			patch.fill = "none";
 		}
-		projectState.updateElement(element.id, patch);
+		App.actions.project.updateElement(element.id, patch);
 	}
 
 	function getTextVisualX() {
@@ -77,7 +77,7 @@
 		const parsed = parseIntNumber(value);
 		if (parsed === null) return;
 		const { left } = getWrappedTextMetrics(element);
-		projectState.updateElement(element.id, {
+		App.actions.project.updateElement(element.id, {
 			x: Math.round(parsed + left)
 		} as Partial<Element>);
 	}
@@ -87,7 +87,7 @@
 		const parsed = parseIntNumber(value);
 		if (parsed === null) return;
 		const { ascent } = getWrappedTextMetrics(element);
-		projectState.updateElement(element.id, {
+		App.actions.project.updateElement(element.id, {
 			y: Math.round(parsed + ascent)
 		} as Partial<Element>);
 	}
@@ -108,10 +108,10 @@
 		if (parsed === null) return;
 
 		if (axis === "width") {
-			projectState.updateElement(element.id, { width: parsed } as Partial<Element>);
+			App.actions.project.updateElement(element.id, { width: parsed } as Partial<Element>);
 			return;
 		}
-		projectState.updateElement(element.id, {
+		App.actions.project.updateElement(element.id, {
 			height: parsed
 		} as Partial<Element>);
 	}
@@ -122,7 +122,7 @@
 		if (parsed === null) return;
 		const currentBounds = getElementBounds(element);
 		const { left, ascent } = getTextLayoutMetrics(element.text, parsed, element.width);
-		projectState.updateElement(element.id, {
+		App.actions.project.updateElement(element.id, {
 			fontSize: parsed,
 			x: Math.round(currentBounds.x + left),
 			y: Math.round(currentBounds.y + ascent)

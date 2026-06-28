@@ -1,7 +1,6 @@
 <script lang="ts">
-	import { getClipboardElement, copyElement } from "$lib/app/state/clipboard.svelte";
-	import { projectState } from "$lib/app/state/project.svelte";
-	import { toolState, type Tool } from "$lib/app/state/tool.svelte";
+	import { App } from "@app";
+	import type { Tool } from "@app/types";
 	import { onMount } from "svelte";
 
 	import CanvasArea from "./canvas";
@@ -15,6 +14,7 @@
 	const SIDEBAR_MAX_WIDTH_RATIO = 1.75;
 	const MAIN_AREA_MIN_WIDTH = 480;
 	const RESIZE_HANDLE_WIDTH = 8;
+	const project = App.state.project;
 
 	let layoutRef: HTMLDivElement | null = $state(null);
 	let leftSidebarWidth = $state(LEFT_SIDEBAR_MIN_WIDTH);
@@ -112,29 +112,29 @@
 				const shortcutTool = getShortcutTool(event.key);
 				if (shortcutTool) {
 					event.preventDefault();
-					toolState.setTool(shortcutTool);
+					App.actions.tool.set(shortcutTool);
 					return;
 				}
 			}
 
 			if (!isEditingText(event)) {
-				const selectedId = $projectState.selectedElementId;
+				const selectedId = $project.selectedElementId;
 				const delta = getArrowDelta(event.key, event.shiftKey ? 10 : 1);
 
 				if (selectedId && delta) {
 					event.preventDefault();
-					projectState.translateElement(selectedId, delta.dx, delta.dy);
+					App.actions.project.translateElement(selectedId, delta.dx, delta.dy);
 					return;
 				}
 			}
 
 			if (event.key === "Delete" || event.key === "Backspace") {
 				if (isEditingText(event)) return;
-				const selectedId = $projectState.selectedElementId;
+				const selectedId = $project.selectedElementId;
 				if (!selectedId) return;
 
 				event.preventDefault();
-				projectState.deleteElement(selectedId);
+				void App.element.delete(selectedId);
 				return;
 			}
 
@@ -142,20 +142,18 @@
 
 			if (event.key === "c") {
 				if (isEditingText(event)) return;
-				const selected = $projectState.elements.find(
-					(element) => element.id === $projectState.selectedElementId
-				);
+				const selected = $project.elements.find((element) => element.id === $project.selectedElementId);
 				if (!selected) return;
 
 				event.preventDefault();
-				copyElement(selected);
+				App.actions.clipboard.copy(selected);
 			} else if (event.key === "v") {
 				if (isEditingText(event)) return;
-				const copied = getClipboardElement();
+				const copied = App.actions.clipboard.get();
 				if (!copied) return;
 
 				event.preventDefault();
-				void projectState.pasteClipboardElement();
+				void App.element.paste();
 			}
 		}
 

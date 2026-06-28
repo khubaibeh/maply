@@ -1,8 +1,6 @@
 <script lang="ts">
-	import type { ImageElement } from "$lib/app/domain/elements";
-	import { canvasState } from "$lib/app/state/canvas.svelte";
-	import { imageAssetState } from "$lib/app/state/image-assets.svelte";
-	import { projectState } from "$lib/app/state/project.svelte";
+	import { App } from "@app";
+	import type { ImageElement } from "@app/types";
 	import Check from "@lucide/svelte/icons/check";
 	import Crop from "@lucide/svelte/icons/crop";
 	import Download from "@lucide/svelte/icons/download";
@@ -26,13 +24,15 @@
 	const TOOLBAR_ICON_SIZE = 15;
 
 	let fileInputRef: HTMLInputElement | null = $state(null);
+	const canvas = App.state.canvas;
+	const imageAssets = App.state.imageAssets;
 
-	const imageAsset = $derived(element.assetId ? ($imageAssetState[element.assetId] ?? null) : null);
+	const imageAsset = $derived(element.assetId ? ($imageAssets[element.assetId] ?? null) : null);
 	const imageHref = $derived(imageAsset?.dataUrl ?? element.href ?? "");
 	const downloadName = $derived(imageAsset?.name ?? `${element.name || "image"}.svg`);
 	const hasImage = $derived(!!imageHref);
 
-	const toolbarScale = $derived(Math.max(0.9, Math.min(1.1, Math.pow($canvasState.camera.zoom, 0.12))));
+	const toolbarScale = $derived(Math.max(0.9, Math.min(1.1, Math.pow($canvas.camera.zoom, 0.12))));
 	const toolbarWidth = $derived((cropEditing ? CROP_TOOLBAR_WIDTH : DEFAULT_TOOLBAR_WIDTH) * toolbarScale);
 	const toolbarHeight = $derived(TOOLBAR_HEIGHT * toolbarScale);
 	const toolbarGap = $derived(TOOLBAR_GAP * toolbarScale);
@@ -40,45 +40,43 @@
 	const toolbarIconSize = $derived(TOOLBAR_ICON_SIZE * toolbarScale);
 
 	const screenLeft = $derived(
-		(element.x + element.width / 2 - $canvasState.camera.x) * $canvasState.camera.zoom - toolbarWidth / 2
+		(element.x + element.width / 2 - $canvas.camera.x) * $canvas.camera.zoom - toolbarWidth / 2
 	);
-	const screenTop = $derived(
-		(element.y - $canvasState.camera.y) * $canvasState.camera.zoom - toolbarHeight - toolbarGap
-	);
+	const screenTop = $derived((element.y - $canvas.camera.y) * $canvas.camera.zoom - toolbarHeight - toolbarGap);
 
 	const left = $derived(Math.max(8, Math.min(containerWidth - toolbarWidth - 8, screenLeft)));
 	const top = $derived(Math.max(8, Math.min(containerHeight - toolbarHeight - 8, screenTop)));
 
 	function keepSelected(event: PointerEvent | WheelEvent) {
 		event.stopPropagation();
-		projectState.selectElement(element.id);
+		App.actions.project.selectElement(element.id);
 	}
 
 	function resetCrop() {
-		projectState.resetImageCrop(element.id);
-		projectState.selectElement(element.id);
+		App.actions.project.resetImageCrop(element.id);
+		App.actions.project.selectElement(element.id);
 	}
 
 	function updateCropScale(event: Event) {
 		const value = Number((event.currentTarget as HTMLInputElement).value);
 		if (Number.isNaN(value)) return;
-		projectState.setImageCropScale(element.id, value);
-		projectState.selectElement(element.id);
+		App.actions.project.setImageCropScale(element.id, value);
+		App.actions.project.selectElement(element.id);
 	}
 
 	function finishCrop() {
-		projectState.setCropEditingElement(null);
-		projectState.selectElement(element.id);
+		App.actions.project.setCropEditingElement(null);
+		App.actions.project.selectElement(element.id);
 	}
 
 	function startCrop() {
 		if (!hasImage) return;
-		projectState.setCropEditingElement(element.id);
-		projectState.selectElement(element.id);
+		App.actions.project.setCropEditingElement(element.id);
+		App.actions.project.selectElement(element.id);
 	}
 
 	function openImagePicker() {
-		projectState.selectElement(element.id);
+		App.actions.project.selectElement(element.id);
 		fileInputRef?.click();
 	}
 
@@ -87,8 +85,8 @@
 		const file = input.files?.[0];
 		if (!file) return;
 
-		await projectState.setImageAssetFromFile(element.id, file);
-		projectState.selectElement(element.id);
+		await App.actions.project.setImageAssetFromFile(element.id, file);
+		App.actions.project.selectElement(element.id);
 		input.value = "";
 	}
 
@@ -99,7 +97,7 @@
 		link.href = imageHref;
 		link.download = downloadName;
 		link.click();
-		projectState.selectElement(element.id);
+		App.actions.project.selectElement(element.id);
 	}
 </script>
 

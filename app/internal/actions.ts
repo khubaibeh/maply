@@ -1,3 +1,4 @@
+import type { ResizeHandle } from "$lib/app/core/element-actions";
 import { canvasState } from "$lib/app/state/canvas.svelte";
 import { clearClipboard, copyElement, getClipboardElement } from "$lib/app/state/clipboard.svelte";
 import { projectState } from "$lib/app/state/project.svelte";
@@ -49,6 +50,26 @@ export const appActions = {
 
 		setCropEditingElement(id: string | null) {
 			projectState.setCropEditingElement(id);
+		},
+
+		translateImageCrop(id: string, dx: number, dy: number) {
+			projectState.translateImageCrop(id, dx, dy);
+		},
+
+		resizeImageFrame(id: string, handle: ResizeHandle, dx: number, dy: number) {
+			projectState.resizeImageFrame(id, handle, dx, dy);
+		},
+
+		resetImageCrop(id: string) {
+			projectState.resetImageCrop(id);
+		},
+
+		setImageCropScale(id: string, cropScale: number) {
+			projectState.setImageCropScale(id, cropScale);
+		},
+
+		setImageAssetFromFile(id: string, file: File) {
+			return projectState.setImageAssetFromFile(id, file);
 		},
 
 		reorderElements(from: number, to: number) {

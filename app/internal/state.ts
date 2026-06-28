@@ -19,5 +19,7 @@ export const appState = {
 	canvas: view(canvasState),
 	tool: view(toolState),
 	imageAssets: view(imageAssetState),
-	theme: getTheme()
+	get theme() {
+		return getTheme();
+	}
 } as const;
