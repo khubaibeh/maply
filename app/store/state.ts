@@ -1,7 +1,6 @@
-import { projectState } from "$lib/app/state/project.svelte";
-
 import { appCanvasState } from "./canvas";
 import { appImageAssetState } from "./image-assets";
+import { appProjectState } from "./project";
 import { appToolState } from "./tool";
 
 type ReadonlyState<T> = {
@@ -15,7 +14,7 @@ function view<T>(state: ReadonlyState<T>) {
 }
 
 export const appState = {
-	project: view(projectState),
+	project: view(appProjectState),
 	canvas: view(appCanvasState),
 	tool: view(appToolState),
 	imageAssets: view(appImageAssetState)

@@ -1,4 +1,4 @@
-import { projectState } from "$lib/app/state/project.svelte";
+import { appProjectState } from "../store/project";
 
 const DEFAULT_PROJECT_ID = "prod";
 
@@ -10,7 +10,7 @@ export function loadApp(projectId = DEFAULT_PROJECT_ID) {
 	 * Keep App.load() pointed at that path until app-owned state can apply the
 	 * fetched record into the active UI stores behind the same public seam.
 	 */
-	return projectState.load(projectId);
+	return appProjectState.load(projectId);
 }
 
 export function startAppLifecycle(): Teardown {

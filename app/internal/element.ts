@@ -1,16 +1,17 @@
-import { projectState } from "$lib/app/state/project.svelte";
 import { Effect } from "effect";
 
+import { appProjectState } from "../store/project";
+
 function bridgePaste() {
-	return Effect.promise(() => projectState.pasteClipboardElement());
+	return Effect.promise(() => appProjectState.pasteClipboardElement());
 }
 
 function bridgeDelete(id: string) {
-	return Effect.sync(() => projectState.deleteElement(id));
+	return Effect.sync(() => appProjectState.deleteElement(id));
 }
 
 function bridgeReplaceImage(id: string, file: File) {
-	return Effect.promise(() => projectState.setImageAssetFromFile(id, file));
+	return Effect.promise(() => appProjectState.setImageAssetFromFile(id, file));
 }
 
 export function pasteElement() {

@@ -1,12 +1,13 @@
-import { projectState } from "$lib/app/state/project.svelte";
 import { Effect } from "effect";
 
+import { appProjectState } from "../store/project";
+
 function bridgeSaveQueue() {
-	return Effect.sync(() => projectState.queueSave());
+	return Effect.sync(() => appProjectState.queueSave());
 }
 
 function bridgeSaveFlush() {
-	return Effect.promise(() => projectState.saveNow());
+	return Effect.promise(() => appProjectState.saveNow());
 }
 
 export function queueProjectSave() {

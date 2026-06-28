@@ -1,19 +1,18 @@
-import { projectState } from "$lib/app/state/project.svelte";
-
+import { appProjectState } from "../store/project";
 import type { ProjectFilePackage } from "../types";
 
 export function createProjectBridge(options?: { elements?: "sample" | "blank" }) {
-	return projectState.createNewProject(options);
+	return appProjectState.createNewProject(options);
 }
 
 export function importProjectBridge(projectFile: ProjectFilePackage) {
-	return projectState.importProjectFilePackage(projectFile);
+	return appProjectState.importProjectFilePackage(projectFile);
 }
 
 export function exportProjectBridge() {
-	return projectState.exportProjectFilePackage();
+	return appProjectState.exportProjectFilePackage();
 }
 
 export function svgProjectBridge() {
-	return projectState.exportSvg();
+	return appProjectState.exportSvg();
 }
