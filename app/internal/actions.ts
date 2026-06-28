@@ -32,6 +32,10 @@ export const appActions = {
 			projectState.updateElement(id, patch);
 		},
 
+		addElement(element: Element) {
+			projectState.addElement(element);
+		},
+
 		translateElement(id: string, dx: number, dy: number) {
 			projectState.translateElement(id, dx, dy);
 		},

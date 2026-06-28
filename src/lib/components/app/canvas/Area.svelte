@@ -7,39 +7,39 @@
 		createTextElementFromDrag,
 		getShapeDragBox
 	} from "$lib/app/core/element-actions";
-	import type { ImageElement } from "$lib/app/domain/elements";
 	import { isPointInsideCanvas, type Point } from "$lib/app/domain/geometry";
-	import { canvasState } from "$lib/app/state/canvas.svelte";
-	import { copyElement, getClipboardElement } from "$lib/app/state/clipboard.svelte";
-	import { projectState } from "$lib/app/state/project.svelte";
-	import { toolState } from "$lib/app/state/tool.svelte";
 	import penToolSvg from "$lib/assets/pen-tool.svg?raw";
 	import plusSvg from "$lib/assets/plus.svg?raw";
 	import * as ContextMenu from "$lib/components/ui/context-menu";
+	import { App } from "@app";
+	import type { ImageElement } from "@app/types";
 	import { onMount } from "svelte";
 
 	import Artboard from "./Artboard.svelte";
 	import Background from "./Background.svelte";
 	import ImageCropToolbar from "./ImageCropToolbar.svelte";
 
+	const canvas = App.state.canvas;
+	const project = App.state.project;
+	const tool = App.state.tool;
+
 	let container: HTMLDivElement | null = $state(null);
 	let contextMenuOpen = $state(false);
 	let contextMenuTarget: "element" | "empty" = $state("empty");
 	let contextMenuElementId: string | null = $state(null);
 
-	const hasClipboardElement = $derived(!!getClipboardElement());
+	const hasClipboardElement = $derived(!!App.actions.clipboard.get());
 	const contextMenuElementLayerIndex = $derived(
-		contextMenuElementId ? $projectState.elements.findIndex((element) => element.id === contextMenuElementId) : -1
+		contextMenuElementId ? $project.elements.findIndex((element) => element.id === contextMenuElementId) : -1
 	);
-	const contextMenuElementIsFrontmost = $derived(contextMenuElementLayerIndex === $projectState.elements.length - 1);
+	const contextMenuElementIsFrontmost = $derived(contextMenuElementLayerIndex === $project.elements.length - 1);
 	const contextMenuElementIsBackmost = $derived(contextMenuElementLayerIndex === 0);
 	const selectedImage = $derived(
-		($projectState.elements.find(
-			(element) => element.id === $projectState.selectedElementId && element.type === "image"
-		) ?? null) as ImageElement | null
+		($project.elements.find((element) => element.id === $project.selectedElementId && element.type === "image") ??
+			null) as ImageElement | null
 	);
 	const cropEditing = $derived(
-		$projectState.cropEditingElementId === $projectState.selectedElementId && selectedImage !== null
+		$project.cropEditingElementId === $project.selectedElementId && selectedImage !== null
 	);
 	let svgRef: SVGSVGElement | null = $state(null);
 	let containerWidth = $state(0);
@@ -66,12 +66,12 @@
 	const CLOSE_HANDLE_SCREEN_PX = 6;
 
 	$effect(() => {
-		if ($toolState.activeTool !== "path" && pathSession) {
+		if ($tool.activeTool !== "path" && pathSession) {
 			pathSession = null;
 		}
 	});
 
-	const isHandActive = $derived($toolState.activeTool === "hand" || (isHovering && $toolState.isSpacePressed));
+	const isHandActive = $derived($tool.activeTool === "hand" || (isHovering && $tool.isSpacePressed));
 	const cursorClass = $derived(() => {
 		if (isPanning) return "cursor-grabbing";
 		if (isHandActive) return "cursor-grab";
@@ -85,9 +85,11 @@
 	const toolCursor = $derived(() => {
 		if (isPanning || isHandActive) return undefined;
 
-		const tool = $toolState.activeTool;
-		if (tool === "rect" || tool === "circle" || tool === "text" || tool === "image") return svgCursorUrl(plusSvg);
-		if (tool === "path") return svgCursorUrl(penToolSvg, 6, 6);
+		const activeTool = $tool.activeTool;
+		if (activeTool === "rect" || activeTool === "circle" || activeTool === "text" || activeTool === "image") {
+			return svgCursorUrl(plusSvg);
+		}
+		if (activeTool === "path") return svgCursorUrl(penToolSvg, 6, 6);
 		return undefined;
 	});
 
@@ -111,8 +113,8 @@
 		};
 	});
 
-	const pathPreviewRadius = $derived(CLOSE_HANDLE_SCREEN_PX / $canvasState.camera.zoom);
-	const pathVertexRadius = $derived(VERTEX_DOT_SCREEN_PX / $canvasState.camera.zoom);
+	const pathPreviewRadius = $derived(CLOSE_HANDLE_SCREEN_PX / $canvas.camera.zoom);
+	const pathVertexRadius = $derived(VERTEX_DOT_SCREEN_PX / $canvas.camera.zoom);
 
 	function distance(a: Point, b: Point): number {
 		const dx = a.x - b.x;
@@ -122,8 +124,8 @@
 
 	function clampPointToCanvas(point: Point): Point {
 		return {
-			x: Math.max($canvasState.x, Math.min($canvasState.x + $canvasState.width, point.x)),
-			y: Math.max($canvasState.y, Math.min($canvasState.y + $canvasState.height, point.y))
+			x: Math.max($canvas.x, Math.min($canvas.x + $canvas.width, point.x)),
+			y: Math.max($canvas.y, Math.min($canvas.y + $canvas.height, point.y))
 		};
 	}
 
@@ -132,7 +134,7 @@
 		const clampedPoint = clampPointToCanvas(point);
 		const first = pathSession.points[0];
 		const last = pathSession.points[pathSession.points.length - 1];
-		const threshold = CLOSE_THRESHOLD_SCREEN_PX / $canvasState.camera.zoom;
+		const threshold = CLOSE_THRESHOLD_SCREEN_PX / $canvas.camera.zoom;
 		const nearFirst = first ? distance(first, clampedPoint) <= threshold : false;
 		const nearLast =
 			!nearFirst && pathSession.points.length >= 2 && last ? distance(last, clampedPoint) <= threshold : false;
@@ -149,11 +151,11 @@
 		const points = pathSession.points;
 		pathSession = null;
 
-		const element = createPathElementFromPoints(points, closed, $projectState.elements);
+		const element = createPathElementFromPoints(points, closed, $project.elements);
 		if (!element) return;
 
-		projectState.addElement(element);
-		toolState.setTool("select");
+		App.actions.project.addElement(element);
+		App.actions.tool.set("select");
 	}
 
 	function closePath() {
@@ -184,8 +186,8 @@
 		containerHeight = initialRect.height;
 
 		function handleWheel(event: WheelEvent) {
-			const cropEditingElement = $projectState.cropEditingElementId
-				? $projectState.elements.find((element) => element.id === $projectState.cropEditingElementId)
+			const cropEditingElement = $project.cropEditingElementId
+				? $project.elements.find((element) => element.id === $project.cropEditingElementId)
 				: null;
 
 			if (cropEditingElement?.type === "image") {
@@ -208,28 +210,25 @@
 				// Zoom around the pointer so the world point under the cursor stays fixed.
 				const ZOOM_SENSITIVITY = 0.0025;
 				const nextZoom = Math.min(
-					$canvasState.maxZoom,
-					Math.max(
-						$canvasState.minZoom,
-						$canvasState.camera.zoom * Math.exp(-event.deltaY * ZOOM_SENSITIVITY)
-					)
+					$canvas.maxZoom,
+					Math.max($canvas.minZoom, $canvas.camera.zoom * Math.exp(-event.deltaY * ZOOM_SENSITIVITY))
 				);
-				if (nextZoom === $canvasState.camera.zoom) return;
+				if (nextZoom === $canvas.camera.zoom) return;
 
 				const rect = viewport.getBoundingClientRect();
 				const mouseX = event.clientX - rect.left;
 				const mouseY = event.clientY - rect.top;
 
-				const worldX = $canvasState.camera.x + mouseX / $canvasState.camera.zoom;
-				const worldY = $canvasState.camera.y + mouseY / $canvasState.camera.zoom;
+				const worldX = $canvas.camera.x + mouseX / $canvas.camera.zoom;
+				const worldY = $canvas.camera.y + mouseY / $canvas.camera.zoom;
 
-				canvasState.setCamera({
+				App.actions.canvas.setCamera({
 					zoom: nextZoom,
 					x: worldX - mouseX / nextZoom,
 					y: worldY - mouseY / nextZoom
 				});
 			} else {
-				canvasState.pan(event.deltaX / $canvasState.camera.zoom, event.deltaY / $canvasState.camera.zoom);
+				App.actions.canvas.pan(event.deltaX / $canvas.camera.zoom, event.deltaY / $canvas.camera.zoom);
 			}
 		}
 
@@ -241,14 +240,14 @@
 			viewport.focus();
 			isPanning = true;
 			panStart = { x: event.clientX, y: event.clientY };
-			cameraStart = { x: $canvasState.camera.x, y: $canvasState.camera.y };
+			cameraStart = { x: $canvas.camera.x, y: $canvas.camera.y };
 		}
 
 		function movePan(event: MouseEvent) {
 			if (!isPanning) return;
-			const dx = (panStart.x - event.clientX) / $canvasState.camera.zoom;
-			const dy = (panStart.y - event.clientY) / $canvasState.camera.zoom;
-			canvasState.setCamera({
+			const dx = (panStart.x - event.clientX) / $canvas.camera.zoom;
+			const dy = (panStart.y - event.clientY) / $canvas.camera.zoom;
+			App.actions.canvas.setCamera({
 				x: cameraStart.x + dx,
 				y: cameraStart.y + dy
 			});
@@ -282,20 +281,20 @@
 
 			let element = null;
 			if (session.tool === "rect") {
-				element = createRectElementFromDrag(session.start, end, $projectState.elements, {
+				element = createRectElementFromDrag(session.start, end, $project.elements, {
 					square: event.shiftKey
 				});
 			} else if (session.tool === "circle") {
-				element = createCircleElementFromDrag(session.start, end, $projectState.elements);
+				element = createCircleElementFromDrag(session.start, end, $project.elements);
 			} else if (session.tool === "text") {
-				element = createTextElementFromDrag(session.start, end, $projectState.elements);
+				element = createTextElementFromDrag(session.start, end, $project.elements);
 			} else if (session.tool === "image") {
-				element = createImageElementFromDrag(session.start, end, $projectState.elements);
+				element = createImageElementFromDrag(session.start, end, $project.elements);
 			}
 			if (!element) return;
 
-			projectState.addElement(element);
-			toolState.setTool("select");
+			App.actions.project.addElement(element);
+			App.actions.tool.set("select");
 		}
 
 		function cancelDrawing() {
@@ -318,13 +317,13 @@
 			if (event.key !== " ") return;
 			if (!isHovering) return;
 			event.preventDefault();
-			toolState.setSpacePressed(true);
+			App.actions.tool.setSpacePressed(true);
 		}
 
 		function handleKeyUp(event: KeyboardEvent) {
 			if (event.key !== " ") return;
 			event.preventDefault();
-			toolState.setSpacePressed(false);
+			App.actions.tool.setSpacePressed(false);
 		}
 
 		function handleMouseEnter() {
@@ -333,7 +332,7 @@
 
 		function handleMouseLeave() {
 			isHovering = false;
-			toolState.setSpacePressed(false);
+			App.actions.tool.setSpacePressed(false);
 		}
 
 		function dismissContextMenu(event: PointerEvent) {
@@ -378,7 +377,7 @@
 	});
 
 	const viewBox = $derived(
-		`${$canvasState.camera.x} ${$canvasState.camera.y} ${containerWidth / $canvasState.camera.zoom} ${containerHeight / $canvasState.camera.zoom}`
+		`${$canvas.camera.x} ${$canvas.camera.y} ${containerWidth / $canvas.camera.zoom} ${containerHeight / $canvas.camera.zoom}`
 	);
 
 	function clientToSvgPoint(clientX: number, clientY: number): Point | null {
@@ -400,19 +399,19 @@
 	function handleSvgPointerDown(event: PointerEvent) {
 		if (event.button !== 0) return;
 		if (isHandActive) return;
-		if ($toolState.activeTool === "select") {
-			projectState.selectElement(null);
+		if ($tool.activeTool === "select") {
+			App.actions.project.selectElement(null);
 			return;
 		}
 
 		const drawPoint = clientToSvgPoint(event.clientX, event.clientY);
 		if (!drawPoint) return;
 		const insideArtboard = isPointInsideCanvas(drawPoint, {
-			x: $canvasState.x,
-			y: $canvasState.y,
-			width: $canvasState.width,
-			height: $canvasState.height,
-			color: $canvasState.color
+			x: $canvas.x,
+			y: $canvas.y,
+			width: $canvas.width,
+			height: $canvas.height,
+			color: $canvas.color
 		});
 
 		if (!insideArtboard) return;
@@ -420,7 +419,7 @@
 		event.preventDefault();
 		event.stopPropagation();
 
-		if ($toolState.activeTool === "path") {
+		if ($tool.activeTool === "path") {
 			if (pathSession) {
 				if (pathSession.nearFirst) {
 					closePath();
@@ -444,10 +443,10 @@
 			return;
 		}
 
-		if (!isShapeDrawingTool($toolState.activeTool)) return;
+		if (!isShapeDrawingTool($tool.activeTool)) return;
 
 		drawingSession = {
-			tool: $toolState.activeTool,
+			tool: $tool.activeTool,
 			start: drawPoint,
 			current: drawPoint,
 			square: event.shiftKey
@@ -462,7 +461,7 @@
 			if (id) {
 				contextMenuTarget = "element";
 				contextMenuElementId = id;
-				projectState.selectElement(id);
+				App.actions.project.selectElement(id);
 				return;
 			}
 		}
@@ -472,45 +471,45 @@
 
 	function handleCopy() {
 		if (!contextMenuElementId) return;
-		const element = $projectState.elements.find((e) => e.id === contextMenuElementId);
-		if (element) copyElement(element);
+		const element = $project.elements.find((e) => e.id === contextMenuElementId);
+		if (element) App.actions.clipboard.copy(element);
 		contextMenuOpen = false;
 	}
 
 	function handleDelete() {
 		if (!contextMenuElementId) return;
-		projectState.deleteElement(contextMenuElementId);
+		void App.element.delete(contextMenuElementId);
 		contextMenuOpen = false;
 	}
 
 	function handleBringToFront() {
 		if (!contextMenuElementId) return;
-		projectState.moveElementToFront(contextMenuElementId);
+		App.actions.project.moveElementToFront(contextMenuElementId);
 		contextMenuOpen = false;
 	}
 
 	function handleBringForward() {
 		if (!contextMenuElementId) return;
-		projectState.moveElementForward(contextMenuElementId);
+		App.actions.project.moveElementForward(contextMenuElementId);
 		contextMenuOpen = false;
 	}
 
 	function handleSendBackward() {
 		if (!contextMenuElementId) return;
-		projectState.moveElementBackward(contextMenuElementId);
+		App.actions.project.moveElementBackward(contextMenuElementId);
 		contextMenuOpen = false;
 	}
 
 	function handleSendToBack() {
 		if (!contextMenuElementId) return;
-		projectState.moveElementToBack(contextMenuElementId);
+		App.actions.project.moveElementToBack(contextMenuElementId);
 		contextMenuOpen = false;
 	}
 
 	function handlePaste() {
-		const copied = getClipboardElement();
+		const copied = App.actions.clipboard.get();
 		if (!copied) return;
-		void projectState.pasteClipboardElement();
+		void App.element.paste();
 		contextMenuOpen = false;
 	}
 </script>
@@ -536,7 +535,7 @@
 					aria-label="Canvas workspace"
 					onpointerdown={handleSvgPointerDown}
 				>
-					<Background {containerWidth} {containerHeight} camera={$canvasState.camera} />
+					<Background {containerWidth} {containerHeight} camera={$canvas.camera} />
 					<Artboard />
 					{#if shapePreview()}
 						{@const preview = shapePreview()!}

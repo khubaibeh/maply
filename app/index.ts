@@ -1,7 +1,12 @@
 import { appActions } from "./internal/actions";
 import { deleteElement, pasteElement, replaceElementImage } from "./internal/element";
 import { loadApp, startAppLifecycle } from "./internal/lifecycle";
-import { createProject, exportProject, importProject, svgProject } from "./internal/project";
+import {
+	createProjectBridge,
+	exportProjectBridge,
+	importProjectBridge,
+	svgProjectBridge
+} from "./internal/project-bridge";
 import { parseProjectFilePackage, stringifyProjectFilePackage } from "./internal/project-file";
 import { flushProjectSave, queueProjectSave } from "./internal/save";
 import { appState } from "./internal/state";
@@ -17,21 +22,25 @@ export const App = {
 		return runApp(loadApp(projectId));
 	},
 
+	// Transitional bridge: App.project.* is temporarily routed through the live src/lib state graph so
+	// rewired UI consumers keep current behavior while that state still owns the editable document.
+	// This is not moving away from Effect; it is a compatibility step until the app-owned project
+	// implementation can take over the live state responsibilities behind the same public API.
 	project: {
 		create(options?: { elements?: "sample" | "blank" }) {
-			return runApp(createProject(options));
+			return createProjectBridge(options);
 		},
 
 		import(projectFile: ProjectFilePackage) {
-			return runApp(importProject(projectFile));
+			return importProjectBridge(projectFile);
 		},
 
 		export() {
-			return runApp(exportProject());
+			return exportProjectBridge();
 		},
 
 		svg() {
-			return runApp(svgProject());
+			return svgProjectBridge();
 		}
 	},
 

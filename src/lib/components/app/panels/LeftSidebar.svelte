@@ -1,10 +1,5 @@
 <script lang="ts">
 	import { validateElementNames } from "$lib/app/core/element-name-validation";
-	import { parseProjectFilePackage, stringifyProjectFilePackage } from "$lib/app/core/project-io";
-	import type { ProjectFilePackage } from "$lib/app/core/project-io";
-	import type { Element } from "$lib/app/domain/elements";
-	import { copyElement, getClipboardElement } from "$lib/app/state/clipboard.svelte";
-	import { projectState } from "$lib/app/state/project.svelte";
 	import * as AlertDialog from "$lib/components/ui/alert-dialog";
 	import { Button, buttonVariants } from "$lib/components/ui/button";
 	import * as Collapsible from "$lib/components/ui/collapsible";
@@ -12,6 +7,8 @@
 	import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
 	import { Input } from "$lib/components/ui/input";
 	import { ScrollArea } from "$lib/components/ui/scroll-area";
+	import { App } from "@app";
+	import type { Element, ProjectFilePackage } from "@app/types";
 	import ChevronDown from "@lucide/svelte/icons/chevron-down";
 	import Circle from "@lucide/svelte/icons/circle";
 	import Download from "@lucide/svelte/icons/download";
@@ -27,6 +24,8 @@
 	import type { Component } from "svelte";
 
 	import ElementNameValidation from "./ElementNameValidation.svelte";
+
+	const project = App.state.project;
 
 	let { width = 240 }: { width?: number } = $props();
 
@@ -67,10 +66,10 @@
 
 	const REORDER_HOLD_DELAY_MS = 220;
 
-	const hasClipboardElement = $derived(!!getClipboardElement());
-	const elementNameValidations = $derived(validateElementNames($projectState.elements));
+	const hasClipboardElement = $derived(!!App.actions.clipboard.get());
+	const elementNameValidations = $derived(validateElementNames($project.elements));
 	const sidebarElements = $derived(() => {
-		const elements = [...$projectState.elements].reverse();
+		const elements = [...$project.elements].reverse();
 		const activeReorder = reorderState;
 		if (!activeReorder) return elements;
 
@@ -92,12 +91,12 @@
 	};
 
 	async function handleCreateNewProject(elements: "sample" | "blank" = "sample") {
-		await projectState.createNewProject({ elements });
+		await App.project.create({ elements });
 		newProjectDialogOpen = false;
 	}
 
 	async function handleSave() {
-		await projectState.saveNow();
+		await App.save.flush();
 	}
 
 	function setImportExportFeedback(tone: "success" | "error", text: string) {
@@ -154,10 +153,10 @@
 		importExportFeedback = null;
 
 		try {
-			const projectFile = projectState.exportProjectFilePackage();
+			const projectFile = App.project.export();
 			downloadTextFile(
 				sanitizeDownloadName(projectFile.project.name, "json"),
-				stringifyProjectFilePackage(projectFile),
+				App.codec.project.stringify(projectFile),
 				"application/json"
 			);
 			setImportExportFeedback("success", "Project exported as a portable JSON file.");
@@ -174,8 +173,8 @@
 		importExportFeedback = null;
 
 		try {
-			const svg = await projectState.exportSvg();
-			downloadTextFile(sanitizeDownloadName($projectState.name, "svg"), svg, "image/svg+xml");
+			const svg = await App.project.svg();
+			downloadTextFile(sanitizeDownloadName($project.name, "svg"), svg, "image/svg+xml");
 			setImportExportFeedback("success", "Standalone SVG exported with embedded assets and recovery metadata.");
 		} catch (error) {
 			setImportExportFeedback("error", formatImportExportError(error, "Failed to export SVG."));
@@ -197,7 +196,7 @@
 		importExportFeedback = null;
 
 		try {
-			pendingImportedProject = parseProjectFilePackage(await file.text());
+			pendingImportedProject = App.codec.project.parse(await file.text());
 			pendingImportedProjectName = file.name;
 			importProjectDialogOpen = true;
 		} catch (error) {
@@ -217,7 +216,7 @@
 		importExportBusy = "project-import";
 
 		try {
-			await projectState.importProjectFilePackage(pendingImportedProject);
+			await App.project.import(pendingImportedProject);
 			setImportExportFeedback("success", `Imported ${pendingImportedProjectName || "project file"}.`);
 			importProjectDialogOpen = false;
 			pendingImportedProject = null;
@@ -243,17 +242,17 @@
 	});
 
 	function startEditing() {
-		editName = $projectState.name;
+		editName = $project.name;
 		isEditing = true;
 	}
 
 	function save() {
-		projectState.setName(editName);
+		App.actions.project.setName(editName);
 		isEditing = false;
 	}
 
 	function cancel() {
-		editName = $projectState.name;
+		editName = $project.name;
 		isEditing = false;
 	}
 
@@ -273,13 +272,13 @@
 	function saveElementEdit() {
 		const trimmed = editingElementName.trim();
 		if (editingElementId) {
-			projectState.renameElement(editingElementId, trimmed);
+			App.actions.project.renameElement(editingElementId, trimmed);
 		}
 		editingElementId = null;
 	}
 
 	function autofixElementName(elementId: string, suggestion: string) {
-		projectState.renameElement(elementId, suggestion);
+		App.actions.project.renameElement(elementId, suggestion);
 	}
 
 	function cancelElementEdit() {
@@ -296,7 +295,7 @@
 
 	function handleElementTreeBackgroundPointerDown(event: PointerEvent) {
 		if (event.target !== event.currentTarget) return;
-		projectState.selectElement(null);
+		App.actions.project.selectElement(null);
 	}
 
 	function setElementContextMenuOpen(elementId: string, open: boolean) {
@@ -430,7 +429,7 @@
 			return;
 		}
 
-		projectState.selectElement(elementId);
+		App.actions.project.selectElement(elementId);
 	}
 
 	function handleReorderPointerMove(event: PointerEvent) {
@@ -453,12 +452,12 @@
 	function stopReordering() {
 		if (!reorderState) return;
 
-		const elementCount = $projectState.elements.length;
+		const elementCount = $project.elements.length;
 		const fromProjectIndex = elementCount - 1 - reorderState.fromSidebarIndex;
 		const toProjectIndex = elementCount - 1 - reorderState.insertionIndex;
 
 		if (fromProjectIndex !== toProjectIndex) {
-			projectState.reorderElements(fromProjectIndex, toProjectIndex);
+			App.actions.project.reorderElements(fromProjectIndex, toProjectIndex);
 		}
 
 		reorderState = null;
@@ -480,18 +479,18 @@
 	});
 
 	$effect(() => {
-		if (!$projectState.initialized) return;
+		if (!$project.initialized) return;
 		// Do not overwrite the local draft while the project name input is active.
 		if (isEditing) return;
-		editName = $projectState.name;
-		importsOpen = $projectState.importExportState.importsOpen;
-		elementsOpen = $projectState.importExportState.elementsOpen;
+		editName = $project.name;
+		importsOpen = $project.importExportState.importsOpen;
+		elementsOpen = $project.importExportState.elementsOpen;
 	});
 
 	$effect(() => {
-		if (!$projectState.initialized) return;
+		if (!$project.initialized) return;
 		// Collapsible state is part of the persisted project UI state.
-		projectState.setImportExportState({ importsOpen, elementsOpen });
+		App.actions.project.setImportExportState({ importsOpen, elementsOpen });
 	});
 
 	onDestroy(() => {
@@ -520,7 +519,7 @@
 				role="button"
 				tabindex="0"
 			>
-				{$projectState.name}
+				{$project.name}
 			</span>
 		{/if}
 		<div class="flex items-center gap-x-1">
@@ -663,15 +662,13 @@
 							>
 								{#each sidebarElements() as element, sidebarIndex (element.id)}
 									{@const Icon = elementIcons[element.type]}
-									{@const isSelected = $projectState.selectedElementId === element.id}
+									{@const isSelected = $project.selectedElementId === element.id}
 									{@const isEditingElement = editingElementId === element.id}
 									{@const nameValidation = elementNameValidations.get(element.id)}
 									{@const isInvalidName = !!nameValidation && !nameValidation.valid}
 									{@const isReordering = reorderState?.elementId === element.id}
-									{@const projectLayerIndex = $projectState.elements.findIndex(
-										(e) => e.id === element.id
-									)}
-									{@const isFrontmost = projectLayerIndex === $projectState.elements.length - 1}
+									{@const projectLayerIndex = $project.elements.findIndex((e) => e.id === element.id)}
+									{@const isFrontmost = projectLayerIndex === $project.elements.length - 1}
 									{@const isBackmost = projectLayerIndex === 0}
 									<ContextMenu.Root
 										open={openElementContextMenuId === element.id}
@@ -734,7 +731,7 @@
 														: ''}"
 													onclick={(event) => {
 														event.stopPropagation();
-														projectState.deleteElement(element.id);
+														void App.element.delete(element.id);
 													}}
 													aria-label="Delete {element.name}"
 												>
@@ -745,7 +742,7 @@
 										<ContextMenu.Content>
 											<ContextMenu.Item
 												onclick={() => {
-													copyElement(element);
+													App.actions.clipboard.copy(element);
 													closeElementContextMenu();
 												}}
 											>
@@ -755,7 +752,7 @@
 											<ContextMenu.Item
 												disabled={isFrontmost}
 												onclick={() => {
-													projectState.moveElementToFront(element.id);
+													App.actions.project.moveElementToFront(element.id);
 													closeElementContextMenu();
 												}}
 											>
@@ -764,7 +761,7 @@
 											<ContextMenu.Item
 												disabled={isFrontmost}
 												onclick={() => {
-													projectState.moveElementForward(element.id);
+													App.actions.project.moveElementForward(element.id);
 													closeElementContextMenu();
 												}}
 											>
@@ -773,7 +770,7 @@
 											<ContextMenu.Item
 												disabled={isBackmost}
 												onclick={() => {
-													projectState.moveElementBackward(element.id);
+													App.actions.project.moveElementBackward(element.id);
 													closeElementContextMenu();
 												}}
 											>
@@ -782,7 +779,7 @@
 											<ContextMenu.Item
 												disabled={isBackmost}
 												onclick={() => {
-													projectState.moveElementToBack(element.id);
+													App.actions.project.moveElementToBack(element.id);
 													closeElementContextMenu();
 												}}
 											>
@@ -792,7 +789,7 @@
 											<ContextMenu.Item
 												variant="destructive"
 												onclick={() => {
-													projectState.deleteElement(element.id);
+													void App.element.delete(element.id);
 													closeElementContextMenu();
 												}}
 											>
@@ -810,9 +807,9 @@
 						<ContextMenu.Item
 							disabled={!hasClipboardElement}
 							onclick={() => {
-								const copied = getClipboardElement();
+								const copied = App.actions.clipboard.get();
 								if (!copied) return;
-								void projectState.pasteClipboardElement();
+								void App.element.paste();
 							}}
 						>
 							Paste
