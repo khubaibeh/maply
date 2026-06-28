@@ -1,4 +1,4 @@
-import { getTheme, type Theme } from "$lib/app/theme.svelte";
+import { getTheme, type Theme } from "../store/theme.svelte";
 
 export { type Theme };
 

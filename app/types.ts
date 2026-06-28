@@ -13,5 +13,5 @@ export type { Camera, Canvas, ImportExportState, Project } from "./domain/projec
 export type { Tool } from "./domain/tools";
 export type { ProjectFilePackage } from "./internal/project-file";
 export type { ResizeHandle } from "./internal/geometry";
-export type { Theme } from "./internal/theme";
+export type { Theme } from "./store/theme.svelte";
 export type { ElementNameValidation } from "./internal/validate";
