@@ -20,7 +20,8 @@ export const App = {
 	},
 
 	load(projectId?: string) {
-		return runApp(loadApp(projectId));
+		// Transitional bridge: load must hydrate the current live UI stores, not just fetch persistence.
+		return loadApp(projectId);
 	},
 
 	// Transitional bridge: App.project.* is temporarily routed through the live src/lib state graph so

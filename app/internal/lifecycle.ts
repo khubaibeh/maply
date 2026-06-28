@@ -1,26 +1,20 @@
-import { Effect } from "effect";
-
-import { runApp } from "../runtime/browser-runtime";
-import { ProjectRepo } from "../services/project-repo";
+import { projectState } from "$lib/app/state/project.svelte";
 
 const DEFAULT_PROJECT_ID = "prod";
 
 export type Teardown = () => void;
 
 export function loadApp(projectId = DEFAULT_PROJECT_ID) {
-	return Effect.gen(function* () {
-		const repo = yield* ProjectRepo;
-		return yield* repo.fetchProject(projectId);
-	});
+	/*
+	 * Transitional bridge: live editable project hydration still lives in src/lib.
+	 * Keep App.load() pointed at that path until app-owned state can apply the
+	 * fetched record into the active UI stores behind the same public seam.
+	 */
+	return projectState.load(projectId);
 }
 
 export function startAppLifecycle(): Teardown {
-	/*
-	 * Step 1 only establishes the lifecycle seam and initial load path.
-	 * Reactive state wiring, autosave subscriptions, and unload flushing come
-	 * later once the app-side state surfaces exist.
-	 */
-	void runApp(loadApp());
+	void loadApp();
 
 	return () => {};
 }
