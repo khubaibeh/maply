@@ -1,9 +1,4 @@
-import {
-	getTextLayoutMetrics,
-	getWrappedTextLineHeight,
-	getWrappedTextLines,
-	getWrappedTextMetrics
-} from "$lib/app/core/element-actions";
+import { getTextLayoutMetrics, getWrappedTextLineHeight, getWrappedTextLines, getWrappedTextMetrics } from "./element";
 
 export const appText = {
 	wrappedLines: getWrappedTextLines,

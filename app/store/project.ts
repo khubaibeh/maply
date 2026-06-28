@@ -7,15 +7,6 @@ import {
 	saveImageAsset
 } from "$lib/app/core/db";
 import {
-	clampElementToCanvas,
-	duplicateElement,
-	normalizeElements,
-	resizeImageFrameWithinCanvas,
-	setElementPosition,
-	translateElementWithinCanvas
-} from "$lib/app/core/element-actions";
-import type { ResizeHandle } from "$lib/app/core/element-actions";
-import {
 	cloneStoredImageAsset,
 	getImageCropStateForFrameResize,
 	importImageFile,
@@ -29,6 +20,15 @@ import type { Element } from "../domain/elements";
 import type { StoredImageAsset } from "../domain/image-assets";
 import type { Project } from "../domain/project";
 import { queueProjectSave, saveProjectNow } from "../internal/autosave";
+import {
+	clampElementToCanvas,
+	duplicateElement,
+	normalizeElements,
+	resizeImageFrameWithinCanvas,
+	setElementPosition,
+	translateElementWithinCanvas
+} from "../internal/element";
+import type { ResizeHandle } from "../internal/element";
 import { appCanvasState } from "./canvas";
 import { getClipboardElement } from "./clipboard.svelte";
 import { appImageAssetState } from "./image-assets";

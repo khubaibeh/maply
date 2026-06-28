@@ -1,5 +1,3 @@
-import type { ResizeHandle } from "$lib/app/core/element-actions";
-
 import type { Element } from "../domain/elements";
 import type { Camera, ImportExportState } from "../domain/project";
 import type { Tool } from "../domain/tools";
@@ -7,6 +5,7 @@ import { appCanvasState } from "../store/canvas";
 import { clearClipboard, copyElement, getClipboardElement } from "../store/clipboard.svelte";
 import { appProjectState } from "../store/project";
 import { appToolState } from "../store/tool";
+import type { ResizeHandle } from "./element";
 
 type ElementPatch = Partial<Omit<Element, "id" | "type">>;
 
