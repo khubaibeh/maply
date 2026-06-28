@@ -1,7 +1,7 @@
-import { CONSTANTS, mergeCamera, sanitizeCanvasSize } from "$lib/app/core/canvas-actions";
 import { get, writable } from "svelte/store";
 
 import type { Camera } from "../domain/project";
+import { CONSTANTS, mergeCamera, sanitizeCanvasSize } from "../internal/canvas";
 
 type CanvasState = {
 	width: number;
