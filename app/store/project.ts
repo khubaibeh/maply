@@ -6,12 +6,6 @@ import {
 	resetProdProject,
 	saveImageAsset
 } from "$lib/app/core/db";
-import {
-	cloneStoredImageAsset,
-	getImageCropStateForFrameResize,
-	importImageFile,
-	translateImageCrop
-} from "$lib/app/core/image-assets";
 import { createProjectFilePackage, type ProjectFilePackage, toImportedProject } from "$lib/app/core/project-io";
 import { exportProjectSvg } from "$lib/app/core/svg-export";
 import { get, writable } from "svelte/store";
@@ -29,6 +23,12 @@ import {
 	translateElementWithinCanvas
 } from "../internal/element";
 import type { ResizeHandle } from "../internal/element";
+import {
+	cloneStoredImageAsset,
+	getImageCropStateForFrameResize,
+	importImageFile,
+	translateImageCrop
+} from "../internal/image-assets";
 import { appCanvasState } from "./canvas";
 import { getClipboardElement } from "./clipboard.svelte";
 import { appImageAssetState } from "./image-assets";
