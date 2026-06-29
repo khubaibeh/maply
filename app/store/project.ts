@@ -3,7 +3,6 @@ import { get, writable } from "svelte/store";
 import type { Element } from "../domain/elements";
 import type { StoredImageAsset } from "../domain/image-assets";
 import type { Project } from "../domain/project";
-import { queueProjectSave, saveProjectNow } from "../internal/autosave";
 import {
 	deleteImageAsset,
 	fetchProject,
@@ -128,19 +127,15 @@ function toProject(): Project {
 export const appProjectState = {
 	subscribe: store.subscribe,
 
+	getSnapshot() {
+		return get(store);
+	},
+
 	toProject,
 
 	getSelectedElement() {
 		const project = get(store);
 		return project.elements.find((element) => element.id === project.selectedElementId) ?? null;
-	},
-
-	queueSave(project = toProject()) {
-		queueProjectSave(project, get(store).initialized);
-	},
-
-	async saveNow() {
-		await saveProjectNow(toProject(), get(store).initialized);
 	},
 
 	async load(projectId = DEFAULTS.prodProjId) {
@@ -165,7 +160,6 @@ export const appProjectState = {
 
 	setName(nextName: string) {
 		store.update((state) => ({ ...state, name: nextName }));
-		this.queueSave();
 	},
 
 	setImportExportState(nextState: Partial<Project["importExportState"]>) {
@@ -183,13 +177,11 @@ export const appProjectState = {
 		}
 
 		store.update((state) => ({ ...state, importExportState: nextImportExportState }));
-		this.queueSave();
 	},
 
 	async createNewProject(options: { elements?: "sample" | "blank" } = {}) {
 		const fresh = await resetProdProject(options);
 		await applyProjectRecord(fresh);
-		this.queueSave();
 	},
 
 	exportProjectFilePackage(): ProjectFilePackage {
@@ -221,7 +213,6 @@ export const appProjectState = {
 			elements: [...state.elements, nextElement],
 			selectedElementId: nextElement.id
 		}));
-		this.queueSave();
 	},
 
 	async setImageAssetFromFile(id: string, file: File) {
@@ -337,7 +328,6 @@ export const appProjectState = {
 				return { ...nextFrame, ...nextCrop };
 			})
 		}));
-		this.queueSave();
 	},
 
 	updateElement(id: string, patch: Partial<Omit<Element, "id" | "type">>) {
@@ -350,7 +340,6 @@ export const appProjectState = {
 				return clampElementToCanvas({ ...element, ...patch } as Element, canvas);
 			})
 		}));
-		this.queueSave();
 	},
 
 	translateElement(id: string, dx: number, dy: number) {
@@ -364,7 +353,6 @@ export const appProjectState = {
 				return translateElementWithinCanvas(element, dx, dy, canvas);
 			})
 		}));
-		this.queueSave();
 	},
 
 	setElementPosition(id: string, x: number, y: number) {
@@ -377,7 +365,6 @@ export const appProjectState = {
 				return setElementPosition(element, x, y, canvas);
 			})
 		}));
-		this.queueSave();
 	},
 
 	clampElementsToCanvas() {
@@ -387,7 +374,6 @@ export const appProjectState = {
 			...state,
 			elements: state.elements.map((element) => clampElementToCanvas(element, canvas))
 		}));
-		this.queueSave();
 	},
 
 	renameElement(id: string, nextName: string) {
@@ -455,7 +441,6 @@ export const appProjectState = {
 		const [moved] = next.splice(fromIndex, 1);
 		next.splice(toIndex, 0, moved);
 		store.update((state) => ({ ...state, elements: next }));
-		this.queueSave();
 	},
 
 	moveElementToFront(id: string) {
@@ -496,7 +481,6 @@ export const appProjectState = {
 			});
 			appImageAssetState.removeAsset(current.assetId);
 		}
-		this.queueSave();
 	}
 };
 

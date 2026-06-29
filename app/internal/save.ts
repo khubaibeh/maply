@@ -1,21 +1,48 @@
 import { Effect } from "effect";
 
 import { appProjectState } from "../store/project";
+import { saveProject } from "./db";
 
-function bridgeSaveQueue() {
-	return Effect.sync(() => appProjectState.queueSave());
+let saveTimeout: ReturnType<typeof setTimeout> | null = null;
+
+function clearPendingSave() {
+	if (!saveTimeout) return;
+	clearTimeout(saveTimeout);
+	saveTimeout = null;
 }
 
-function bridgeSaveFlush() {
-	return Effect.promise(() => appProjectState.saveNow());
+function canSave() {
+	return appProjectState.getSnapshot().initialized;
+}
+
+function queueCurrentProjectSave() {
+	// Saves before hydration can overwrite persisted data with startup defaults.
+	if (!canSave()) return;
+	clearPendingSave();
+
+	saveTimeout = setTimeout(() => {
+		saveProject(appProjectState.toProject()).catch((error) => {
+			console.warn("Failed to save project:", error);
+		});
+	}, 500);
+}
+
+async function flushCurrentProjectSave() {
+	// Flushes replace the pending debounce so unload handlers do not race a later save.
+	if (!canSave()) return;
+	clearPendingSave();
+
+	try {
+		await saveProject(appProjectState.toProject());
+	} catch (error) {
+		console.warn("Failed to save project:", error);
+	}
 }
 
 export function queueProjectSave() {
-	// Keep the Effect-facing save API localized here while the live store owns save triggering.
-	return bridgeSaveQueue();
+	return Effect.sync(() => queueCurrentProjectSave());
 }
 
 export function flushProjectSave() {
-	// Keep the Effect-facing flush API localized here while the live store owns save triggering.
-	return bridgeSaveFlush();
+	return Effect.promise(() => flushCurrentProjectSave());
 }
