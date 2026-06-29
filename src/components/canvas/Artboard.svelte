@@ -1,5 +1,66 @@
 <script lang="ts">
-	import Artboard from "$lib/components/app/canvas/Artboard.svelte";
+	import { App } from "@app";
+
+	import ElementOutline from "./ElementOutline.svelte";
+	import ElementShapes from "./ElementShapes.svelte";
+	import ImageCropOverlay from "./ImageCropOverlay.svelte";
+	import PathElementHandles from "./PathElementHandles.svelte";
+	import PathElementOutline from "./PathElementOutline.svelte";
+
+	const canvas = App.state.canvas;
+	const project = App.state.project;
+	const tool = App.state.tool;
+
+	const selectedElement = $derived(
+		$project.elements.find((element) => element.id === $project.selectedElementId) ?? null
+	);
+	const hoveredElement = $derived(
+		$tool.activeTool === "select" &&
+			$project.hoveredElementId &&
+			$project.hoveredElementId !== $project.selectedElementId
+			? ($project.elements.find((element) => element.id === $project.hoveredElementId) ?? null)
+			: null
+	);
 </script>
 
-<Artboard />
+<defs>
+	<filter id="canvas-shadow" x="-10%" y="-10%" width="120%" height="120%">
+		<feDropShadow dx="0" dy="1" stdDeviation="3" flood-color="black" flood-opacity="0.08" />
+	</filter>
+</defs>
+
+<rect
+	x={$canvas.x}
+	y={$canvas.y}
+	width={$canvas.width}
+	height={$canvas.height}
+	fill={$canvas.color}
+	stroke="var(--border)"
+	filter="url(#canvas-shadow)"
+/>
+
+<ElementShapes />
+
+{#if hoveredElement && hoveredElement.type !== "path"}
+	<ElementOutline element={hoveredElement} interactive={false} />
+{/if}
+
+{#if hoveredElement?.type === "path"}
+	<PathElementOutline element={hoveredElement} />
+{/if}
+
+{#if selectedElement && selectedElement.type !== "path"}
+	<ElementOutline element={selectedElement} />
+{/if}
+
+{#if selectedElement?.type === "path"}
+	<PathElementOutline element={selectedElement} />
+{/if}
+
+{#if selectedElement?.type === "image"}
+	<ImageCropOverlay element={selectedElement} cropEditing={$project.cropEditingElementId === selectedElement.id} />
+{/if}
+
+{#if selectedElement?.type === "path" && $tool.activeTool === "select"}
+	<PathElementHandles element={selectedElement} />
+{/if}
