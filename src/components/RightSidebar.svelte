@@ -1,11 +1,11 @@
 <script lang="ts">
-	import ColorPicker from "$lib/components/app/panels/ColorPicker.svelte";
-	import ElementNameValidation from "$lib/components/app/panels/ElementNameValidation.svelte";
-	import ElementProperties from "$lib/components/app/panels/Elements.svelte";
 	import { Input } from "$lib/components/ui/input";
 	import { ScrollArea } from "$lib/components/ui/scroll-area";
 	import { Separator } from "$lib/components/ui/separator";
 	import { App } from "@app";
+	import ColorPicker from "@components/core/ColorPicker.svelte";
+	import ElementNameValidation from "@components/core/ElementNameValidation.svelte";
+	import ElementProperties from "@components/ElementProperties.svelte";
 
 	let { width = 288 }: { width?: number } = $props();
 	const canvas = App.state.canvas;

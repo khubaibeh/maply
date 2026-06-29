@@ -1,11 +1,11 @@
 <script lang="ts">
-	import ElementNameValidation from "$lib/components/app/panels/ElementNameValidation.svelte";
 	import * as Collapsible from "$lib/components/ui/collapsible";
 	import * as ContextMenu from "$lib/components/ui/context-menu";
 	import { Input } from "$lib/components/ui/input";
 	import { ScrollArea } from "$lib/components/ui/scroll-area";
 	import { App } from "@app";
 	import type { Element } from "@app/types";
+	import ElementNameValidation from "@components/core/ElementNameValidation.svelte";
 	import ChevronDown from "@lucide/svelte/icons/chevron-down";
 	import Circle from "@lucide/svelte/icons/circle";
 	import Image from "@lucide/svelte/icons/image";
