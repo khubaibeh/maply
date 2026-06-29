@@ -11,19 +11,11 @@ function bridgeSaveFlush() {
 }
 
 export function queueProjectSave() {
-	/*
-	 * Temporary migration bridge: save still depends on src/lib-owned state.
-	 * Keep that dependency isolated in this file so the later switch to app-owned
-	 * state only replaces this implementation, not the public API or call sites.
-	 */
+	// Keep the Effect-facing save API localized here while the live store owns save triggering.
 	return bridgeSaveQueue();
 }
 
 export function flushProjectSave() {
-	/*
-	 * Temporary migration bridge: save still depends on src/lib-owned state.
-	 * Keep that dependency isolated in this file so the later switch to app-owned
-	 * state only replaces this implementation, not the public API or call sites.
-	 */
+	// Keep the Effect-facing flush API localized here while the live store owns save triggering.
 	return bridgeSaveFlush();
 }

@@ -24,14 +24,12 @@ export const App = {
 	},
 
 	load(projectId?: string) {
-		// Transitional bridge: load must hydrate the current live UI stores, not just fetch persistence.
+		// App.load hydrates the live app-owned stores that drive the UI.
 		return loadApp(projectId);
 	},
 
-	// Transitional bridge: App.project.* is temporarily routed through the live src/lib state graph so
-	// rewired UI consumers keep current behavior while that state still owns the editable document.
-	// This is not moving away from Effect; it is a compatibility step until the app-owned project
-	// implementation can take over the live state responsibilities behind the same public API.
+	// Project workflows stay grouped here so file import/export concerns remain separate from
+	// the live editing actions exposed through App.actions.* and App.element.*.
 	project: {
 		create(options?: { elements?: "sample" | "blank" }) {
 			return createProjectBridge(options);

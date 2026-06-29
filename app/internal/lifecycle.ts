@@ -5,11 +5,7 @@ const DEFAULT_PROJECT_ID = "prod";
 export type Teardown = () => void;
 
 export function loadApp(projectId = DEFAULT_PROJECT_ID) {
-	/*
-	 * Transitional bridge: live editable project hydration still lives in src/lib.
-	 * Keep App.load() pointed at that path until app-owned state can apply the
-	 * fetched record into the active UI stores behind the same public seam.
-	 */
+	// Load routes through the live project store so the active UI state is hydrated in one place.
 	return appProjectState.load(projectId);
 }
 
