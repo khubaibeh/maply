@@ -183,8 +183,7 @@
 		<LeftSidebar width={leftSidebarWidth} />
 
 		<div class="relative w-0 shrink-0 overflow-visible">
-			<button
-				type="button"
+			<div
 				class="group absolute inset-y-0 -left-1 z-10 w-2 cursor-col-resize touch-none bg-transparent outline-none"
 				onpointerdown={(event) => startSidebarResize(event, "left")}
 				role="separator"
@@ -199,7 +198,7 @@
 						? 'bg-primary/70'
 						: ''}"
 				></span>
-			</button>
+			</div>
 		</div>
 
 		<main class="flex min-w-0 flex-1 flex-col">
@@ -208,8 +207,7 @@
 		</main>
 
 		<div class="relative w-0 shrink-0 overflow-visible">
-			<button
-				type="button"
+			<div
 				class="group absolute inset-y-0 -left-1 z-10 w-2 cursor-col-resize touch-none bg-transparent outline-none"
 				onpointerdown={(event) => startSidebarResize(event, "right")}
 				role="separator"
@@ -224,7 +222,7 @@
 						? 'bg-primary/70'
 						: ''}"
 				></span>
-			</button>
+			</div>
 		</div>
 
 		<RightSidebar width={rightSidebarWidth} />
