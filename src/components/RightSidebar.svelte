@@ -3,10 +3,9 @@
 	import { ScrollArea } from "$lib/components/ui/scroll-area";
 	import { Separator } from "$lib/components/ui/separator";
 	import { App } from "@app";
-
-	import ColorPicker from "./ColorPicker.svelte";
-	import ElementNameValidation from "./ElementNameValidation.svelte";
-	import ElementProperties from "./Elements.svelte";
+	import ColorPicker from "@components/core/ColorPicker.svelte";
+	import ElementNameValidation from "@components/core/ElementNameValidation.svelte";
+	import ElementProperties from "@components/ElementProperties.svelte";
 
 	let { width = 288 }: { width?: number } = $props();
 	const canvas = App.state.canvas;

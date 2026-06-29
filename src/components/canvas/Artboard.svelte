@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { App } from "@app";
 
-	import Elements from "./Elements.svelte";
+	import ElementOutline from "./ElementOutline.svelte";
+	import ElementShapes from "./ElementShapes.svelte";
 	import ImageCropOverlay from "./ImageCropOverlay.svelte";
-	import Outline from "./Outline.svelte";
-	import PathHandles from "./PathHandles.svelte";
-	import PathOutline from "./PathOutline.svelte";
+	import PathElementHandles from "./PathElementHandles.svelte";
+	import PathElementOutline from "./PathElementOutline.svelte";
 
 	const canvas = App.state.canvas;
 	const project = App.state.project;
@@ -39,22 +39,22 @@
 	filter="url(#canvas-shadow)"
 />
 
-<Elements />
+<ElementShapes />
 
 {#if hoveredElement && hoveredElement.type !== "path"}
-	<Outline element={hoveredElement} interactive={false} />
+	<ElementOutline element={hoveredElement} interactive={false} />
 {/if}
 
 {#if hoveredElement?.type === "path"}
-	<PathOutline element={hoveredElement} />
+	<PathElementOutline element={hoveredElement} />
 {/if}
 
 {#if selectedElement && selectedElement.type !== "path"}
-	<Outline element={selectedElement} />
+	<ElementOutline element={selectedElement} />
 {/if}
 
 {#if selectedElement?.type === "path"}
-	<PathOutline element={selectedElement} />
+	<PathElementOutline element={selectedElement} />
 {/if}
 
 {#if selectedElement?.type === "image"}
@@ -62,5 +62,5 @@
 {/if}
 
 {#if selectedElement?.type === "path" && $tool.activeTool === "select"}
-	<PathHandles element={selectedElement} />
+	<PathElementHandles element={selectedElement} />
 {/if}

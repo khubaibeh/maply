@@ -3,8 +3,7 @@
 	import { Textarea } from "$lib/components/ui/textarea";
 	import { App } from "@app";
 	import type { Element } from "@app/types";
-
-	import ColorPicker from "./ColorPicker.svelte";
+	import ColorPicker from "@components/core/ColorPicker.svelte";
 
 	interface Props {
 		element: Element;
