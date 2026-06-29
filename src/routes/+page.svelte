@@ -1,8 +1,8 @@
 <script lang="ts">
-	import App from "$lib/components/app";
+	import EditorScreen from "@components/EditorScreen.svelte";
 </script>
 
 <svelte:head>
 	<title>Maply | App</title>
 </svelte:head>
-<App />
+<EditorScreen />
