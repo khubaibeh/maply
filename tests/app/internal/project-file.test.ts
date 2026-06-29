@@ -1,7 +1,5 @@
-import { describe, expect, it } from "vitest";
-
-import { createDefaultProject } from "../domain/defaults";
-import type { StoredImageAsset } from "../domain/image-assets";
+import { createDefaultProject } from "@app/domain/defaults";
+import type { StoredImageAsset } from "@app/domain/image-assets";
 import {
 	PROJECT_FILE_FORMAT,
 	PROJECT_FILE_VERSION,
@@ -9,7 +7,8 @@ import {
 	parseProjectFilePackage,
 	stringifyProjectFilePackage,
 	toImportedProject
-} from "./project-io";
+} from "@app/internal/project-file";
+import { describe, expect, it } from "vitest";
 
 function createAsset(id: string, projectId = "prod"): StoredImageAsset {
 	return {

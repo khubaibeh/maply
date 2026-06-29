@@ -1,6 +1,5 @@
+import { getPathDataBounds, getPathPoints, pathDataFromPoints, updatePathVertex } from "@app/internal/path-geometry";
 import { describe, expect, it } from "vitest";
-
-import { getPathDataBounds, getPathPoints, pathDataFromPoints, updatePathVertex } from "./path-geometry";
 
 describe("pathDataFromPoints", () => {
 	it("creates an open polyline", () => {

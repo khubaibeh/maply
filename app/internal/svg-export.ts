@@ -236,7 +236,7 @@ function getImageRenderRect(element: ImageElement, asset: StoredImageAsset) {
 
 const strJoin = (strings: string[], separator: string) => strings.join(separator);
 
-function buildMetadata(project: Project, imageAssets: StoredImageAsset[]) {
+export function buildMetadata(project: Project, imageAssets: StoredImageAsset[]) {
 	const projectFile = createProjectFilePackage(project, imageAssets);
 
 	return {

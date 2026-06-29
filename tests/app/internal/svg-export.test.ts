@@ -1,8 +1,7 @@
+import { createDefaultProject } from "@app/domain/defaults";
+import type { StoredImageAsset } from "@app/domain/image-assets";
+import { buildMetadata, buildSvgExport } from "@app/internal/svg-export";
 import { describe, expect, it } from "vitest";
-
-import { createDefaultProject } from "../domain/defaults";
-import type { StoredImageAsset } from "../domain/image-assets";
-import { buildSvgExport, createSvgRecoveryMetadata } from "./svg-export";
 
 function createAsset(id: string): StoredImageAsset {
 	return {
@@ -115,7 +114,7 @@ describe("buildSvgExport", () => {
 
 		const asset = createAsset("asset-1");
 		const svg = buildSvgExport(project, [asset]);
-		const metadata = createSvgRecoveryMetadata(project, [asset]);
+		const metadata = buildMetadata(project, [asset]);
 
 		expect(svg).toContain('data-maply-asset-id="asset-1"');
 		expect(svg).toContain('href="data:image/png;base64,abc"');

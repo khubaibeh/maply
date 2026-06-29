@@ -1,15 +1,14 @@
-import { describe, expect, it } from "vitest";
-
 import {
 	cloneStoredImageAsset,
 	createStoredImageAsset,
-	getImageCropStateForFrameResize,
 	getImageCropMetrics,
+	getImageCropStateForFrameResize,
 	getImageRenderRect,
 	normalizeSvgMarkup,
 	normalizeSvgToDataUrl,
 	translateImageCrop
-} from "./image-assets";
+} from "@app/internal/image-assets";
+import { describe, expect, it } from "vitest";
 
 describe("normalizeSvgMarkup", () => {
 	it("strips xml declarations and ensures xmlns", () => {
