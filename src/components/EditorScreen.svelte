@@ -1,71 +1,30 @@
 <script lang="ts">
 	import { App } from "@app";
-	import type { Tool } from "@app/types";
+	import CanvasArea from "@components/CanvasArea.svelte";
+	import Toolbar from "@components/core/Toolbar.svelte";
+	import Topbar from "@components/core/Topbar.svelte";
+	import LeftSidebar from "@components/LeftSidebar.svelte";
+	import RightSidebar from "@components/RightSidebar.svelte";
 	import { onMount } from "svelte";
 
-	import CanvasArea from "./canvas";
-	import BottomToolbar from "./core/BottomToolbar.svelte";
-	import TopNavbar from "./core/TopNavbar.svelte";
-	import LeftSidebar from "./panels/LeftSidebar.svelte";
-	import RightSidebar from "./panels/RightSidebar.svelte";
+	import {
+		clamp,
+		getArrowDelta,
+		getShortcutTool,
+		isEditingText,
+		LEFT_SIDEBAR_MIN_WIDTH,
+		MAIN_AREA_MIN_WIDTH,
+		RESIZE_HANDLE_WIDTH,
+		RIGHT_SIDEBAR_MIN_WIDTH,
+		SIDEBAR_MAX_WIDTH_RATIO
+	} from "./core.ts";
 
-	const LEFT_SIDEBAR_MIN_WIDTH = 240;
-	const RIGHT_SIDEBAR_MIN_WIDTH = 288;
-	const SIDEBAR_MAX_WIDTH_RATIO = 1.75;
-	const MAIN_AREA_MIN_WIDTH = 480;
-	const RESIZE_HANDLE_WIDTH = 8;
 	const project = App.state.project;
 
 	let layoutRef: HTMLDivElement | null = $state(null);
 	let leftSidebarWidth = $state(LEFT_SIDEBAR_MIN_WIDTH);
 	let rightSidebarWidth = $state(RIGHT_SIDEBAR_MIN_WIDTH);
 	let activeResizeSide = $state<"left" | "right" | null>(null);
-
-	function isEditingText(event: KeyboardEvent): boolean {
-		const target = event.target as HTMLElement | null;
-		if (!target) return false;
-		return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target.isContentEditable;
-	}
-
-	function getArrowDelta(key: string, step: number) {
-		switch (key) {
-			case "ArrowLeft":
-				return { dx: -step, dy: 0 };
-			case "ArrowRight":
-				return { dx: step, dy: 0 };
-			case "ArrowUp":
-				return { dx: 0, dy: -step };
-			case "ArrowDown":
-				return { dx: 0, dy: step };
-			default:
-				return null;
-		}
-	}
-
-	function getShortcutTool(key: string): Tool | null {
-		switch (key.toLowerCase()) {
-			case "v":
-				return "select";
-			case "h":
-				return "hand";
-			case "r":
-				return "rect";
-			case "c":
-				return "circle";
-			case "p":
-				return "path";
-			case "t":
-				return "text";
-			case "i":
-				return "image";
-			default:
-				return null;
-		}
-	}
-
-	function clamp(value: number, min: number, max: number) {
-		return Math.min(Math.max(value, min), max);
-	}
 
 	function updateSidebarWidth(clientX: number) {
 		if (!layoutRef || !activeResizeSide) return;
@@ -177,14 +136,13 @@
 </script>
 
 <div class="bg-background text-foreground flex h-screen w-screen flex-col overflow-hidden">
-	<TopNavbar />
+	<Topbar />
 
 	<div bind:this={layoutRef} class="flex min-h-0 flex-1">
 		<LeftSidebar width={leftSidebarWidth} />
 
 		<div class="relative w-0 shrink-0 overflow-visible">
-			<button
-				type="button"
+			<div
 				class="group absolute inset-y-0 -left-1 z-10 w-2 cursor-col-resize touch-none bg-transparent outline-none"
 				onpointerdown={(event) => startSidebarResize(event, "left")}
 				role="separator"
@@ -199,17 +157,16 @@
 						? 'bg-primary/70'
 						: ''}"
 				></span>
-			</button>
+			</div>
 		</div>
 
 		<main class="flex min-w-0 flex-1 flex-col">
 			<CanvasArea />
-			<BottomToolbar />
+			<Toolbar />
 		</main>
 
 		<div class="relative w-0 shrink-0 overflow-visible">
-			<button
-				type="button"
+			<div
 				class="group absolute inset-y-0 -left-1 z-10 w-2 cursor-col-resize touch-none bg-transparent outline-none"
 				onpointerdown={(event) => startSidebarResize(event, "right")}
 				role="separator"
@@ -224,7 +181,7 @@
 						? 'bg-primary/70'
 						: ''}"
 				></span>
-			</button>
+			</div>
 		</div>
 
 		<RightSidebar width={rightSidebarWidth} />
