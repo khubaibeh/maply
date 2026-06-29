@@ -1,15 +1,10 @@
 <script lang="ts">
-	import {
-		getPathRenderTransform,
-		getWrappedTextLineHeight,
-		getWrappedTextLines,
-		getWrappedTextMetrics
-	} from "$lib/app/core/element-actions";
-	import { getImageRenderRect } from "$lib/app/core/image-assets";
-	import { imageAssetState } from "$lib/app/state/image-assets.svelte";
-	import { projectState } from "$lib/app/state/project.svelte";
-	import { toolState } from "$lib/app/state/tool.svelte";
+	import { App } from "@app";
 	import { onMount } from "svelte";
+
+	const imageAssets = App.state.imageAssets;
+	const project = App.state.project;
+	const tool = App.state.tool;
 
 	let dragState = $state<{
 		kind: "move";
@@ -37,21 +32,21 @@
 		return point.matrixTransform(ctm.inverse());
 	}
 
-	function getElementOrigin(element: (typeof $projectState.elements)[number]) {
+	function getElementOrigin(element: (typeof $project.elements)[number]) {
 		if (element.type === "circle") return { x: element.cx, y: element.cy };
 		return { x: element.x, y: element.y };
 	}
 
 	function selectElement(event: PointerEvent, id: string) {
-		if ($toolState.activeTool !== "select") return;
+		if ($tool.activeTool !== "select") return;
 		event.stopPropagation();
 
-		const wasSelected = $projectState.selectedElementId === id;
+		const wasSelected = $project.selectedElementId === id;
 		if (!wasSelected) {
-			projectState.selectElement(id);
+			App.actions.project.selectElement(id);
 		}
 
-		const element = $projectState.elements.find((e) => e.id === id);
+		const element = $project.elements.find((e) => e.id === id);
 		if (!element) return;
 
 		const svg = getSvgRoot(event.target);
@@ -74,13 +69,13 @@
 	}
 
 	function hoverElement(id: string) {
-		if ($toolState.activeTool !== "select") return;
-		projectState.setHoveredElement(id);
+		if ($tool.activeTool !== "select") return;
+		App.actions.project.setHoveredElement(id);
 	}
 
 	function clearHoveredElement(id: string) {
-		if ($projectState.hoveredElementId !== id) return;
-		projectState.setHoveredElement(null);
+		if ($project.hoveredElementId !== id) return;
+		App.actions.project.setHoveredElement(null);
 	}
 
 	onMount(() => {
@@ -96,12 +91,12 @@
 			dragState.didMove = true;
 			const nextX = dragState.elementX + (svgPoint.x - dragState.grabX);
 			const nextY = dragState.elementY + (svgPoint.y - dragState.grabY);
-			projectState.setElementPosition(dragState.id, nextX, nextY);
+			App.actions.project.setElementPosition(dragState.id, nextX, nextY);
 		}
 
 		function stopDragging() {
 			if (dragState && dragState.wasSelected && !dragState.didMove) {
-				projectState.selectElement(null);
+				App.actions.project.selectElement(null);
 			}
 			dragState = null;
 		}
@@ -119,7 +114,7 @@
 </script>
 
 <g class="canvas-elements">
-	{#each $projectState.elements as element (element.id)}
+	{#each $project.elements as element (element.id)}
 		{#if element.type === "rect"}
 			<rect
 				id="element-{element.id}"
@@ -158,7 +153,7 @@
 				onpointerleave={() => clearHoveredElement(element.id)}
 			/>
 		{:else if element.type === "path"}
-			{@const transform = getPathRenderTransform(element)}
+			{@const transform = App.geometry.pathRenderTransform(element)}
 			<path
 				id="element-{element.id}"
 				data-canvas-element={element.id}
@@ -176,9 +171,9 @@
 				onpointerleave={() => clearHoveredElement(element.id)}
 			/>
 		{:else if element.type === "text"}
-			{@const wrappedLines = getWrappedTextLines(element)}
-			{@const lineHeight = getWrappedTextLineHeight(element)}
-			{@const textMetrics = getWrappedTextMetrics(element)}
+			{@const wrappedLines = App.text.wrappedLines(element)}
+			{@const lineHeight = App.text.wrappedLineHeight(element)}
+			{@const textMetrics = App.text.wrappedMetrics(element)}
 			<defs>
 				<clipPath id="text-clip-{element.id}">
 					<rect
@@ -214,7 +209,7 @@
 				{/each}
 			</text>
 		{:else if element.type === "image"}
-			{@const imageAsset = element.assetId ? $imageAssetState[element.assetId] : null}
+			{@const imageAsset = element.assetId ? $imageAssets[element.assetId] : null}
 			{@const imageHref = imageAsset?.dataUrl ?? element.href ?? ""}
 			<g
 				id="element-{element.id}"
@@ -230,7 +225,7 @@
 				<rect x={element.x} y={element.y} width={element.width} height={element.height} fill="var(--muted)" />
 				{#if imageHref}
 					{@const renderRect = imageAsset
-						? getImageRenderRect({
+						? App.geometry.imageRenderRect({
 								x: 0,
 								y: 0,
 								width: element.width,

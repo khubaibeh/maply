@@ -1,7 +1,7 @@
 <script lang="ts">
-	import type { Tool } from "$lib/app/domain/tools";
-	import { toolState } from "$lib/app/state/tool.svelte";
 	import * as Tooltip from "$lib/components/ui/tooltip";
+	import { App } from "@app";
+	import type { Tool } from "@app/types";
 	import Circle from "@lucide/svelte/icons/circle";
 	import Hand from "@lucide/svelte/icons/hand";
 	import Image from "@lucide/svelte/icons/image";
@@ -19,10 +19,11 @@
 		{ id: "text", label: "Text", shortcut: "T", icon: Type },
 		{ id: "image", label: "Image", shortcut: "I", icon: Image }
 	] as const;
+	const toolState = App.state.tool;
 
-	function selectTool(tool: Tool) {
+	function selectTool(nextTool: Tool) {
 		if ($toolState.isSpacePressed) return;
-		toolState.setTool(tool);
+		App.actions.tool.set(nextTool);
 		(document.activeElement as HTMLElement | null)?.blur();
 	}
 </script>

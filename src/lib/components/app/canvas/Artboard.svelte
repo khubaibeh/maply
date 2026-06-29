@@ -1,7 +1,5 @@
 <script lang="ts">
-	import { canvasState } from "$lib/app/state/canvas.svelte";
-	import { projectState } from "$lib/app/state/project.svelte";
-	import { toolState } from "$lib/app/state/tool.svelte";
+	import { App } from "@app";
 
 	import Elements from "./Elements.svelte";
 	import ImageCropOverlay from "./ImageCropOverlay.svelte";
@@ -9,14 +7,18 @@
 	import PathHandles from "./PathHandles.svelte";
 	import PathOutline from "./PathOutline.svelte";
 
+	const canvas = App.state.canvas;
+	const project = App.state.project;
+	const tool = App.state.tool;
+
 	const selectedElement = $derived(
-		$projectState.elements.find((element) => element.id === $projectState.selectedElementId) ?? null
+		$project.elements.find((element) => element.id === $project.selectedElementId) ?? null
 	);
 	const hoveredElement = $derived(
-		$toolState.activeTool === "select" &&
-			$projectState.hoveredElementId &&
-			$projectState.hoveredElementId !== $projectState.selectedElementId
-			? ($projectState.elements.find((element) => element.id === $projectState.hoveredElementId) ?? null)
+		$tool.activeTool === "select" &&
+			$project.hoveredElementId &&
+			$project.hoveredElementId !== $project.selectedElementId
+			? ($project.elements.find((element) => element.id === $project.hoveredElementId) ?? null)
 			: null
 	);
 </script>
@@ -28,11 +30,11 @@
 </defs>
 
 <rect
-	x={$canvasState.x}
-	y={$canvasState.y}
-	width={$canvasState.width}
-	height={$canvasState.height}
-	fill={$canvasState.color}
+	x={$canvas.x}
+	y={$canvas.y}
+	width={$canvas.width}
+	height={$canvas.height}
+	fill={$canvas.color}
 	stroke="var(--border)"
 	filter="url(#canvas-shadow)"
 />
@@ -56,12 +58,9 @@
 {/if}
 
 {#if selectedElement?.type === "image"}
-	<ImageCropOverlay
-		element={selectedElement}
-		cropEditing={$projectState.cropEditingElementId === selectedElement.id}
-	/>
+	<ImageCropOverlay element={selectedElement} cropEditing={$project.cropEditingElementId === selectedElement.id} />
 {/if}
 
-{#if selectedElement?.type === "path" && $toolState.activeTool === "select"}
+{#if selectedElement?.type === "path" && $tool.activeTool === "select"}
 	<PathHandles element={selectedElement} />
 {/if}

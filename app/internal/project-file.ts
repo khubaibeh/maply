@@ -2,11 +2,11 @@ import { createDefaultProject } from "../domain/defaults";
 import type { CircleElement, Element, ImageElement, PathElement, RectElement, TextElement } from "../domain/elements";
 import type { StoredImageAsset } from "../domain/image-assets";
 import type { Camera, Canvas, ImportExportState, Project } from "../domain/project";
-import { sanitizeCanvasSize, validNumber } from "./canvas-actions";
-import { normalizeElements } from "./element-actions";
 
 export const PROJECT_FILE_FORMAT = "maply-project";
 export const PROJECT_FILE_VERSION = 1;
+
+const TEXT_LINE_HEIGHT_RATIO = 1.2;
 
 export type ProjectFilePackage = {
 	format: typeof PROJECT_FILE_FORMAT;
@@ -19,6 +19,57 @@ type UnknownRecord = Record<string, unknown>;
 
 function isRecord(value: unknown): value is UnknownRecord {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function validNumber(value: unknown): value is number {
+	return typeof value === "number" && Number.isFinite(value);
+}
+
+function sanitizeCanvasSize(value: number) {
+	return Math.max(1, Math.round(value));
+}
+
+function estimateSingleLineTextWidth(text: string, fontSize: number) {
+	return Math.max(1, text.length * fontSize * 0.6);
+}
+
+function estimateTextBoxHeight(fontSize: number, text: string) {
+	return Math.max(1, Math.ceil(text.split("\n").length * fontSize * TEXT_LINE_HEIGHT_RATIO));
+}
+
+function normalizeElement(element: Element): Element {
+	if (element.type === "path") {
+		const closed = /\s*[Zz]\s*$/.test(element.d);
+		return {
+			...element,
+			closed,
+			strokeWidth: closed ? 0 : element.strokeWidth,
+			fill: closed ? element.fill : "none"
+		};
+	}
+
+	if (element.type === "text") {
+		return {
+			...element,
+			width: element.width >= 1 ? element.width : estimateSingleLineTextWidth(element.text, element.fontSize),
+			height: element.height >= 1 ? element.height : estimateTextBoxHeight(element.fontSize, element.text)
+		};
+	}
+
+	if (element.type === "image") {
+		return {
+			...element,
+			cropX: Math.min(100, Math.max(-100, element.cropX)),
+			cropY: Math.min(100, Math.max(-100, element.cropY)),
+			cropScale: Math.max(100, element.cropScale)
+		};
+	}
+
+	return element;
+}
+
+function normalizeElements(elements: Element[]) {
+	return elements.map(normalizeElement);
 }
 
 function requireString(value: unknown, message: string): string {
@@ -231,7 +282,8 @@ export function createProjectFilePackage(project: Project, imageAssets: StoredIm
 }
 
 export function stringifyProjectFilePackage(projectFile: ProjectFilePackage): string {
-	return JSON.stringify(projectFile, null, 2);
+	const normalized = createProjectFilePackage(projectFile.project, projectFile.imageAssets);
+	return JSON.stringify(normalized, null, 2);
 }
 
 export function parseProjectFilePackage(text: string): ProjectFilePackage {
@@ -244,11 +296,9 @@ export function parseProjectFilePackage(text: string): ProjectFilePackage {
 	}
 
 	if (!isRecord(parsed)) throw new Error("Project file root must be an object.");
-
 	if (parsed.format !== PROJECT_FILE_FORMAT) {
 		throw new Error("Unsupported project file format.");
 	}
-
 	if (parsed.version !== PROJECT_FILE_VERSION) {
 		throw new Error(`Unsupported project file version: ${String(parsed.version)}.`);
 	}
@@ -268,7 +318,6 @@ export function parseProjectFilePackage(text: string): ProjectFilePackage {
 }
 
 export function toImportedProject(projectFile: ProjectFilePackage, projectId: string): ProjectFilePackage {
-	// Import callers may pass reactive proxies, so normalize back into plain validated records first.
 	const normalized = createProjectFilePackage(projectFile.project, projectFile.imageAssets);
 	const project = structuredClone(normalized.project);
 	const imageAssets = structuredClone(normalized.imageAssets).map((asset) => ({ ...asset, projectId }));

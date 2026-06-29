@@ -1,7 +1,7 @@
 import { get, writable } from "svelte/store";
 
-import { CONSTANTS, mergeCamera, sanitizeCanvasSize } from "../core/canvas-actions";
 import type { Camera } from "../domain/project";
+import { CONSTANTS, mergeCamera, sanitizeCanvasSize } from "../internal/canvas";
 
 type CanvasState = {
 	width: number;
@@ -25,7 +25,7 @@ const store = writable<CanvasState>({
 	maxZoom: CONSTANTS.max_zoom
 });
 
-export const canvasState = {
+export const appCanvasState = {
 	subscribe: store.subscribe,
 
 	getSnapshot() {

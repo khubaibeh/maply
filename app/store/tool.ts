@@ -2,8 +2,6 @@ import { get, writable } from "svelte/store";
 
 import type { Tool } from "../domain/tools";
 
-export type { Tool };
-
 type ToolState = {
 	activeTool: Tool;
 	previousTool: Tool | null;
@@ -16,7 +14,7 @@ const store = writable<ToolState>({
 	isSpacePressed: false
 });
 
-export const toolState = {
+export const appToolState = {
 	subscribe: store.subscribe,
 
 	setTool(tool: Tool) {

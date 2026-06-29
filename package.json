@@ -1,6 +1,6 @@
 {
 	"name": "maply",
-	"version": "0.0.1",
+	"version": "0.1.0",
 	"private": true,
 	"type": "module",
 	"scripts": {
@@ -13,6 +13,9 @@
 		"test": "vitest run",
 		"lint": "eslint --ignore-pattern \"src/lib/components/ui/**\" --fix .",
 		"fmt": "oxfmt && prettier --log-level warn --write ."
+	},
+	"dependencies": {
+		"effect": "4.0.0-beta.90"
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",

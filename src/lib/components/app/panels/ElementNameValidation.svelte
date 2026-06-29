@@ -1,7 +1,7 @@
 <script lang="ts">
-	import type { ElementNameValidation } from "$lib/app/core/element-name-validation";
 	import { Button } from "$lib/components/ui/button";
 	import * as Tooltip from "$lib/components/ui/tooltip";
+	import type { ElementNameValidation } from "@app/types";
 	import ChevronDown from "@lucide/svelte/icons/chevron-down";
 	import TriangleAlert from "@lucide/svelte/icons/triangle-alert";
 	import { SvelteMap } from "svelte/reactivity";

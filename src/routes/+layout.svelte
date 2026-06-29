@@ -1,12 +1,10 @@
 <script lang="ts">
-	import { canvasState } from "$lib/app/state/canvas.svelte";
-	import { projectState } from "$lib/app/state/project.svelte";
+	import favicon from "$lib/assets/favicon.svg";
 
 	import "./layout.css";
 	import "./selections.css";
-	import { getTheme } from "$lib/app/theme.svelte";
-	import favicon from "$lib/assets/favicon.svg";
 	import * as Tooltip from "$lib/components/ui/tooltip";
+	import { App } from "@app";
 	import Monitor from "@lucide/svelte/icons/monitor";
 	import { onMount } from "svelte";
 
@@ -16,43 +14,29 @@
 	let innerHeight = $state(0);
 	let isClient = $state(false);
 	let MIN_DIM = [800, 600];
+	const canvas = App.state.canvas;
+	const project = App.state.project;
+	const theme = App.theme.use();
 
 	let isTooSmall = $derived(isClient && (innerWidth < MIN_DIM[0] || innerHeight < MIN_DIM[1]));
 
-	getTheme();
+	void theme;
 
 	$effect(() => {
-		if (!$projectState.initialized) return;
+		const projectState = $project;
+		const canvasState = $canvas;
+		if (!projectState.initialized) return;
 
 		// Layout owns autosave because it observes both project and canvas state.
-		projectState.queueSave({
-			id: $projectState.id,
-			name: $projectState.name,
-			canvas: {
-				width: $canvasState.width,
-				height: $canvasState.height,
-				color: $canvasState.color,
-				x: $canvasState.x,
-				y: $canvasState.y
-			},
-			camera: {
-				x: $canvasState.camera.x,
-				y: $canvasState.camera.y,
-				zoom: $canvasState.camera.zoom
-			},
-			elements: $projectState.elements.map((element) => ({ ...element })),
-			importExportState: {
-				importsOpen: $projectState.importExportState.importsOpen,
-				elementsOpen: $projectState.importExportState.elementsOpen
-			}
-		});
+		void canvasState;
+		App.save.queue();
 	});
 
 	onMount(() => {
 		isClient = true;
 
 		const flushProjectSave = () => {
-			void projectState.saveNow();
+			void App.save.flush();
 		};
 
 		const handleVisibilityChange = () => {
@@ -62,7 +46,7 @@
 		};
 
 		// Load once on the client and flush pending saves through browser shutdown paths.
-		void projectState.load();
+		void App.load();
 		window.addEventListener("pagehide", flushProjectSave);
 		window.addEventListener("beforeunload", flushProjectSave);
 		document.addEventListener("visibilitychange", handleVisibilityChange);

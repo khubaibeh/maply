@@ -1,6 +1,16 @@
 import { get, writable } from "svelte/store";
 
-import { deleteImageAsset, fetchProject, DEFAULTS, replaceProject, resetProdProject, saveImageAsset } from "../core/db";
+import type { Element } from "../domain/elements";
+import type { StoredImageAsset } from "../domain/image-assets";
+import type { Project } from "../domain/project";
+import {
+	deleteImageAsset,
+	fetchProject,
+	DEFAULTS,
+	replaceProject,
+	resetProdProject,
+	saveImageAsset
+} from "../internal/db";
 import {
 	clampElementToCanvas,
 	duplicateElement,
@@ -8,25 +18,20 @@ import {
 	resizeImageFrameWithinCanvas,
 	setElementPosition,
 	translateElementWithinCanvas
-} from "../core/element-actions";
-import type { ResizeHandle } from "../core/element-actions";
+} from "../internal/element-actions";
+import type { ResizeHandle } from "../internal/element-actions";
 import {
 	cloneStoredImageAsset,
 	getImageCropStateForFrameResize,
 	importImageFile,
 	translateImageCrop
-} from "../core/image-assets";
-import { createProjectFilePackage, type ProjectFilePackage, toImportedProject } from "../core/project-io";
-import { exportProjectSvg } from "../core/svg-export";
-import type { Element } from "../domain/elements";
-import type { StoredImageAsset } from "../domain/image-assets";
-import type { Project } from "../domain/project";
-import { queueProjectSave, saveProjectNow } from "./autosave.svelte";
-import { canvasState } from "./canvas.svelte";
+} from "../internal/image-assets";
+import { createProjectFilePackage, type ProjectFilePackage, toImportedProject } from "../internal/project-file";
+import { exportProjectSvg } from "../internal/svg-export";
+import { appCanvasState } from "./canvas";
 import { getClipboardElement } from "./clipboard.svelte";
-import { imageAssetState } from "./image-assets.svelte";
+import { appImageAssetState } from "./image-assets";
 
-// Project state owns document data while canvasState owns viewport and artboard geometry.
 type ProjectState = {
 	id: string;
 	name: string;
@@ -53,16 +58,16 @@ const store = writable<ProjectState>({
 });
 
 async function applyProjectRecord(record: Project) {
-	canvasState.setSize(record.canvas.width, record.canvas.height);
-	canvasState.setColor(record.canvas.color);
-	canvasState.setPosition(record.canvas.x, record.canvas.y);
+	appCanvasState.setSize(record.canvas.width, record.canvas.height);
+	appCanvasState.setColor(record.canvas.color);
+	appCanvasState.setPosition(record.canvas.x, record.canvas.y);
 	if (record.camera) {
-		canvasState.setCamera(record.camera);
+		appCanvasState.setCamera(record.camera);
 	} else {
-		canvasState.resetCamera();
+		appCanvasState.resetCamera();
 	}
 
-	const canvas = canvasState.getSnapshot();
+	const canvas = appCanvasState.getSnapshot();
 	store.update((state) => ({
 		...state,
 		name: record.name,
@@ -72,11 +77,11 @@ async function applyProjectRecord(record: Project) {
 		hoveredElementId: null,
 		cropEditingElementId: null
 	}));
-	await imageAssetState.loadForElements(record.elements);
+	await appImageAssetState.loadForElements(record.elements);
 }
 
 function getReferencedImageAssets(project: Project): StoredImageAsset[] {
-	const assets = imageAssetState.getSnapshot();
+	const assets = appImageAssetState.getSnapshot();
 	const referencedIds = Array.from(
 		new Set(
 			project.elements.flatMap((element) =>
@@ -96,9 +101,8 @@ function getReferencedImageAssets(project: Project): StoredImageAsset[] {
 }
 
 function toProject(): Project {
-	// Persisted projects are assembled from both state stores.
 	const project = get(store);
-	const canvas = canvasState.getSnapshot();
+	const canvas = appCanvasState.getSnapshot();
 
 	return {
 		id: project.id,
@@ -120,22 +124,18 @@ function toProject(): Project {
 	};
 }
 
-export const projectState = {
+export const appProjectState = {
 	subscribe: store.subscribe,
+
+	getSnapshot() {
+		return get(store);
+	},
 
 	toProject,
 
 	getSelectedElement() {
 		const project = get(store);
 		return project.elements.find((element) => element.id === project.selectedElementId) ?? null;
-	},
-
-	queueSave(project = toProject()) {
-		queueProjectSave(project, get(store).initialized);
-	},
-
-	async saveNow() {
-		await saveProjectNow(toProject(), get(store).initialized);
 	},
 
 	async load(projectId = DEFAULTS.prodProjId) {
@@ -146,10 +146,9 @@ export const projectState = {
 			await applyProjectRecord(record);
 		} catch (error) {
 			console.warn("Failed to load project, using defaults:", error);
-			imageAssetState.clear();
+			appImageAssetState.clear();
 		}
 
-		// Autosave is enabled only after the initial load path has finished.
 		store.update((state) => ({
 			...state,
 			selectedElementId: null,
@@ -161,7 +160,6 @@ export const projectState = {
 
 	setName(nextName: string) {
 		store.update((state) => ({ ...state, name: nextName }));
-		this.queueSave();
 	},
 
 	setImportExportState(nextState: Partial<Project["importExportState"]>) {
@@ -179,14 +177,11 @@ export const projectState = {
 		}
 
 		store.update((state) => ({ ...state, importExportState: nextImportExportState }));
-		this.queueSave();
 	},
 
 	async createNewProject(options: { elements?: "sample" | "blank" } = {}) {
-		// The app has one editable project slot, so creating a project resets that slot.
 		const fresh = await resetProdProject(options);
 		await applyProjectRecord(fresh);
-		this.queueSave();
 	},
 
 	exportProjectFilePackage(): ProjectFilePackage {
@@ -204,13 +199,13 @@ export const projectState = {
 		const imported = toImportedProject(projectFile, activeProjectId);
 		await replaceProject(imported.project, imported.imageAssets);
 
-		imageAssetState.setAll(imported.imageAssets);
+		appImageAssetState.setAll(imported.imageAssets);
 		await applyProjectRecord(imported.project);
 		store.update((state) => ({ ...state, initialized: true }));
 	},
 
 	addElement(element: Element) {
-		const canvas = canvasState.getSnapshot();
+		const canvas = appCanvasState.getSnapshot();
 		const nextElement = clampElementToCanvas(element, canvas);
 
 		store.update((state) => ({
@@ -218,19 +213,18 @@ export const projectState = {
 			elements: [...state.elements, nextElement],
 			selectedElementId: nextElement.id
 		}));
-		this.queueSave();
 	},
 
 	async setImageAssetFromFile(id: string, file: File) {
 		const projectId = get(store).id;
 		const nextAsset = await importImageFile(file, projectId);
 		await saveImageAsset(nextAsset);
-		imageAssetState.setAsset(nextAsset);
+		appImageAssetState.setAsset(nextAsset);
 
 		const current = get(store).elements.find((element) => element.id === id);
 		if (current?.type === "image" && current.assetId && current.assetId !== nextAsset.id) {
 			await deleteImageAsset(current.assetId);
-			imageAssetState.removeAsset(current.assetId);
+			appImageAssetState.removeAsset(current.assetId);
 		}
 
 		this.updateElement(id, {
@@ -248,7 +242,7 @@ export const projectState = {
 
 		if (current.assetId) {
 			await deleteImageAsset(current.assetId);
-			imageAssetState.removeAsset(current.assetId);
+			appImageAssetState.removeAsset(current.assetId);
 		}
 
 		this.updateElement(id, {
@@ -272,7 +266,7 @@ export const projectState = {
 		const current = get(store).elements.find((element) => element.id === id);
 		if (!current || current.type !== "image" || !current.assetId) return;
 
-		const asset = imageAssetState.getAsset(current.assetId);
+		const asset = appImageAssetState.getAsset(current.assetId);
 		if (!asset) return;
 
 		const nextCrop = translateImageCrop(
@@ -298,7 +292,7 @@ export const projectState = {
 	},
 
 	resizeImageFrame(id: string, handle: ResizeHandle, dx: number, dy: number) {
-		const canvas = canvasState.getSnapshot();
+		const canvas = appCanvasState.getSnapshot();
 
 		store.update((state) => ({
 			...state,
@@ -308,7 +302,7 @@ export const projectState = {
 				const nextFrame = resizeImageFrameWithinCanvas(element, handle, dx, dy, canvas);
 				if (!element.assetId) return nextFrame;
 
-				const asset = imageAssetState.getAsset(element.assetId);
+				const asset = appImageAssetState.getAsset(element.assetId);
 				if (!asset) return nextFrame;
 
 				const nextCrop = getImageCropStateForFrameResize(
@@ -334,11 +328,10 @@ export const projectState = {
 				return { ...nextFrame, ...nextCrop };
 			})
 		}));
-		this.queueSave();
 	},
 
 	updateElement(id: string, patch: Partial<Omit<Element, "id" | "type">>) {
-		const canvas = canvasState.getSnapshot();
+		const canvas = appCanvasState.getSnapshot();
 
 		store.update((state) => ({
 			...state,
@@ -347,12 +340,11 @@ export const projectState = {
 				return clampElementToCanvas({ ...element, ...patch } as Element, canvas);
 			})
 		}));
-		this.queueSave();
 	},
 
 	translateElement(id: string, dx: number, dy: number) {
 		if (dx === 0 && dy === 0) return;
-		const canvas = canvasState.getSnapshot();
+		const canvas = appCanvasState.getSnapshot();
 
 		store.update((state) => ({
 			...state,
@@ -361,11 +353,10 @@ export const projectState = {
 				return translateElementWithinCanvas(element, dx, dy, canvas);
 			})
 		}));
-		this.queueSave();
 	},
 
 	setElementPosition(id: string, x: number, y: number) {
-		const canvas = canvasState.getSnapshot();
+		const canvas = appCanvasState.getSnapshot();
 
 		store.update((state) => ({
 			...state,
@@ -374,17 +365,15 @@ export const projectState = {
 				return setElementPosition(element, x, y, canvas);
 			})
 		}));
-		this.queueSave();
 	},
 
 	clampElementsToCanvas() {
-		const canvas = canvasState.getSnapshot();
+		const canvas = appCanvasState.getSnapshot();
 
 		store.update((state) => ({
 			...state,
 			elements: state.elements.map((element) => clampElementToCanvas(element, canvas))
 		}));
-		this.queueSave();
 	},
 
 	renameElement(id: string, nextName: string) {
@@ -413,11 +402,11 @@ export const projectState = {
 
 		const nextElement = duplicateElement(copied, get(store).elements);
 		if (nextElement.type === "image" && nextElement.assetId) {
-			const asset = imageAssetState.getAsset(nextElement.assetId);
+			const asset = appImageAssetState.getAsset(nextElement.assetId);
 			if (asset) {
 				const clonedAsset = cloneStoredImageAsset(asset, get(store).id);
 				await saveImageAsset(clonedAsset);
-				imageAssetState.setAsset(clonedAsset);
+				appImageAssetState.setAsset(clonedAsset);
 				nextElement.assetId = clonedAsset.id;
 			} else {
 				nextElement.assetId = null;
@@ -452,7 +441,6 @@ export const projectState = {
 		const [moved] = next.splice(fromIndex, 1);
 		next.splice(toIndex, 0, moved);
 		store.update((state) => ({ ...state, elements: next }));
-		this.queueSave();
 	},
 
 	moveElementToFront(id: string) {
@@ -491,9 +479,8 @@ export const projectState = {
 			deleteImageAsset(current.assetId).catch((error) => {
 				console.warn("Failed to delete image asset:", error);
 			});
-			imageAssetState.removeAsset(current.assetId);
+			appImageAssetState.removeAsset(current.assetId);
 		}
-		this.queueSave();
 	}
 };
 

@@ -1,8 +1,8 @@
 import { get, writable } from "svelte/store";
 
-import { fetchImageAssets } from "../core/db";
 import type { Element } from "../domain/elements";
 import type { StoredImageAsset } from "../domain/image-assets";
+import { fetchImageAssets } from "../internal/db";
 
 const store = writable<Record<string, StoredImageAsset>>({});
 
@@ -10,7 +10,7 @@ function getImageAssetIds(elements: Element[]) {
 	return elements.flatMap((element) => (element.type === "image" && element.assetId ? [element.assetId] : []));
 }
 
-export const imageAssetState = {
+export const appImageAssetState = {
 	subscribe: store.subscribe,
 
 	getSnapshot() {

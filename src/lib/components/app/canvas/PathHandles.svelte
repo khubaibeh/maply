@@ -1,10 +1,6 @@
 <script lang="ts">
-	import { getPathRenderTransform } from "$lib/app/core/element-actions";
-	import { getPathDataBounds, getPathPoints, updatePathVertex } from "$lib/app/core/path-geometry";
-	import type { Element, PathElement } from "$lib/app/domain/elements";
-	import type { Point } from "$lib/app/domain/geometry";
-	import { canvasState } from "$lib/app/state/canvas.svelte";
-	import { projectState } from "$lib/app/state/project.svelte";
+	import { App } from "@app";
+	import type { Element, PathElement, Point } from "@app/types";
 	import { onMount } from "svelte";
 
 	interface Props {
@@ -12,6 +8,7 @@
 	}
 
 	let { element }: Props = $props();
+	const canvas = App.state.canvas;
 
 	const HANDLE_SIZE_SCREEN = 8;
 
@@ -22,9 +19,9 @@
 		svg: SVGSVGElement;
 	} | null>(null);
 
-	const points = $derived(getPathPoints(element.d));
-	const transform = $derived(getPathRenderTransform(element));
-	const handleSize = $derived(HANDLE_SIZE_SCREEN / $canvasState.camera.zoom);
+	const points = $derived(App.geometry.pathPoints(element.d));
+	const transform = $derived(App.geometry.pathRenderTransform(element));
+	const handleSize = $derived(HANDLE_SIZE_SCREEN / $canvas.camera.zoom);
 	const halfHandleSize = $derived(handleSize / 2);
 
 	function getSvgRoot(target: EventTarget | null): SVGSVGElement | null {
@@ -63,12 +60,12 @@
 
 	function clampPathPoint(point: Point, offsetX: number, offsetY: number) {
 		const strokePadding = Math.ceil(element.strokeWidth / 2);
-		const canvasRight = $canvasState.x + $canvasState.width;
-		const canvasBottom = $canvasState.y + $canvasState.height;
+		const canvasRight = $canvas.x + $canvas.width;
+		const canvasBottom = $canvas.y + $canvas.height;
 
 		return {
-			x: Math.max($canvasState.x - offsetX, Math.min(canvasRight - offsetX - strokePadding * 2, point.x)),
-			y: Math.max($canvasState.y - offsetY, Math.min(canvasBottom - offsetY - strokePadding * 2, point.y))
+			x: Math.max($canvas.x - offsetX, Math.min(canvasRight - offsetX - strokePadding * 2, point.x)),
+			y: Math.max($canvas.y - offsetY, Math.min(canvasBottom - offsetY - strokePadding * 2, point.y))
 		};
 	}
 
@@ -79,7 +76,7 @@
 			const svgPoint = clientToSvgPoint(dragState.svg, event.clientX, event.clientY);
 			if (!svgPoint) return;
 
-			const oldBounds = getPathDataBounds(points);
+			const oldBounds = App.geometry.pathBounds(points);
 			const offsetX = element.x - oldBounds.x;
 			const offsetY = element.y - oldBounds.y;
 
@@ -92,9 +89,9 @@
 				offsetY
 			);
 
-			const { d, bounds } = updatePathVertex(element.d, dragState.index, nextPoint);
+			const { d, bounds } = App.geometry.updatePathVertex(element.d, dragState.index, nextPoint);
 
-			projectState.updateElement(element.id, {
+			App.actions.project.updateElement(element.id, {
 				d,
 				x: Math.round(bounds.x + offsetX),
 				y: Math.round(bounds.y + offsetY)

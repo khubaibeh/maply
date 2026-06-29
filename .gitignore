@@ -25,3 +25,9 @@ vite.config.ts.timestamp-*
 # Dev
 TODO.md
 goals/
+.repos/
+.agents/
+CONTEXT.md
+WORKPLAN.md
+RULES.md
+IMPROVEMENTS.md
