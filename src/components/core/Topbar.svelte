@@ -14,7 +14,7 @@
 	}
 </script>
 
-<header class="border-border bg-sidebar flex h-10 shrink-0 items-center justify-between border-b px-3">
+<header class="flex h-10 shrink-0 items-center justify-between px-3">
 	<div class="flex items-center gap-2">
 		<span class="text-sm font-semibold">Maply</span>
 	</div>

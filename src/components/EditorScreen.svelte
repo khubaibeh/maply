@@ -135,11 +135,15 @@
 	});
 </script>
 
-<div class="bg-background text-foreground flex h-screen w-screen flex-col overflow-hidden">
-	<Topbar />
+<div class="bg-background text-foreground flex h-screen w-screen flex-col gap-4 overflow-hidden p-4">
+	<div>
+		<Topbar />
+	</div>
 
-	<div bind:this={layoutRef} class="flex min-h-0 flex-1">
-		<LeftSidebar width={leftSidebarWidth} />
+	<div bind:this={layoutRef} class="flex min-h-0 flex-1 gap-4">
+		<div class="border-border bg-sidebar min-h-0 shrink-0 overflow-hidden rounded-2xl border">
+			<LeftSidebar width={leftSidebarWidth} />
+		</div>
 
 		<div class="relative w-0 shrink-0 overflow-visible">
 			<div
@@ -160,10 +164,12 @@
 			</div>
 		</div>
 
-		<main class="flex min-w-0 flex-1 flex-col">
-			<CanvasArea />
-			<Toolbar />
-		</main>
+		<div class="border-border bg-background min-w-0 flex-1 overflow-hidden rounded-[1.5rem] border">
+			<main class="flex h-full min-w-0 flex-1 flex-col overflow-hidden">
+				<CanvasArea />
+				<Toolbar />
+			</main>
+		</div>
 
 		<div class="relative w-0 shrink-0 overflow-visible">
 			<div
@@ -184,6 +190,8 @@
 			</div>
 		</div>
 
-		<RightSidebar width={rightSidebarWidth} />
+		<div class="border-border bg-sidebar min-h-0 shrink-0 overflow-hidden rounded-2xl border">
+			<RightSidebar width={rightSidebarWidth} />
+		</div>
 	</div>
 </div>
