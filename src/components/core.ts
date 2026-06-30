@@ -1,7 +1,7 @@
 import type { Tool } from "@app/types";
 
 export const LEFT_SIDEBAR_MIN_WIDTH = 240;
-export const RIGHT_SIDEBAR_MIN_WIDTH = 288;
+export const RIGHT_SIDEBAR_MIN_WIDTH = 270;
 
 export function isEditingText(event: KeyboardEvent): boolean {
 	const target = event.target as HTMLElement | null;
