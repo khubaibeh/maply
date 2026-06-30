@@ -6,7 +6,6 @@
 	import Sun from "phosphor-svelte/lib/Sun";
 
 	const theme = App.theme.use();
-
 	function handleChange(value: string | undefined) {
 		if (value === "light" || value === "dark" || value === "system") {
 			App.theme.set(value);

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { App } from "@app";
 	import CanvasArea from "@components/CanvasArea.svelte";
+	import ProjectMenuOverlay from "@components/core/ProjectMenuOverlay.svelte";
 	import Toolbar from "@components/core/Toolbar.svelte";
 	import Topbar from "@components/core/Topbar.svelte";
 	import LeftSidebar from "@components/LeftSidebar.svelte";
@@ -82,12 +83,11 @@
 	</div>
 
 	<div class="flex min-h-0 flex-1 gap-4">
-		<div class="border-border bg-sidebar min-h-0 shrink-0 overflow-hidden rounded-2xl border">
-			<LeftSidebar width={LEFT_SIDEBAR_MIN_WIDTH} />
-		</div>
+		<LeftSidebar width={LEFT_SIDEBAR_MIN_WIDTH} />
 
 		<div class="border-border bg-background min-w-0 flex-1 overflow-hidden rounded-[1.5rem] border">
 			<main class="relative flex h-full min-w-0 flex-1 flex-col overflow-hidden">
+				<ProjectMenuOverlay class="top-4 left-4" />
 				<CanvasArea />
 				<Toolbar class="absolute inset-x-0 bottom-4 z-10 mx-auto w-fit" />
 			</main>
