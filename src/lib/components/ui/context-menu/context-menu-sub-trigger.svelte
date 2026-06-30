@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { cn, type WithoutChild } from "$lib/utils.js";
-	import ChevronRightIcon from "@lucide/svelte/icons/chevron-right";
 	import { ContextMenu as ContextMenuPrimitive } from "bits-ui";
+	import CaretRightIcon from "phosphor-svelte/lib/CaretRight";
 
 	let {
 		ref = $bindable(null),
@@ -19,11 +19,11 @@
 	data-slot="context-menu-sub-trigger"
 	data-inset={inset}
 	class={cn(
-		"focus:bg-accent focus:text-accent-foreground data-open:bg-accent data-open:text-accent-foreground flex min-h-7 cursor-default items-center rounded-xl px-2 py-1.5 text-sm outline-hidden select-none data-inset:ps-8 data-inset:pl-7 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+		"focus:bg-accent focus:text-accent-foreground data-open:bg-accent data-open:text-accent-foreground flex cursor-default items-center rounded-2xl px-3 py-2 text-sm font-medium outline-hidden select-none data-inset:ps-8 data-inset:pl-9.5 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
 		className
 	)}
 	{...restProps}
 >
 	{@render children?.()}
-	<ChevronRightIcon class="ml-auto" />
+	<CaretRightIcon class="ml-auto" />
 </ContextMenuPrimitive.SubTrigger>

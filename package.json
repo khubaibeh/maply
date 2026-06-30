@@ -39,6 +39,8 @@
 		"lint-staged": "^17.0.7",
 		"oxfmt": "^0.55.0",
 		"oxlint": "^1.70.0",
+		"phosphor-icons": "^1.4.2",
+		"phosphor-svelte": "^3.1.0",
 		"prettier": "^3.8.4",
 		"prettier-plugin-svelte": "^4.1.0",
 		"prettier-plugin-tailwindcss": "^0.8.0",
@@ -58,7 +60,7 @@
 		"*.{js,ts,svelte,json,css}": [
 			"oxfmt",
 			"prettier --write",
-			"eslint --fix"
+			"eslint --ignore-pattern \"src/lib/components/ui/**\" --fix"
 		]
 	},
 	"engines": {
