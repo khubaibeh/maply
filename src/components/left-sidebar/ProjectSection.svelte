@@ -4,10 +4,10 @@
 	import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
 	import { Input } from "$lib/components/ui/input";
 	import { App } from "@app";
-	import ChevronDown from "@lucide/svelte/icons/chevron-down";
-	import Pencil from "@lucide/svelte/icons/pencil";
-	import Plus from "@lucide/svelte/icons/plus";
-	import Save from "@lucide/svelte/icons/save";
+	import CaretDown from "phosphor-svelte/lib/CaretDown";
+	import FloppyDisk from "phosphor-svelte/lib/FloppyDisk";
+	import Pencil from "phosphor-svelte/lib/Pencil";
+	import Plus from "phosphor-svelte/lib/Plus";
 
 	const project = App.state.project;
 
@@ -103,7 +103,7 @@
 				onclick={handleSave}
 				aria-label="Save project"
 			>
-				<Save />
+				<FloppyDisk />
 			</Button>
 			<Button
 				variant="ghost"
@@ -143,7 +143,7 @@
 						})} border-primary-foreground/20 -ml-1 rounded-l-none border-l px-1!"
 						aria-label="Create new project options"
 					>
-						<ChevronDown />
+						<CaretDown />
 					</DropdownMenu.Trigger>
 					<DropdownMenu.Content align="end">
 						<DropdownMenu.Item onclick={() => handleCreateNewProject("blank")} class="text-xs">

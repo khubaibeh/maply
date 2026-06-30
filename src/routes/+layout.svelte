@@ -5,7 +5,7 @@
 	import "./selections.css";
 	import * as Tooltip from "$lib/components/ui/tooltip";
 	import { App } from "@app";
-	import Monitor from "@lucide/svelte/icons/monitor";
+	import Monitor from "phosphor-svelte/lib/Monitor";
 	import { onMount } from "svelte";
 
 	let { children } = $props();
