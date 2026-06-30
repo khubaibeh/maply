@@ -87,9 +87,9 @@
 		</div>
 
 		<div class="border-border bg-background min-w-0 flex-1 overflow-hidden rounded-[1.5rem] border">
-			<main class="flex h-full min-w-0 flex-1 flex-col overflow-hidden">
+			<main class="relative flex h-full min-w-0 flex-1 flex-col overflow-hidden">
 				<CanvasArea />
-				<Toolbar />
+				<Toolbar class="absolute inset-x-0 bottom-4 z-10 mx-auto w-fit" />
 			</main>
 		</div>
 
