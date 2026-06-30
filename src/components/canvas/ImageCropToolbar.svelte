@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { App } from "@app";
 	import type { ImageElement } from "@app/types";
-	import Check from "@lucide/svelte/icons/check";
-	import Crop from "@lucide/svelte/icons/crop";
-	import Download from "@lucide/svelte/icons/download";
-	import ImageIcon from "@lucide/svelte/icons/image";
-	import RotateCcw from "@lucide/svelte/icons/rotate-ccw";
+	import ArrowCounterClockwise from "phosphor-svelte/lib/ArrowCounterClockwise";
+	import Check from "phosphor-svelte/lib/Check";
+	import Crop from "phosphor-svelte/lib/Crop";
+	import Download from "phosphor-svelte/lib/Download";
+	import Image from "phosphor-svelte/lib/Image";
 
 	interface Props {
 		element: ImageElement;
@@ -131,7 +131,7 @@
 			style:width="{toolbarButtonSize}px"
 			style:height="{toolbarButtonSize}px"
 		>
-			<RotateCcw style={`width:${toolbarIconSize}px;height:${toolbarIconSize}px`} />
+			<ArrowCounterClockwise style={`width:${toolbarIconSize}px;height:${toolbarIconSize}px`} />
 		</button>
 		<div class="flex min-w-0 flex-1 items-center" style:padding-inline="{4 * toolbarScale}px">
 			<input
@@ -167,7 +167,7 @@
 			style:width="{toolbarButtonSize}px"
 			style:height="{toolbarButtonSize}px"
 		>
-			<ImageIcon style={`width:${toolbarIconSize}px;height:${toolbarIconSize}px`} />
+			<Image style={`width:${toolbarIconSize}px;height:${toolbarIconSize}px`} />
 		</button>
 		<button
 			type="button"

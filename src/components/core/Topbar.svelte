@@ -1,9 +1,9 @@
 <script lang="ts">
 	import * as ToggleGroup from "$lib/components/ui/toggle-group";
 	import { App } from "@app";
-	import Monitor from "@lucide/svelte/icons/monitor";
-	import Moon from "@lucide/svelte/icons/moon";
-	import Sun from "@lucide/svelte/icons/sun";
+	import Monitor from "phosphor-svelte/lib/Monitor";
+	import Moon from "phosphor-svelte/lib/Moon";
+	import Sun from "phosphor-svelte/lib/Sun";
 
 	const theme = App.theme.use();
 

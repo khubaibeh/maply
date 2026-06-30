@@ -2,21 +2,21 @@
 	import * as Tooltip from "$lib/components/ui/tooltip";
 	import { App } from "@app";
 	import type { Tool } from "@app/types";
-	import Circle from "@lucide/svelte/icons/circle";
-	import Hand from "@lucide/svelte/icons/hand";
-	import Image from "@lucide/svelte/icons/image";
-	import MousePointer2 from "@lucide/svelte/icons/mouse-pointer-2";
-	import Pencil from "@lucide/svelte/icons/pencil";
-	import Square from "@lucide/svelte/icons/square";
-	import Type from "@lucide/svelte/icons/type";
+	import Circle from "phosphor-svelte/lib/Circle";
+	import Cursor from "phosphor-svelte/lib/Cursor";
+	import Hand from "phosphor-svelte/lib/Hand";
+	import Image from "phosphor-svelte/lib/Image";
+	import Pencil from "phosphor-svelte/lib/Pencil";
+	import Rectangle from "phosphor-svelte/lib/Rectangle";
+	import TextT from "phosphor-svelte/lib/TextT";
 
 	const tools = [
-		{ id: "select", label: "Select", shortcut: "V", icon: MousePointer2 },
+		{ id: "select", label: "Select", shortcut: "V", icon: Cursor },
 		{ id: "hand", label: "Hand", shortcut: "H", icon: Hand },
-		{ id: "rect", label: "Rect", shortcut: "R", icon: Square },
+		{ id: "rect", label: "Rect", shortcut: "R", icon: Rectangle },
 		{ id: "circle", label: "Circle", shortcut: "C", icon: Circle },
 		{ id: "path", label: "Path", shortcut: "P", icon: Pencil },
-		{ id: "text", label: "Text", shortcut: "T", icon: Type },
+		{ id: "text", label: "Text", shortcut: "T", icon: TextT },
 		{ id: "image", label: "Image", shortcut: "I", icon: Image }
 	] as const;
 	const toolState = App.state.tool;

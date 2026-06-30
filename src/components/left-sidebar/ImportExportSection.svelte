@@ -5,9 +5,9 @@
 	import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
 	import { App } from "@app";
 	import type { ProjectFilePackage } from "@app/types";
-	import ChevronDown from "@lucide/svelte/icons/chevron-down";
-	import Download from "@lucide/svelte/icons/download";
-	import Upload from "@lucide/svelte/icons/upload";
+	import CaretDown from "phosphor-svelte/lib/CaretDown";
+	import Download from "phosphor-svelte/lib/Download";
+	import Upload from "phosphor-svelte/lib/Upload";
 
 	const project = App.state.project;
 
@@ -172,7 +172,7 @@
 			<span class="text-sidebar-foreground/80 text-xs font-semibold tracking-wide uppercase">
 				Import / Export
 			</span>
-			<ChevronDown
+			<CaretDown
 				class="text-sidebar-foreground/70 size-4 transition-transform duration-200 {importsOpen
 					? 'rotate-180'
 					: ''}"

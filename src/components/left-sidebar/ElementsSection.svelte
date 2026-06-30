@@ -6,13 +6,13 @@
 	import { App } from "@app";
 	import type { Element } from "@app/types";
 	import ElementNameValidation from "@components/core/ElementNameValidation.svelte";
-	import ChevronDown from "@lucide/svelte/icons/chevron-down";
-	import Circle from "@lucide/svelte/icons/circle";
-	import Image from "@lucide/svelte/icons/image";
-	import Pencil from "@lucide/svelte/icons/pencil";
-	import Square from "@lucide/svelte/icons/square";
-	import Trash2 from "@lucide/svelte/icons/trash-2";
-	import Type from "@lucide/svelte/icons/type";
+	import CaretDown from "phosphor-svelte/lib/CaretDown";
+	import Circle from "phosphor-svelte/lib/Circle";
+	import Image from "phosphor-svelte/lib/Image";
+	import Pencil from "phosphor-svelte/lib/Pencil";
+	import Rectangle from "phosphor-svelte/lib/Rectangle";
+	import TextT from "phosphor-svelte/lib/TextT";
+	import Trash from "phosphor-svelte/lib/Trash";
 	import { onDestroy } from "svelte";
 	import type { Component } from "svelte";
 
@@ -59,10 +59,10 @@
 	});
 
 	const elementIcons: Record<Element["type"], Component> = {
-		rect: Square,
+		rect: Rectangle,
 		circle: Circle,
 		path: Pencil,
-		text: Type,
+		text: TextT,
 		image: Image
 	};
 
@@ -343,7 +343,7 @@
 					}}
 					aria-label="Delete {element.name}"
 				>
-					<Trash2 class="size-3.5" />
+					<Trash class="size-3.5" />
 				</button>
 			</div>
 		</ContextMenu.Trigger>
@@ -447,7 +447,7 @@
 			class="border-border hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex h-8 w-full shrink-0 items-center justify-between border-b px-3 text-left outline-none"
 		>
 			<span class="text-sidebar-foreground/80 text-xs font-semibold tracking-wide uppercase"> Elements </span>
-			<ChevronDown
+			<CaretDown
 				class="text-sidebar-foreground/70 size-4 transition-transform duration-200 {elementsOpen
 					? 'rotate-180'
 					: ''}"

@@ -2,8 +2,8 @@
 	import { Button } from "$lib/components/ui/button";
 	import * as Tooltip from "$lib/components/ui/tooltip";
 	import type { ElementNameValidation } from "@app/types";
-	import ChevronDown from "@lucide/svelte/icons/chevron-down";
-	import TriangleAlert from "@lucide/svelte/icons/triangle-alert";
+	import CaretDown from "phosphor-svelte/lib/CaretDown";
+	import Warning from "phosphor-svelte/lib/Warning";
 	import { SvelteMap } from "svelte/reactivity";
 
 	const inlineRulesOpenByKey = new SvelteMap<string, boolean>();
@@ -71,7 +71,7 @@
 				aria-expanded={inlineRulesOpen}
 			>
 				<span>Rules:</span>
-				<ChevronDown
+				<CaretDown
 					class="text-muted-foreground size-3.5 transition-transform duration-150 {inlineRulesOpen
 						? 'rotate-180'
 						: ''}"
@@ -122,7 +122,7 @@
 			class="text-destructive hover:bg-destructive/10 focus-visible:ring-destructive/30 inline-flex size-5 shrink-0 items-center justify-center rounded-md outline-none focus-visible:ring-2 {className}"
 			aria-label="Show element name validation details"
 		>
-			<TriangleAlert class="size-3.5" />
+			<Warning class="size-3.5" />
 		</Tooltip.Trigger>
 		<Tooltip.Content
 			side="bottom"
