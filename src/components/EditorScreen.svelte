@@ -93,7 +93,7 @@
 			</main>
 		</div>
 
-		<div class="border-border bg-sidebar min-h-0 shrink-0 overflow-hidden rounded-2xl border">
+		<div class="border-border/50 bg-sidebar/5 min-h-0 shrink-0 overflow-hidden rounded-2xl border">
 			<RightSidebar width={RIGHT_SIDEBAR_MIN_WIDTH} />
 		</div>
 	</div>

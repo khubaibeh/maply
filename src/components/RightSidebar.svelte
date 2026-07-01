@@ -44,7 +44,7 @@
 	);
 </script>
 
-<aside class="border-border bg-sidebar flex h-full min-h-0 shrink-0 flex-col pb-6" style={`width: ${width}px;`}>
+<aside class="flex h-full min-h-0 shrink-0 flex-col pb-6" style={`width: ${width}px;`}>
 	<div class="px-4 pt-3 pb-2">
 		<span class="text-sidebar-foreground/80 text-sm font-bold">Properties</span>
 	</div>
