@@ -11,6 +11,8 @@ import { getPathDataBounds as getPointsBounds, pathDataFromPoints } from "../pat
 import { MIN_SHAPE_SIZE } from "./constants";
 import { createElementId, nextElementName } from "./naming";
 
+const DEFAULT_FILL = "#e5e5e5";
+
 export function getShapeDragBox(start: Point, end: Point, options: { square?: boolean } = {}) {
 	let x = Math.min(start.x, end.x);
 	let y = Math.min(start.y, end.y);
@@ -30,7 +32,7 @@ export function getShapeDragBox(start: Point, end: Point, options: { square?: bo
 	return { x, y, width, height };
 }
 
-export function createRectElement(point: Point, elements: Element[]): RectElement {
+export function createRectElement(point: Point, elements: Element[], fill = DEFAULT_FILL): RectElement {
 	return {
 		id: createElementId(),
 		name: nextElementName("rect", elements),
@@ -39,7 +41,7 @@ export function createRectElement(point: Point, elements: Element[]): RectElemen
 		y: Math.round(point.y),
 		width: 120,
 		height: 80,
-		fill: "#e5e5e5",
+		fill,
 		stroke: "#000000",
 		strokeWidth: 0
 	};
@@ -49,7 +51,7 @@ export function createRectElementFromDrag(
 	start: Point,
 	end: Point,
 	elements: Element[],
-	options: { square?: boolean } = {}
+	options: { square?: boolean; fill?: string } = {}
 ): RectElement | null {
 	const box = getShapeDragBox(start, end, options);
 	if (!box) return null;
@@ -62,13 +64,18 @@ export function createRectElementFromDrag(
 		y: Math.round(box.y),
 		width: Math.round(box.width),
 		height: Math.round(box.height),
-		fill: "#e5e5e5",
+		fill: options.fill ?? DEFAULT_FILL,
 		stroke: "#000000",
 		strokeWidth: 0
 	};
 }
 
-export function createCircleElementFromDrag(start: Point, end: Point, elements: Element[]): CircleElement | null {
+export function createCircleElementFromDrag(
+	start: Point,
+	end: Point,
+	elements: Element[],
+	fill = DEFAULT_FILL
+): CircleElement | null {
 	const box = getShapeDragBox(start, end);
 	if (!box) return null;
 
@@ -82,7 +89,7 @@ export function createCircleElementFromDrag(start: Point, end: Point, elements: 
 		cx: Math.round(box.x + radius),
 		cy: Math.round(box.y + radius),
 		r: Math.round(radius),
-		fill: "#e5e5e5",
+		fill,
 		stroke: "#000000",
 		strokeWidth: 0
 	};
@@ -126,7 +133,12 @@ export function createImageElementFromDrag(start: Point, end: Point, elements: E
 	};
 }
 
-export function createPathElementFromPoints(points: Point[], closed: boolean, elements: Element[]): PathElement | null {
+export function createPathElementFromPoints(
+	points: Point[],
+	closed: boolean,
+	elements: Element[],
+	fill = DEFAULT_FILL
+): PathElement | null {
 	if (points.length < 2) return null;
 	if (closed && points.length < 3) return null;
 
@@ -140,7 +152,7 @@ export function createPathElementFromPoints(points: Point[], closed: boolean, el
 		x: Math.round(bounds.x),
 		y: Math.round(bounds.y),
 		d,
-		fill: closed ? "#9ca3af" : "none",
+		fill: closed ? fill : "none",
 		stroke: "#000000",
 		strokeWidth: closed ? 0 : 2,
 		closed

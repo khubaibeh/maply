@@ -5,8 +5,6 @@
 	import type { Element } from "@app/types";
 	import ColorPicker from "@components/core/ColorPicker.svelte";
 
-	const DEFAULT_CLOSED_PATH_FILL = "#9ca3af";
-
 	interface Props {
 		element: Element;
 	}
@@ -32,6 +30,9 @@
 	}
 
 	function updateColor(key: "fill" | "stroke", value: string) {
+		if (key === "fill") {
+			App.actions.fill.set(value);
+		}
 		App.actions.project.updateElement(element.id, { [key]: value } as Partial<Element>);
 	}
 
@@ -56,7 +57,7 @@
 		if (closed) {
 			patch.strokeWidth = 0;
 			if (element.type === "path" && !element.closed && element.fill === "none") {
-				patch.fill = DEFAULT_CLOSED_PATH_FILL;
+				patch.fill = App.actions.fill.get();
 			}
 		} else {
 			patch.fill = "none";

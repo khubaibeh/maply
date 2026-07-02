@@ -3,6 +3,7 @@ import type { Camera, ImportExportState } from "../domain/project";
 import type { Tool } from "../domain/tools";
 import { appCanvasState } from "../store/canvas";
 import { clearClipboard, copyElement, getClipboardElement } from "../store/clipboard.svelte";
+import { appFillState } from "../store/fill";
 import { appProjectState } from "../store/project";
 import { appToolState } from "../store/tool";
 import type { ResizeHandle, ResizeOptions } from "./element-actions";
@@ -139,6 +140,16 @@ export const appActions = {
 
 		centerCamera(containerWidth: number, containerHeight: number) {
 			appCanvasState.centerCamera(containerWidth, containerHeight);
+		}
+	},
+
+	fill: {
+		set(color: string) {
+			appFillState.setDefaultFill(color);
+		},
+
+		get() {
+			return appFillState.getSnapshot();
 		}
 	},
 
