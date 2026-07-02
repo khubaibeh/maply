@@ -20,6 +20,8 @@
 
 	onMount(() => {
 		function handleKeyDown(event: KeyboardEvent) {
+			if (event.defaultPrevented) return;
+
 			if (!isEditingText(event) && !event.ctrlKey && !event.metaKey && !event.altKey) {
 				const shortcutTool = getShortcutTool(event.key);
 				if (shortcutTool) {
@@ -27,6 +29,15 @@
 					App.actions.tool.set(shortcutTool);
 					return;
 				}
+			}
+
+			if (event.key === "Escape") {
+				if (isEditingText(event)) return;
+				if (!$project.selectedElementId) return;
+
+				event.preventDefault();
+				App.actions.project.selectElement(null);
+				return;
 			}
 
 			if (!isEditingText(event)) {

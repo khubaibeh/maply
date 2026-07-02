@@ -433,7 +433,7 @@ export const appProjectState = {
 		store.update((state) => ({
 			...state,
 			selectedElementId: id,
-			hoveredElementId: id === null ? state.hoveredElementId : id,
+			hoveredElementId: null,
 			cropEditingElementId: state.cropEditingElementId === id ? state.cropEditingElementId : null
 		}));
 	},

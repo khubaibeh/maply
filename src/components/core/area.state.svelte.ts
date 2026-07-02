@@ -462,11 +462,16 @@ export function createCanvasAreaState() {
 		if (elementNode instanceof Element) {
 			const id = elementNode.getAttribute("data-canvas-element");
 			if (id) {
+				if (project.current.selectedElementId !== id) {
+					App.actions.project.selectElement(null);
+				}
 				state.contextMenuTarget = "element";
 				state.contextMenuElementId = id;
-				App.actions.project.selectElement(id);
 				return;
 			}
+		}
+		if (project.current.selectedElementId !== null) {
+			App.actions.project.selectElement(null);
 		}
 		state.contextMenuTarget = "empty";
 		state.contextMenuElementId = null;

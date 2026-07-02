@@ -104,6 +104,9 @@
 	}
 
 	function setElementContextMenuOpen(elementId: string, open: boolean) {
+		if (open && $project.selectedElementId !== elementId) {
+			App.actions.project.selectElement(null);
+		}
 		openElementContextMenuId = open
 			? elementId
 			: openElementContextMenuId === elementId
