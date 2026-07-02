@@ -167,7 +167,7 @@
 	height={bbox.height}
 	fill="transparent"
 	stroke="var(--primary)"
-	stroke-width="0.25"
+	stroke-width="0.5"
 	stroke-dasharray={element.type === "image" && $project.cropEditingElementId === element.id ? "2 1" : undefined}
 	pointer-events={interactive ? "all" : "none"}
 	class="cursor-inherit"

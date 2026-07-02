@@ -124,7 +124,7 @@
 				height={handleSize}
 				fill="var(--background)"
 				stroke="var(--primary)"
-				stroke-width="1"
+				stroke-width="2"
 				role="button"
 				tabindex="-1"
 				aria-label="Edit path vertex"

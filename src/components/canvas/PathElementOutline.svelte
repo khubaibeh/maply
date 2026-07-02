@@ -10,7 +10,7 @@
 	const canvas = App.state.canvas;
 
 	const transform = $derived(App.geometry.pathRenderTransform(element));
-	const strokeWidth = $derived(1.25 / $canvas.camera.zoom);
+	const strokeWidth = $derived(2.5 / $canvas.camera.zoom);
 </script>
 
 <path
