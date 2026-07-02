@@ -100,7 +100,7 @@
 							onchange={(event) => updateElementName(event, selectedElement.id)}
 							aria-invalid={selectedElementNameValidation && !selectedElementNameValidation.valid}
 							class="h-7 text-xs {selectedElementNameValidation && !selectedElementNameValidation.valid
-								? 'bg-destructive/10 text-destructive focus-visible:aria-invalid:border-destructive focus-visible:ring-0 focus-visible:ring-offset-0 aria-invalid:border-transparent aria-invalid:ring-0 dark:aria-invalid:ring-0'
+								? 'bg-destructive/10 text-destructive focus-visible:aria-invalid:border-destructive focus-visible:ring-0 focus-visible:ring-offset-0 aria-invalid:border-transparent aria-invalid:ring-0 dark:aria-invalid:border-transparent dark:aria-invalid:ring-0'
 								: 'focus-visible:ring-0 focus-visible:ring-offset-0'}"
 						/>
 						{#if selectedElementNameValidation && !selectedElementNameValidation.valid}
