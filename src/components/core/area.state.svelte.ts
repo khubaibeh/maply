@@ -265,6 +265,12 @@ export function createCanvasAreaState() {
 		}
 
 		function handleKeyDown(event: KeyboardEvent) {
+			if (event.key === "Escape" && state.drawingSession) {
+				event.preventDefault();
+				cancelDrawing();
+				return;
+			}
+
 			if (event.key === "Escape" && state.pathSession) {
 				event.preventDefault();
 				cancelPath();
@@ -421,7 +427,14 @@ export function createCanvasAreaState() {
 			color: canvas.current.color
 		});
 
-		if (!insideArtboard) return;
+		if (!insideArtboard) {
+			if (tool.current.activeTool === "path" && state.pathSession) {
+				event.preventDefault();
+				event.stopPropagation();
+				cancelPath();
+			}
+			return;
+		}
 
 		event.preventDefault();
 		event.stopPropagation();
