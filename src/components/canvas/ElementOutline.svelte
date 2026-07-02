@@ -11,6 +11,7 @@
 	let { element, interactive = true }: Props = $props();
 	const project = App.state.project;
 	const tool = App.state.tool;
+	const hideOutline = $derived(element.type === "image" && $project.cropEditingElementId === element.id);
 
 	let bbox = $state({ x: 0, y: 0, width: 0, height: 0 });
 	let dragState = $state<{
@@ -166,10 +167,10 @@
 	width={bbox.width}
 	height={bbox.height}
 	fill="transparent"
-	stroke="var(--primary)"
 	stroke-width="0.5"
-	stroke-dasharray={element.type === "image" && $project.cropEditingElementId === element.id ? "2 1" : undefined}
-	pointer-events={interactive ? "all" : "none"}
+	stroke={hideOutline ? "transparent" : "var(--primary)"}
+	stroke-dasharray={undefined}
+	pointer-events={interactive && !hideOutline ? "all" : "none"}
 	class="cursor-inherit"
 	onpointerdown={startSelectionDrag}
 />
