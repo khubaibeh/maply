@@ -368,8 +368,9 @@
 {/snippet}
 
 {#snippet elementMenu(element: Element, isFrontmost: boolean, isBackmost: boolean)}
-	<ContextMenu.Content>
+	<ContextMenu.Content class="min-w-40 rounded-xl p-1">
 		<ContextMenu.Item
+			class="rounded-lg px-2.5 py-1.5 text-xs"
 			onclick={() => {
 				App.actions.clipboard.copy(element);
 				closeElementContextMenu();
@@ -379,6 +380,7 @@
 		</ContextMenu.Item>
 		<ContextMenu.Separator />
 		<ContextMenu.Item
+			class="rounded-lg px-2.5 py-1.5 text-xs"
 			disabled={isFrontmost}
 			onclick={() => {
 				App.actions.project.moveElementToFront(element.id);
@@ -388,6 +390,7 @@
 			Bring to front
 		</ContextMenu.Item>
 		<ContextMenu.Item
+			class="rounded-lg px-2.5 py-1.5 text-xs"
 			disabled={isFrontmost}
 			onclick={() => {
 				App.actions.project.moveElementForward(element.id);
@@ -397,6 +400,7 @@
 			Bring forward
 		</ContextMenu.Item>
 		<ContextMenu.Item
+			class="rounded-lg px-2.5 py-1.5 text-xs"
 			disabled={isBackmost}
 			onclick={() => {
 				App.actions.project.moveElementBackward(element.id);
@@ -406,6 +410,7 @@
 			Send backward
 		</ContextMenu.Item>
 		<ContextMenu.Item
+			class="rounded-lg px-2.5 py-1.5 text-xs"
 			disabled={isBackmost}
 			onclick={() => {
 				App.actions.project.moveElementToBack(element.id);
@@ -416,6 +421,7 @@
 		</ContextMenu.Item>
 		<ContextMenu.Separator />
 		<ContextMenu.Item
+			class="rounded-lg px-2.5 py-1.5 text-xs"
 			variant="destructive"
 			onclick={() => {
 				void App.element.delete(element.id);
