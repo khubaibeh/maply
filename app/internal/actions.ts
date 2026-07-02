@@ -5,7 +5,7 @@ import { appCanvasState } from "../store/canvas";
 import { clearClipboard, copyElement, getClipboardElement } from "../store/clipboard.svelte";
 import { appProjectState } from "../store/project";
 import { appToolState } from "../store/tool";
-import type { ResizeHandle } from "./element-actions";
+import type { ResizeHandle, ResizeOptions } from "./element-actions";
 
 type ElementPatch = Partial<Omit<Element, "id" | "type">>;
 
@@ -63,8 +63,8 @@ export const appActions = {
 			appProjectState.resizeImageFrame(id, handle, dx, dy);
 		},
 
-		resizeElement(id: string, handle: ResizeHandle, dx: number, dy: number) {
-			appProjectState.resizeElement(id, handle, dx, dy);
+		resizeElement(id: string, handle: ResizeHandle, dx: number, dy: number, options?: ResizeOptions) {
+			appProjectState.resizeElement(id, handle, dx, dy, options);
 		},
 
 		resetImageCrop(id: string) {

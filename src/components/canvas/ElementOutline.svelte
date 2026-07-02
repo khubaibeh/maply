@@ -42,6 +42,8 @@
 				handle: ResizeHandle;
 				grabX: number;
 				grabY: number;
+				lockAspectRatio: boolean;
+				aspectRatio: number | null;
 				didMove: boolean;
 		  }
 		| null
@@ -174,12 +176,16 @@
 
 		const svgPoint = clientToSvgPoint(svg, event.clientX, event.clientY);
 		if (!svgPoint) return;
+		const bounds = App.geometry.elementBounds(element);
+		const aspectRatio = bounds.height > 0 ? bounds.width / bounds.height : null;
 
 		dragState = {
 			kind: "resize",
 			handle,
 			grabX: svgPoint.x,
 			grabY: svgPoint.y,
+			lockAspectRatio: event.shiftKey,
+			aspectRatio,
 			didMove: false
 		};
 	}
@@ -207,7 +213,10 @@
 			if (dx === 0 && dy === 0) return;
 
 			dragState.didMove = true;
-			App.actions.project.resizeElement(element.id, dragState.handle, dx, dy);
+			App.actions.project.resizeElement(element.id, dragState.handle, dx, dy, {
+				lockAspectRatio: dragState.lockAspectRatio,
+				aspectRatio: dragState.aspectRatio ?? undefined
+			});
 			dragState.grabX = svgPoint.x;
 			dragState.grabY = svgPoint.y;
 		}

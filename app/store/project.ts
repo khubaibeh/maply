@@ -20,7 +20,7 @@ import {
 	setElementPosition,
 	translateElementWithinCanvas
 } from "../internal/element-actions";
-import type { ResizeHandle } from "../internal/element-actions";
+import type { ResizeHandle, ResizeOptions } from "../internal/element-actions";
 import {
 	cloneStoredImageAsset,
 	getImageCropStateForFrameResize,
@@ -331,14 +331,14 @@ export const appProjectState = {
 		}));
 	},
 
-	resizeElement(id: string, handle: ResizeHandle, dx: number, dy: number) {
+	resizeElement(id: string, handle: ResizeHandle, dx: number, dy: number, options?: ResizeOptions) {
 		const canvas = appCanvasState.getSnapshot();
 
 		store.update((state) => ({
 			...state,
 			elements: state.elements.map((element) => {
 				if (element.id !== id) return element;
-				return resizeElementWithinCanvas(element, handle, dx, dy, canvas);
+				return resizeElementWithinCanvas(element, handle, dx, dy, canvas, options);
 			})
 		}));
 	},
