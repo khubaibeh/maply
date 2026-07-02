@@ -33,11 +33,15 @@
 
 <div
 	class={cn(
-		"border-border/90 bg-background/72 text-card-foreground supports-backdrop-filter:bg-background/49 flex h-12 rounded-2xl border px-2 shadow-[0_8px_30px_-18px_color-mix(in_oklab,var(--foreground)_28%,transparent)] backdrop-blur-md",
+		"border-border/90 bg-background/72 text-card-foreground supports-backdrop-filter:bg-background/49 flex h-12 rounded-2xl border px-2 shadow-[0_8px_30px_-18px_color-mix(in_oklab,var(--foreground)_28%,transparent)] backdrop-blur-md max-[1149px]:h-auto max-[1149px]:py-2",
 		className
 	)}
 >
-	<div class="flex items-center gap-1" role="toolbar" aria-label="Tools">
+	<div
+		class="flex items-center gap-1 max-[1149px]:grid max-[1149px]:grid-cols-4 max-[1149px]:justify-items-stretch"
+		role="toolbar"
+		aria-label="Tools"
+	>
 		{#each tools as tool (tool.id)}
 			{@const Icon = tool.icon}
 			{@const isActive = $toolState.activeTool === tool.id}
