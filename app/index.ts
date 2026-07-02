@@ -1,3 +1,4 @@
+import type { Point } from "./domain/geometry";
 import { appActions } from "./internal/actions";
 import { appCreate } from "./internal/create";
 import { deleteElement, pasteElement, replaceElementImage } from "./internal/element";
@@ -49,8 +50,8 @@ export const App = {
 	},
 
 	element: {
-		paste() {
-			return runApp(pasteElement());
+		paste(point?: Point) {
+			return runApp(pasteElement(point));
 		},
 
 		delete(id: string) {

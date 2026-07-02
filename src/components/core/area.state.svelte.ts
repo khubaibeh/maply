@@ -35,6 +35,7 @@ export function createCanvasAreaState() {
 		contextMenuOpen: false,
 		contextMenuTarget: "empty" as "element" | "empty",
 		contextMenuElementId: null as string | null,
+		contextMenuPoint: null as Point | null,
 		containerWidth: 0,
 		containerHeight: 0,
 		isPanning: false,
@@ -457,6 +458,7 @@ export function createCanvasAreaState() {
 	}
 
 	function handleContextMenu(event: MouseEvent) {
+		state.contextMenuPoint = clientToSvgPoint(event.clientX, event.clientY);
 		const target = event.target as Element | null;
 		const elementNode = target?.closest("[data-canvas-element]");
 		if (elementNode instanceof Element) {
@@ -517,7 +519,7 @@ export function createCanvasAreaState() {
 	function handlePaste() {
 		const copied = App.actions.clipboard.get();
 		if (!copied) return;
-		void App.element.paste();
+		void App.element.paste(state.contextMenuPoint ?? undefined);
 		state.contextMenuOpen = false;
 	}
 

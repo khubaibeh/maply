@@ -1,6 +1,7 @@
 import { get, writable } from "svelte/store";
 
 import type { Element } from "../domain/elements";
+import type { Point } from "../domain/geometry";
 import type { StoredImageAsset } from "../domain/image-assets";
 import type { Project } from "../domain/project";
 import {
@@ -409,11 +410,15 @@ export const appProjectState = {
 		}));
 	},
 
-	async pasteClipboardElement() {
+	async pasteClipboardElement(point?: Point) {
 		const copied = getClipboardElement();
 		if (!copied) return;
 
-		const nextElement = duplicateElement(copied, get(store).elements);
+		const canvas = appCanvasState.getSnapshot();
+		let nextElement = duplicateElement(copied, get(store).elements);
+		if (point) {
+			nextElement = setElementPosition(nextElement, point.x, point.y, canvas);
+		}
 		if (nextElement.type === "image" && nextElement.assetId) {
 			const asset = appImageAssetState.getAsset(nextElement.assetId);
 			if (asset) {
