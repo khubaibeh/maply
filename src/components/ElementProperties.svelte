@@ -5,6 +5,8 @@
 	import type { Element } from "@app/types";
 	import ColorPicker from "@components/core/ColorPicker.svelte";
 
+	const DEFAULT_CLOSED_PATH_FILL = "#9ca3af";
+
 	interface Props {
 		element: Element;
 	}
@@ -53,6 +55,9 @@
 		const patch: Partial<Element> = { d: value, closed };
 		if (closed) {
 			patch.strokeWidth = 0;
+			if (element.type === "path" && !element.closed && element.fill === "none") {
+				patch.fill = DEFAULT_CLOSED_PATH_FILL;
+			}
 		} else {
 			patch.fill = "none";
 		}

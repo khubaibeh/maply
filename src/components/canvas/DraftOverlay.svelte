@@ -23,7 +23,6 @@
 		points: CanvasPoint[];
 		current: CanvasPoint;
 		nearFirst: boolean;
-		nearLast: boolean;
 	};
 
 	let {
@@ -93,8 +92,7 @@
 	{/if}
 	{#each points as point, index (index)}
 		{@const isFirst = index === 0}
-		{@const isLast = index === points.length - 1}
-		{@const highlighted = (isFirst && pathSession.nearFirst) || (isLast && pathSession.nearLast)}
+		{@const highlighted = isFirst && pathSession.nearFirst}
 		{@const radius = highlighted ? pathPreviewRadius : pathVertexRadius}
 		<circle
 			cx={point.x}
