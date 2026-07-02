@@ -3,9 +3,10 @@ import type { Camera, ImportExportState } from "../domain/project";
 import type { Tool } from "../domain/tools";
 import { appCanvasState } from "../store/canvas";
 import { clearClipboard, copyElement, getClipboardElement } from "../store/clipboard.svelte";
+import { appFillState } from "../store/fill";
 import { appProjectState } from "../store/project";
 import { appToolState } from "../store/tool";
-import type { ResizeHandle } from "./element-actions";
+import type { ResizeHandle, ResizeOptions } from "./element-actions";
 
 type ElementPatch = Partial<Omit<Element, "id" | "type">>;
 
@@ -61,6 +62,10 @@ export const appActions = {
 
 		resizeImageFrame(id: string, handle: ResizeHandle, dx: number, dy: number) {
 			appProjectState.resizeImageFrame(id, handle, dx, dy);
+		},
+
+		resizeElement(id: string, handle: ResizeHandle, dx: number, dy: number, options?: ResizeOptions) {
+			appProjectState.resizeElement(id, handle, dx, dy, options);
 		},
 
 		resetImageCrop(id: string) {
@@ -135,6 +140,16 @@ export const appActions = {
 
 		centerCamera(containerWidth: number, containerHeight: number) {
 			appCanvasState.centerCamera(containerWidth, containerHeight);
+		}
+	},
+
+	fill: {
+		set(color: string) {
+			appFillState.setDefaultFill(color);
+		},
+
+		get() {
+			return appFillState.getSnapshot();
 		}
 	},
 

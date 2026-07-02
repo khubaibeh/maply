@@ -5,7 +5,7 @@
 	import "./selections.css";
 	import * as Tooltip from "$lib/components/ui/tooltip";
 	import { App } from "@app";
-	import Monitor from "@lucide/svelte/icons/monitor";
+	import Monitor from "phosphor-svelte/lib/Monitor";
 	import { onMount } from "svelte";
 
 	let { children } = $props();
@@ -13,7 +13,7 @@
 	let innerWidth = $state(0);
 	let innerHeight = $state(0);
 	let isClient = $state(false);
-	let MIN_DIM = [800, 600];
+	let MIN_DIM = [1000, 800];
 	const canvas = App.state.canvas;
 	const project = App.state.project;
 	const theme = App.theme.use();

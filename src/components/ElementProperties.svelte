@@ -30,6 +30,9 @@
 	}
 
 	function updateColor(key: "fill" | "stroke", value: string) {
+		if (key === "fill") {
+			App.actions.fill.set(value);
+		}
 		App.actions.project.updateElement(element.id, { [key]: value } as Partial<Element>);
 	}
 
@@ -53,6 +56,9 @@
 		const patch: Partial<Element> = { d: value, closed };
 		if (closed) {
 			patch.strokeWidth = 0;
+			if (element.type === "path" && !element.closed && element.fill === "none") {
+				patch.fill = App.actions.fill.get();
+			}
 		} else {
 			patch.fill = "none";
 		}

@@ -56,7 +56,7 @@
 			{/if}
 		</div>
 	</ContextMenu.Trigger>
-	<ContextMenu.Content>
+	<ContextMenu.Content class="min-w-40 rounded-xl p-1">
 		<ContextMenuContent
 			target={canvasArea.state.contextMenuTarget}
 			hasClipboardElement={canvasArea.hasClipboardElement()}

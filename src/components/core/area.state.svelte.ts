@@ -18,7 +18,6 @@ type PathSession = {
 	points: Point[];
 	current: Point;
 	nearFirst: boolean;
-	nearLast: boolean;
 };
 
 const CLOSE_THRESHOLD_SCREEN_PX = 12;
@@ -36,6 +35,7 @@ export function createCanvasAreaState() {
 		contextMenuOpen: false,
 		contextMenuTarget: "empty" as "element" | "empty",
 		contextMenuElementId: null as string | null,
+		contextMenuPoint: null as Point | null,
 		containerWidth: 0,
 		containerHeight: 0,
 		isPanning: false,
@@ -265,6 +265,12 @@ export function createCanvasAreaState() {
 		}
 
 		function handleKeyDown(event: KeyboardEvent) {
+			if (event.key === "Escape" && state.drawingSession) {
+				event.preventDefault();
+				cancelDrawing();
+				return;
+			}
+
 			if (event.key === "Escape" && state.pathSession) {
 				event.preventDefault();
 				cancelPath();
@@ -273,7 +279,7 @@ export function createCanvasAreaState() {
 
 			if (event.key === "Enter" && state.pathSession) {
 				event.preventDefault();
-				commitPath(state.pathSession.nearFirst);
+				closePath();
 				return;
 			}
 
@@ -369,27 +375,21 @@ export function createCanvasAreaState() {
 		if (!state.pathSession) return;
 		const clampedPoint = clampPointToCanvas(point);
 		const first = state.pathSession.points[0];
-		const last = state.pathSession.points[state.pathSession.points.length - 1];
 		const threshold = CLOSE_THRESHOLD_SCREEN_PX / canvas.current.camera.zoom;
 		const nearFirst = first ? distance(first, clampedPoint) <= threshold : false;
-		const nearLast =
-			!nearFirst && state.pathSession.points.length >= 2 && last
-				? distance(last, clampedPoint) <= threshold
-				: false;
 		state.pathSession = {
 			...state.pathSession,
 			current: clampedPoint,
-			nearFirst,
-			nearLast
+			nearFirst
 		};
 	}
 
-	function commitPath(closed: boolean) {
+	function commitPath() {
 		if (!state.pathSession) return;
 		const points = state.pathSession.points;
 		state.pathSession = null;
 
-		const element = App.create.pathFromPoints(points, closed, project.current.elements);
+		const element = App.create.pathFromPoints(points, true, project.current.elements);
 		if (!element) return;
 
 		App.actions.project.addElement(element);
@@ -398,7 +398,7 @@ export function createCanvasAreaState() {
 
 	function closePath() {
 		if (!state.pathSession || state.pathSession.points.length < 3) return;
-		commitPath(true);
+		commitPath();
 	}
 
 	function cancelPath() {
@@ -427,7 +427,14 @@ export function createCanvasAreaState() {
 			color: canvas.current.color
 		});
 
-		if (!insideArtboard) return;
+		if (!insideArtboard) {
+			if (tool.current.activeTool === "path" && state.pathSession) {
+				event.preventDefault();
+				event.stopPropagation();
+				cancelPath();
+			}
+			return;
+		}
 
 		event.preventDefault();
 		event.stopPropagation();
@@ -436,8 +443,6 @@ export function createCanvasAreaState() {
 			if (state.pathSession) {
 				if (state.pathSession.nearFirst) {
 					closePath();
-				} else if (state.pathSession.nearLast) {
-					commitPath(false);
 				} else {
 					state.pathSession = {
 						...state.pathSession,
@@ -449,8 +454,7 @@ export function createCanvasAreaState() {
 				state.pathSession = {
 					points: [drawPoint],
 					current: drawPoint,
-					nearFirst: false,
-					nearLast: false
+					nearFirst: false
 				};
 			}
 			return;
@@ -467,16 +471,22 @@ export function createCanvasAreaState() {
 	}
 
 	function handleContextMenu(event: MouseEvent) {
+		state.contextMenuPoint = clientToSvgPoint(event.clientX, event.clientY);
 		const target = event.target as Element | null;
 		const elementNode = target?.closest("[data-canvas-element]");
 		if (elementNode instanceof Element) {
 			const id = elementNode.getAttribute("data-canvas-element");
 			if (id) {
+				if (project.current.selectedElementId !== id) {
+					App.actions.project.selectElement(null);
+				}
 				state.contextMenuTarget = "element";
 				state.contextMenuElementId = id;
-				App.actions.project.selectElement(id);
 				return;
 			}
+		}
+		if (project.current.selectedElementId !== null) {
+			App.actions.project.selectElement(null);
 		}
 		state.contextMenuTarget = "empty";
 		state.contextMenuElementId = null;
@@ -522,7 +532,7 @@ export function createCanvasAreaState() {
 	function handlePaste() {
 		const copied = App.actions.clipboard.get();
 		if (!copied) return;
-		void App.element.paste();
+		void App.element.paste(state.contextMenuPoint ?? undefined);
 		state.contextMenuOpen = false;
 	}
 

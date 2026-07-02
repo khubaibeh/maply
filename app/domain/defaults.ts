@@ -1,85 +1,83 @@
 import type { Element } from "./elements";
 import type { Project } from "./project";
 
-const defaultElements: Element[] = [
+const sampleElements: Element[] = [
 	{
-		id: "el-circle-1",
-		name: "Highlight-circle",
-		type: "circle",
-		cx: 350,
-		cy: 250,
-		r: 60,
-		fill: "#3b82f6",
+		id: "9103ef60-ae4c-4119-bffc-d4b53eb5fdb6",
+		name: "horizontal",
+		type: "rect",
+		x: 323,
+		y: 347,
+		width: 217,
+		height: 61,
+		fill: "#FDA5A5",
 		stroke: "#000000",
 		strokeWidth: 0
 	},
 	{
-		id: "el-path-1",
-		name: "Demo-closed-path",
+		id: "el-circle-1",
+		name: "circle",
+		type: "circle",
+		cx: 455,
+		cy: 280,
+		r: 60,
+		fill: "#AF87C5",
+		stroke: "#000000",
+		strokeWidth: 0
+	},
+	{
+		id: "cc57f0fa-5b24-480f-80e8-0dae8bfb9cfe",
+		name: "polygon",
 		type: "path",
-		x: 480,
-		y: 480,
-		d: "M500,500 L600,480 L620,560 L560,620 L480,580 Z",
-		fill: "#9ca3af",
+		x: 49,
+		y: 357,
+		d: "M322,570 L234,715 L396,715 Z",
+		fill: "#A1D968",
 		stroke: "#000000",
 		strokeWidth: 0,
 		closed: true
 	},
 	{
-		id: "el-path-2",
-		name: "Demo-open-path",
-		type: "path",
-		x: 100,
-		y: 450,
-		d: "M100,500 L150,450 L200,520 L250,480",
-		fill: "none",
-		stroke: "#000000",
-		strokeWidth: 3,
-		closed: false
-	},
-	{
-		id: "el-text-1",
-		name: "Title-text",
-		type: "text",
-		x: 120,
-		y: 80,
-		width: 220,
-		height: 80,
-		text: "Maply",
-		fontSize: 32,
-		fill: "#171717"
-	},
-	{
-		id: "el-image-1",
-		name: "Sample-image",
-		type: "image",
-		x: 300,
-		y: 120,
-		width: 160,
-		height: 120,
-		assetId: null,
-		href: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='120'%3E%3Crect width='160' height='120' fill='%23d4d4d4'/%3E%3Ccircle cx='80' cy='60' r='30' fill='%239ca3af'/%3E%3C/svg%3E",
-		cropX: 0,
-		cropY: 0,
-		cropScale: 100
-	},
-	{
-		id: "el-rect-1",
-		name: "1 Background/rectangle",
+		id: "db2395ca-3d4f-48a3-b9fc-058d8564e2b8",
+		name: "vertical",
 		type: "rect",
-		x: 100,
-		y: 100,
-		width: 200,
-		height: 120,
-		fill: "#e5e5e5",
+		x: 277,
+		y: 155,
+		width: 112,
+		height: 231,
+		fill: "#D2D39C",
 		stroke: "#000000",
 		strokeWidth: 0
+	},
+	{
+		id: "2a1f024c-febc-42ac-a207-b96edd75409b",
+		name: "polygon-2",
+		type: "path",
+		x: 109,
+		y: 335,
+		d: "M322,570 L234,715 L396,715 Z",
+		fill: "#EDF2EE",
+		stroke: "#000000",
+		strokeWidth: 0,
+		closed: true
+	},
+	{
+		id: "4c596cb5-d31f-4051-bff2-83e5a06eb4f8",
+		name: "path",
+		type: "path",
+		x: 86,
+		y: 99,
+		d: "M136,103 L73,185 L225,118 L71,294 Z",
+		fill: "#2D3B53",
+		stroke: "#000000",
+		strokeWidth: 0,
+		closed: true
 	}
 ];
 
 export const defaultProject: Project = {
-	id: "default",
-	name: "Untitled",
+	id: "prod",
+	name: "UntitledProject",
 	canvas: {
 		width: 800,
 		height: 800,
@@ -87,15 +85,15 @@ export const defaultProject: Project = {
 		x: 0,
 		y: 0
 	},
-	elements: defaultElements,
+	elements: [],
 	importExportState: {
 		importsOpen: true,
 		elementsOpen: true
 	},
 	camera: {
-		x: -350,
-		y: -50,
-		zoom: 0.9
+		x: -302.23521459629404,
+		y: -92.0446555125453,
+		zoom: 1.0327974561434663
 	}
 };
 
@@ -108,4 +106,22 @@ export function createDefaultProject(id = defaultProject.id): Project {
 		importExportState: { ...defaultProject.importExportState },
 		camera: defaultProject.camera ? { ...defaultProject.camera } : undefined
 	};
+}
+
+export function createSampleProject(id = defaultProject.id): Project {
+	const project = createDefaultProject(id);
+	project.elements = sampleElements.map((element) => ({ ...element }));
+	project.canvas = {
+		width: 600,
+		height: 600,
+		color: "#D3DED4",
+		x: 0,
+		y: 0
+	};
+	project.camera = {
+		x: -302.23521459629404,
+		y: -92.0446555125453,
+		zoom: 1.0327974561434663
+	};
+	return project;
 }

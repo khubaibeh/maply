@@ -4,10 +4,10 @@
 	import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
 	import { Input } from "$lib/components/ui/input";
 	import { App } from "@app";
-	import ChevronDown from "@lucide/svelte/icons/chevron-down";
-	import Pencil from "@lucide/svelte/icons/pencil";
-	import Plus from "@lucide/svelte/icons/plus";
-	import Save from "@lucide/svelte/icons/save";
+	import CaretDown from "phosphor-svelte/lib/CaretDown";
+	import FloppyDisk from "phosphor-svelte/lib/FloppyDisk";
+	import Pencil from "phosphor-svelte/lib/Pencil";
+	import Plus from "phosphor-svelte/lib/Plus";
 
 	const project = App.state.project;
 
@@ -16,7 +16,7 @@
 	let inputRef: HTMLInputElement | null = $state(null);
 	let newProjectDialogOpen = $state(false);
 
-	async function handleCreateNewProject(elements: "sample" | "blank" = "sample") {
+	async function handleCreateNewProject(elements: "sample" | "blank" = "blank") {
 		await App.project.create({ elements });
 		newProjectDialogOpen = false;
 	}
@@ -103,7 +103,7 @@
 				onclick={handleSave}
 				aria-label="Save project"
 			>
-				<Save />
+				<FloppyDisk />
 			</Button>
 			<Button
 				variant="ghost"
@@ -125,8 +125,8 @@
 		<AlertDialog.Header>
 			<AlertDialog.Title>Create new project?</AlertDialog.Title>
 			<AlertDialog.Description>
-				This will delete your current project and create a fresh one from the default settings. This action
-				cannot be undone.
+				This will delete your current project and create a fresh blank canvas unless you pick Sample Project.
+				This action cannot be undone.
 			</AlertDialog.Description>
 		</AlertDialog.Header>
 		<AlertDialog.Footer>
@@ -143,11 +143,11 @@
 						})} border-primary-foreground/20 -ml-1 rounded-l-none border-l px-1!"
 						aria-label="Create new project options"
 					>
-						<ChevronDown />
+						<CaretDown />
 					</DropdownMenu.Trigger>
 					<DropdownMenu.Content align="end">
-						<DropdownMenu.Item onclick={() => handleCreateNewProject("blank")} class="text-xs">
-							Blank canvas
+						<DropdownMenu.Item onclick={() => handleCreateNewProject("sample")} class="text-xs">
+							Sample Project
 						</DropdownMenu.Item>
 					</DropdownMenu.Content>
 				</DropdownMenu.Root>

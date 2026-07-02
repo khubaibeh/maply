@@ -1,24 +1,21 @@
 <script lang="ts">
-	import * as Collapsible from "$lib/components/ui/collapsible";
 	import * as ContextMenu from "$lib/components/ui/context-menu";
 	import { Input } from "$lib/components/ui/input";
 	import { ScrollArea } from "$lib/components/ui/scroll-area";
 	import { App } from "@app";
 	import type { Element } from "@app/types";
 	import ElementNameValidation from "@components/core/ElementNameValidation.svelte";
-	import ChevronDown from "@lucide/svelte/icons/chevron-down";
-	import Circle from "@lucide/svelte/icons/circle";
-	import Image from "@lucide/svelte/icons/image";
-	import Pencil from "@lucide/svelte/icons/pencil";
-	import Square from "@lucide/svelte/icons/square";
-	import Trash2 from "@lucide/svelte/icons/trash-2";
-	import Type from "@lucide/svelte/icons/type";
+	import Circle from "phosphor-svelte/lib/Circle";
+	import Image from "phosphor-svelte/lib/Image";
+	import Pencil from "phosphor-svelte/lib/Pencil";
+	import Rectangle from "phosphor-svelte/lib/Rectangle";
+	import TextT from "phosphor-svelte/lib/TextT";
+	import Trash from "phosphor-svelte/lib/Trash";
 	import { onDestroy } from "svelte";
 	import type { Component } from "svelte";
 
 	const project = App.state.project;
 
-	let elementsOpen = $state(true);
 	let editingElementId = $state<string | null>(null);
 	let editingElementName = $state("");
 	let editingElementInputRef: HTMLInputElement | null = $state(null);
@@ -42,7 +39,6 @@
 	let suppressNextElementClick = false;
 
 	const REORDER_HOLD_DELAY_MS = 220;
-	const hasClipboardElement = $derived(!!App.actions.clipboard.get());
 	const elementNameValidations = $derived(App.validate.elementNames($project.elements));
 	const sidebarElements = $derived(() => {
 		const elements = [...$project.elements].reverse();
@@ -59,10 +55,10 @@
 	});
 
 	const elementIcons: Record<Element["type"], Component> = {
-		rect: Square,
+		rect: Rectangle,
 		circle: Circle,
 		path: Pencil,
-		text: Type,
+		text: TextT,
 		image: Image
 	};
 
@@ -71,16 +67,6 @@
 			editingElementInputRef.focus();
 			editingElementInputRef.select();
 		}
-	});
-
-	$effect(() => {
-		if (!$project.initialized) return;
-		elementsOpen = $project.importExportState.elementsOpen;
-	});
-
-	$effect(() => {
-		if (!$project.initialized) return;
-		App.actions.project.setImportExportState({ elementsOpen });
 	});
 
 	function startEditingElement(element: Element) {
@@ -118,6 +104,9 @@
 	}
 
 	function setElementContextMenuOpen(elementId: string, open: boolean) {
+		if (open && $project.selectedElementId !== elementId) {
+			App.actions.project.selectElement(null);
+		}
 		openElementContextMenuId = open
 			? elementId
 			: openElementContextMenuId === elementId
@@ -309,11 +298,11 @@
 		open={openElementContextMenuId === element.id}
 		onOpenChange={(open) => setElementContextMenuOpen(element.id, open)}
 	>
-		<ContextMenu.Trigger class="contents">
+		<ContextMenu.Trigger class="block w-full">
 			<div
 				data-element-row
 				data-element-id={element.id}
-				class="group flex w-full items-center rounded-lg {isInvalidName
+				class="group grid w-full grid-cols-[minmax(0,1fr)_auto_auto] items-center rounded-lg {isInvalidName
 					? 'bg-destructive/10 text-destructive hover:bg-destructive/15'
 					: isReordering
 						? 'ring-sidebar-ring/50 bg-sidebar-accent/80 text-sidebar-accent-foreground shadow-sm ring-1'
@@ -323,7 +312,7 @@
 			>
 				<button
 					type="button"
-					class="flex min-w-0 flex-1 items-center gap-2 px-2 py-1.5 text-left text-xs outline-none select-none"
+					class="flex min-w-0 items-center gap-2 px-2 py-1.5 text-left text-xs outline-none select-none"
 					onpointerdown={(event) => startPendingReorder(event, element, sidebarIndex)}
 					onclick={(event) => handleElementRowClick(event, element.id)}
 					ondblclick={() => startEditingElement(element)}
@@ -334,7 +323,7 @@
 				{@render elementValidation(element, nameValidation, isEditingElement, isInvalidName)}
 				<button
 					type="button"
-					class="text-sidebar-foreground/60 hover:text-destructive px-2 py-1.5 opacity-0 transition-opacity duration-150 outline-none group-hover:opacity-100 focus-visible:opacity-100 {isEditingElement
+					class="text-sidebar-foreground/60 hover:text-destructive mr-1 flex size-6 items-center justify-center rounded-md opacity-0 transition-[color,opacity] outline-none group-hover:opacity-100 focus-visible:opacity-100 {isEditingElement
 						? 'hidden'
 						: ''}"
 					onclick={(event) => {
@@ -343,7 +332,7 @@
 					}}
 					aria-label="Delete {element.name}"
 				>
-					<Trash2 class="size-3.5" />
+					<Trash class="size-3.5" />
 				</button>
 			</div>
 		</ContextMenu.Trigger>
@@ -362,7 +351,7 @@
 			style="font: inherit;"
 		/>
 	{:else}
-		<span class="truncate" title={element.name}>{element.name}</span>
+		<span class="block truncate rounded-none! px-0.5" title={element.name}>{element.name}</span>
 	{/if}
 {/snippet}
 
@@ -382,8 +371,9 @@
 {/snippet}
 
 {#snippet elementMenu(element: Element, isFrontmost: boolean, isBackmost: boolean)}
-	<ContextMenu.Content>
+	<ContextMenu.Content class="min-w-40 rounded-xl p-1">
 		<ContextMenu.Item
+			class="rounded-lg px-2.5 py-1.5 text-xs"
 			onclick={() => {
 				App.actions.clipboard.copy(element);
 				closeElementContextMenu();
@@ -393,6 +383,7 @@
 		</ContextMenu.Item>
 		<ContextMenu.Separator />
 		<ContextMenu.Item
+			class="rounded-lg px-2.5 py-1.5 text-xs"
 			disabled={isFrontmost}
 			onclick={() => {
 				App.actions.project.moveElementToFront(element.id);
@@ -402,6 +393,7 @@
 			Bring to front
 		</ContextMenu.Item>
 		<ContextMenu.Item
+			class="rounded-lg px-2.5 py-1.5 text-xs"
 			disabled={isFrontmost}
 			onclick={() => {
 				App.actions.project.moveElementForward(element.id);
@@ -411,6 +403,7 @@
 			Bring forward
 		</ContextMenu.Item>
 		<ContextMenu.Item
+			class="rounded-lg px-2.5 py-1.5 text-xs"
 			disabled={isBackmost}
 			onclick={() => {
 				App.actions.project.moveElementBackward(element.id);
@@ -420,6 +413,7 @@
 			Send backward
 		</ContextMenu.Item>
 		<ContextMenu.Item
+			class="rounded-lg px-2.5 py-1.5 text-xs"
 			disabled={isBackmost}
 			onclick={() => {
 				App.actions.project.moveElementToBack(element.id);
@@ -430,6 +424,7 @@
 		</ContextMenu.Item>
 		<ContextMenu.Separator />
 		<ContextMenu.Item
+			class="rounded-lg px-2.5 py-1.5 text-xs"
 			variant="destructive"
 			onclick={() => {
 				void App.element.delete(element.id);
@@ -441,87 +436,26 @@
 	</ContextMenu.Content>
 {/snippet}
 
-<div class="flex min-h-0 flex-1 flex-col">
-	<Collapsible.Root bind:open={elementsOpen} class="flex min-h-0 flex-1 flex-col">
-		<Collapsible.Trigger
-			class="border-border hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex h-8 w-full shrink-0 items-center justify-between border-b px-3 text-left outline-none"
+<div class="flex min-h-0 flex-1 flex-col pb-6">
+	<div class="px-4 pt-3 pb-2">
+		<span class="text-sidebar-foreground/80 text-sm font-bold">Elements</span>
+	</div>
+	<hr class="mx-4 opacity-50" />
+	<ScrollArea
+		class="min-h-0 flex-1 [mask-image:linear-gradient(to_bottom,black_calc(100%-2rem),transparent)]"
+		bind:viewportRef={elementScrollViewport}
+	>
+		<div
+			bind:this={elementListRef}
+			class="flex min-h-full flex-col gap-0.5 p-2"
+			onpointerdown={handleElementTreeBackgroundPointerDown}
+			role="presentation"
 		>
-			<span class="text-sidebar-foreground/80 text-xs font-semibold tracking-wide uppercase"> Elements </span>
-			<ChevronDown
-				class="text-sidebar-foreground/70 size-4 transition-transform duration-200 {elementsOpen
-					? 'rotate-180'
-					: ''}"
-			/>
-		</Collapsible.Trigger>
-		<Collapsible.Content class="sidebar-collapsible-content flex min-h-0 flex-col">
-			<div class="flex min-h-0 flex-1 flex-col">
-				<ContextMenu.Root>
-					<ContextMenu.Trigger class="flex min-h-0 flex-1 flex-col">
-						<ScrollArea class="min-h-0 flex-1" bind:viewportRef={elementScrollViewport}>
-							<div
-								bind:this={elementListRef}
-								class="flex min-h-full flex-col gap-0.5 p-2"
-								onpointerdown={handleElementTreeBackgroundPointerDown}
-								role="presentation"
-							>
-								{#each sidebarElements() as element, sidebarIndex (element.id)}
-									{@render elementRow(element, sidebarIndex)}
-								{:else}
-									<p class="text-muted-foreground px-2 py-1 text-xs">No elements</p>
-								{/each}
-							</div>
-						</ScrollArea>
-					</ContextMenu.Trigger>
-					<ContextMenu.Content>
-						<ContextMenu.Item
-							disabled={!hasClipboardElement}
-							onclick={() => {
-								const copied = App.actions.clipboard.get();
-								if (!copied) return;
-								void App.element.paste();
-							}}
-						>
-							Paste
-						</ContextMenu.Item>
-					</ContextMenu.Content>
-				</ContextMenu.Root>
-			</div>
-		</Collapsible.Content>
-	</Collapsible.Root>
+			{#each sidebarElements() as element, sidebarIndex (element.id)}
+				{@render elementRow(element, sidebarIndex)}
+			{:else}
+				<p class="text-muted-foreground px-2 py-1 text-xs">No elements</p>
+			{/each}
+		</div>
+	</ScrollArea>
 </div>
-
-<style>
-	:global(.sidebar-collapsible-content) {
-		overflow: hidden;
-	}
-
-	:global(.sidebar-collapsible-content[data-state="open"]) {
-		animation: sidebar-collapse-down 200ms ease-out;
-	}
-
-	:global(.sidebar-collapsible-content[data-state="closed"]) {
-		animation: sidebar-collapse-up 200ms ease-out;
-	}
-
-	@keyframes sidebar-collapse-down {
-		from {
-			height: 0;
-			opacity: 0;
-		}
-		to {
-			height: var(--bits-collapsible-content-height);
-			opacity: 1;
-		}
-	}
-
-	@keyframes sidebar-collapse-up {
-		from {
-			height: var(--bits-collapsible-content-height);
-			opacity: 1;
-		}
-		to {
-			height: 0;
-			opacity: 0;
-		}
-	}
-</style>

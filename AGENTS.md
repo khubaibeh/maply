@@ -9,3 +9,5 @@
 - Use the `shadcn-svelte` skill for anything related to shadcn-svelte. (In fact, on session start load this and the `frontend-design` skill into memory) (load lazily)
 
 Always read the @RULES.md file
+
+- You cannot edit files under `src/lib/components/ui/*`

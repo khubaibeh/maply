@@ -1,6 +1,7 @@
 import { get, writable } from "svelte/store";
 
 import type { Element } from "../domain/elements";
+import type { Point } from "../domain/geometry";
 import type { StoredImageAsset } from "../domain/image-assets";
 import type { Project } from "../domain/project";
 import {
@@ -15,11 +16,12 @@ import {
 	clampElementToCanvas,
 	duplicateElement,
 	normalizeElements,
+	resizeElementWithinCanvas,
 	resizeImageFrameWithinCanvas,
 	setElementPosition,
 	translateElementWithinCanvas
 } from "../internal/element-actions";
-import type { ResizeHandle } from "../internal/element-actions";
+import type { ResizeHandle, ResizeOptions } from "../internal/element-actions";
 import {
 	cloneStoredImageAsset,
 	getImageCropStateForFrameResize,
@@ -330,6 +332,18 @@ export const appProjectState = {
 		}));
 	},
 
+	resizeElement(id: string, handle: ResizeHandle, dx: number, dy: number, options?: ResizeOptions) {
+		const canvas = appCanvasState.getSnapshot();
+
+		store.update((state) => ({
+			...state,
+			elements: state.elements.map((element) => {
+				if (element.id !== id) return element;
+				return resizeElementWithinCanvas(element, handle, dx, dy, canvas, options);
+			})
+		}));
+	},
+
 	updateElement(id: string, patch: Partial<Omit<Element, "id" | "type">>) {
 		const canvas = appCanvasState.getSnapshot();
 
@@ -396,11 +410,15 @@ export const appProjectState = {
 		}));
 	},
 
-	async pasteClipboardElement() {
+	async pasteClipboardElement(point?: Point) {
 		const copied = getClipboardElement();
 		if (!copied) return;
 
-		const nextElement = duplicateElement(copied, get(store).elements);
+		const canvas = appCanvasState.getSnapshot();
+		let nextElement = duplicateElement(copied, get(store).elements);
+		if (point) {
+			nextElement = setElementPosition(nextElement, point.x, point.y, canvas);
+		}
 		if (nextElement.type === "image" && nextElement.assetId) {
 			const asset = appImageAssetState.getAsset(nextElement.assetId);
 			if (asset) {
@@ -420,7 +438,7 @@ export const appProjectState = {
 		store.update((state) => ({
 			...state,
 			selectedElementId: id,
-			hoveredElementId: id === null ? state.hoveredElementId : id,
+			hoveredElementId: null,
 			cropEditingElementId: state.cropEditingElementId === id ? state.cropEditingElementId : null
 		}));
 	},

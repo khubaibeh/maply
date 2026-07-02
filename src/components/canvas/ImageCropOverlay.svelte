@@ -181,7 +181,7 @@
 			height={element.height}
 			fill="transparent"
 			stroke="var(--primary)"
-			stroke-width={1.25 / $canvas.camera.zoom}
+			stroke-width={2.5 / $canvas.camera.zoom}
 			onpointerdown={startPan}
 			style:cursor={panCursor}
 		/>
@@ -198,7 +198,7 @@
 				rx={handleOffset}
 				fill="var(--background)"
 				stroke="var(--primary)"
-				stroke-width={1 / $canvas.camera.zoom}
+				stroke-width={2 / $canvas.camera.zoom}
 				class={handle.cursor}
 				onpointerdown={(event) => startResize(event, handle.key)}
 			/>

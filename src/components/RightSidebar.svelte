@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { Input } from "$lib/components/ui/input";
 	import { ScrollArea } from "$lib/components/ui/scroll-area";
-	import { Separator } from "$lib/components/ui/separator";
 	import { App } from "@app";
 	import ColorPicker from "@components/core/ColorPicker.svelte";
 	import ElementNameValidation from "@components/core/ElementNameValidation.svelte";
@@ -45,14 +44,15 @@
 	);
 </script>
 
-<aside class="border-border bg-sidebar flex shrink-0 flex-col border-l" style={`width: ${width}px;`}>
-	<div class="border-border border-b px-3 py-2">
-		<span class="text-sidebar-foreground/80 text-xs font-semibold tracking-wide uppercase">Properties</span>
+<aside class="flex h-full min-h-0 shrink-0 flex-col pb-6" style={`width: ${width}px;`}>
+	<div class="px-4 pt-3 pb-2">
+		<span class="text-sidebar-foreground/80 text-sm font-bold">Properties</span>
 	</div>
-	<ScrollArea class="h-full">
+	<hr class="mx-4 opacity-50" />
+	<ScrollArea class="min-h-0 flex-1 [mask-image:linear-gradient(to_bottom,black_calc(100%-2rem),transparent)]">
 		<div class="flex flex-col gap-4 p-3">
-			<div class="flex flex-col gap-2">
-				<span class="text-sidebar-foreground/80 text-xs font-semibold tracking-wide">Canvas</span>
+			<div class="flex flex-col gap-x-2 gap-y-4">
+				<span class="text-sidebar-foreground/30 text-sm font-semibold tracking-wide">Canvas</span>
 				<div class="grid grid-cols-2 gap-2">
 					<div class="flex flex-col gap-1">
 						<label for="canvas-width" class="text-sidebar-foreground/70 text-xs">Width</label>
@@ -88,8 +88,9 @@
 			</div>
 
 			{#if selectedElement}
-				<div class="flex flex-col gap-2">
-					<Separator />
+				<div class="flex flex-col gap-x-2 gap-y-4">
+					<hr class="mx-4 my-2 opacity-50" />
+					<span class="text-sidebar-foreground/30 text-sm font-semibold tracking-wide">Element</span>
 					<div class="flex flex-col gap-1">
 						<label for="{selectedElement.id}-name" class="text-sidebar-foreground/70 text-xs">Name</label>
 						<Input
@@ -99,7 +100,7 @@
 							onchange={(event) => updateElementName(event, selectedElement.id)}
 							aria-invalid={selectedElementNameValidation && !selectedElementNameValidation.valid}
 							class="h-7 text-xs {selectedElementNameValidation && !selectedElementNameValidation.valid
-								? 'border-destructive bg-destructive/10 text-destructive focus-visible:ring-0 focus-visible:ring-offset-0 aria-invalid:ring-0 dark:aria-invalid:ring-0'
+								? 'bg-destructive/10 text-destructive focus-visible:aria-invalid:border-destructive focus-visible:ring-0 focus-visible:ring-offset-0 aria-invalid:border-transparent aria-invalid:ring-0 dark:aria-invalid:border-transparent dark:aria-invalid:ring-0'
 								: 'focus-visible:ring-0 focus-visible:ring-offset-0'}"
 						/>
 						{#if selectedElementNameValidation && !selectedElementNameValidation.valid}
@@ -107,7 +108,6 @@
 								validation={selectedElementNameValidation}
 								onAutofix={(suggestion) => autofixElementName(selectedElement.id, suggestion)}
 								variant="inline"
-								stateKey={selectedElement.id}
 								class="mt-1"
 							/>
 						{/if}
