@@ -7,10 +7,15 @@
 	import Sun from "phosphor-svelte/lib/Sun";
 
 	const theme = App.theme.use();
-	function handleChange(value: string | undefined) {
-		if (value === "light" || value === "dark" || value === "system") {
-			App.theme.set(value);
+	let value = $derived(theme.theme);
+
+	function handleChange(next: string | undefined) {
+		if (next === "light" || next === "dark" || next === "system") {
+			App.theme.set(next);
+			return;
 		}
+
+		value = theme.theme;
 	}
 </script>
 
@@ -20,14 +25,7 @@
 		<h1 class="text-foreground/50 font-extrabold uppercase select-none">Maply</h1>
 	</div>
 
-	<ToggleGroup.Root
-		type="single"
-		value={theme.theme}
-		onValueChange={handleChange}
-		variant="default"
-		size="sm"
-		class="gap-0.5"
-	>
+	<ToggleGroup.Root type="single" bind:value onValueChange={handleChange} variant="default" size="sm" class="gap-0.5">
 		<ToggleGroup.Item
 			value="light"
 			aria-label="Light"
