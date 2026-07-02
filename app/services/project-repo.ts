@@ -62,9 +62,11 @@ export class ProjectRepo extends Context.Service<
 			const fetchProject = Effect.fn("ProjectRepo.fetchProject")(function* (id: string) {
 				const defaultId = IDS.default;
 				const prodId = IDS.prod;
+				const createInitialProject = (projectId: string) =>
+					projectId === defaultId ? createDefaultProject(defaultId) : createSampleProject(prodId);
 
 				if (typeof indexedDB === "undefined") {
-					return createDefaultProject(id === defaultId ? defaultId : prodId);
+					return createInitialProject(id === defaultId ? defaultId : prodId);
 				}
 
 				const defaultProject = createDefaultProject(defaultId);
@@ -78,7 +80,7 @@ export class ProjectRepo extends Context.Service<
 				}
 
 				if (!record) {
-					const prodProject = createDefaultProject(prodId);
+					const prodProject = createInitialProject(prodId);
 					yield* db.put("projects", cloneProject(prodProject));
 					return prodProject;
 				}
