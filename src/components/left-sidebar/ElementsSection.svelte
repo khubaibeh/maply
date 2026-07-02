@@ -441,7 +441,10 @@
 		<span class="text-sidebar-foreground/80 text-sm font-bold">Elements</span>
 	</div>
 	<hr class="mx-4 opacity-50" />
-	<ScrollArea class="min-h-0 flex-1" bind:viewportRef={elementScrollViewport}>
+	<ScrollArea
+		class="min-h-0 flex-1 [mask-image:linear-gradient(to_bottom,black_calc(100%-2rem),transparent)]"
+		bind:viewportRef={elementScrollViewport}
+	>
 		<div
 			bind:this={elementListRef}
 			class="flex min-h-full flex-col gap-0.5 p-2"

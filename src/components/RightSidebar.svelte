@@ -49,7 +49,7 @@
 		<span class="text-sidebar-foreground/80 text-sm font-bold">Properties</span>
 	</div>
 	<hr class="mx-4 opacity-50" />
-	<ScrollArea class="min-h-0 flex-1">
+	<ScrollArea class="min-h-0 flex-1 [mask-image:linear-gradient(to_bottom,black_calc(100%-2rem),transparent)]">
 		<div class="flex flex-col gap-4 p-3">
 			<div class="flex flex-col gap-x-2 gap-y-4">
 				<span class="text-sidebar-foreground/30 text-sm font-semibold tracking-wide">Canvas</span>
