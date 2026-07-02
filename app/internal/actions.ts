@@ -63,6 +63,10 @@ export const appActions = {
 			appProjectState.resizeImageFrame(id, handle, dx, dy);
 		},
 
+		resizeElement(id: string, handle: ResizeHandle, dx: number, dy: number) {
+			appProjectState.resizeElement(id, handle, dx, dy);
+		},
+
 		resetImageCrop(id: string) {
 			appProjectState.resetImageCrop(id);
 		},

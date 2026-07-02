@@ -15,6 +15,7 @@ import {
 	clampElementToCanvas,
 	duplicateElement,
 	normalizeElements,
+	resizeElementWithinCanvas,
 	resizeImageFrameWithinCanvas,
 	setElementPosition,
 	translateElementWithinCanvas
@@ -326,6 +327,18 @@ export const appProjectState = {
 				);
 
 				return { ...nextFrame, ...nextCrop };
+			})
+		}));
+	},
+
+	resizeElement(id: string, handle: ResizeHandle, dx: number, dy: number) {
+		const canvas = appCanvasState.getSnapshot();
+
+		store.update((state) => ({
+			...state,
+			elements: state.elements.map((element) => {
+				if (element.id !== id) return element;
+				return resizeElementWithinCanvas(element, handle, dx, dy, canvas);
 			})
 		}));
 	},

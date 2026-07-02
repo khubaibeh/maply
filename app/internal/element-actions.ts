@@ -297,6 +297,91 @@ type Bounds = {
 
 export type ResizeHandle = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw";
 
+export function resizeElementWithinCanvas(
+	element: Element,
+	handle: ResizeHandle,
+	dx: number,
+	dy: number,
+	canvas: Canvas
+): Element {
+	if (element.type === "circle") {
+		const horizontal = handle.includes("w") ? -dx : handle.includes("e") ? dx : 0;
+		const vertical = handle.includes("n") ? -dy : handle.includes("s") ? dy : 0;
+		const delta =
+			horizontal !== 0 && vertical !== 0
+				? Math.abs(horizontal) >= Math.abs(vertical)
+					? horizontal
+					: vertical
+				: horizontal || vertical;
+		const maxRadius = Math.floor(
+			Math.min(
+				element.cx - canvas.x,
+				canvas.x + canvas.width - element.cx,
+				element.cy - canvas.y,
+				canvas.y + canvas.height - element.cy
+			)
+		);
+
+		return {
+			...element,
+			r: Math.max(0, Math.min(maxRadius, Math.round(element.r + delta)))
+		};
+	}
+
+	if (element.type !== "rect" && element.type !== "text" && element.type !== "image") {
+		return element;
+	}
+
+	const bounds = getElementBounds(element);
+	let left = bounds.x;
+	let top = bounds.y;
+	let right = bounds.x + bounds.width;
+	let bottom = bounds.y + bounds.height;
+	const minSize = 1;
+	const canvasLeft = canvas.x;
+	const canvasTop = canvas.y;
+	const canvasRight = canvas.x + canvas.width;
+	const canvasBottom = canvas.y + canvas.height;
+
+	if (handle.includes("w")) {
+		left = Math.min(right - minSize, Math.max(canvasLeft, left + dx));
+	}
+
+	if (handle.includes("e")) {
+		right = Math.max(left + minSize, Math.min(canvasRight, right + dx));
+	}
+
+	if (handle.includes("n")) {
+		top = Math.min(bottom - minSize, Math.max(canvasTop, top + dy));
+	}
+
+	if (handle.includes("s")) {
+		bottom = Math.max(top + minSize, Math.min(canvasBottom, bottom + dy));
+	}
+
+	const width = Math.max(1, Math.round(right - left));
+	const height = Math.max(1, Math.round(bottom - top));
+
+	if (element.type === "text") {
+		const metrics = getTextLayoutMetrics(element.text, element.fontSize, width);
+		return {
+			...element,
+			x: Math.round(left + metrics.left),
+			y: Math.round(top + metrics.ascent),
+			width,
+			height
+		};
+	}
+
+	return {
+		...element,
+		x: Math.round(left),
+		y: Math.round(top),
+		width,
+		height
+	};
+}
+
 export function resizeImageFrameWithinCanvas(
 	element: ImageElement,
 	handle: ResizeHandle,
