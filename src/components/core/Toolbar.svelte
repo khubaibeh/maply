@@ -48,7 +48,7 @@
 					aria-checked={isActive}
 					aria-label={tool.label}
 					onclick={() => selectTool(tool.id)}
-					class="hover:bg-primary/60 hover:text-primary-foreground flex h-8 items-center gap-1.5 rounded-xl px-2.5 text-xs transition-all duration-300 ease-out active:scale-[0.98] [&_svg:not([class*='size-'])]:size-4 {isActive
+					class="hover:bg-primary/60 hover:text-primary-foreground flex h-8 items-center gap-1.5 rounded-xl px-2.5 text-xs transition-all duration-300 ease-out select-none active:scale-[0.98] [&_svg:not([class*='size-'])]:size-4 {isActive
 						? 'bg-primary text-primary-foreground shadow-sm'
 						: 'text-foreground'}"
 				>
