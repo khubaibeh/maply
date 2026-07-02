@@ -1,7 +1,7 @@
 import type { Element } from "./elements";
 import type { Project } from "./project";
 
-const defaultElements: Element[] = [
+const sampleElements: Element[] = [
 	{
 		id: "9103ef60-ae4c-4119-bffc-d4b53eb5fdb6",
 		name: "horizontal",
@@ -79,13 +79,13 @@ export const defaultProject: Project = {
 	id: "prod",
 	name: "UntitledProject",
 	canvas: {
-		width: 600,
-		height: 600,
-		color: "#D3DED4",
+		width: 800,
+		height: 800,
+		color: "#ffffff",
 		x: 0,
 		y: 0
 	},
-	elements: defaultElements,
+	elements: [],
 	importExportState: {
 		importsOpen: true,
 		elementsOpen: true
@@ -106,4 +106,22 @@ export function createDefaultProject(id = defaultProject.id): Project {
 		importExportState: { ...defaultProject.importExportState },
 		camera: defaultProject.camera ? { ...defaultProject.camera } : undefined
 	};
+}
+
+export function createSampleProject(id = defaultProject.id): Project {
+	const project = createDefaultProject(id);
+	project.elements = sampleElements.map((element) => ({ ...element }));
+	project.canvas = {
+		width: 600,
+		height: 600,
+		color: "#D3DED4",
+		x: 0,
+		y: 0
+	};
+	project.camera = {
+		x: -302.23521459629404,
+		y: -92.0446555125453,
+		zoom: 1.0327974561434663
+	};
+	return project;
 }

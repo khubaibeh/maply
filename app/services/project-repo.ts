@@ -1,6 +1,6 @@
 import { Context, Effect, Layer } from "effect";
 
-import { createDefaultProject } from "../domain/defaults";
+import { createDefaultProject, createSampleProject } from "../domain/defaults";
 import type { StoredImageAsset } from "../domain/image-assets";
 import type { Project } from "../domain/project";
 import { IndexedDbOpenError, IndexedDbStoreError } from "../errors/persistence-errors";
@@ -133,19 +133,15 @@ export class ProjectRepo extends Context.Service<
 			const resetProject = (options: ResetProjectOptions = {}) =>
 				Effect.gen(function* () {
 					const prodId = IDS.prod;
+					const project =
+						options.elements === "sample" ? createSampleProject(prodId) : createDefaultProject(prodId);
 
 					if (typeof indexedDB === "undefined") {
-						const fallback = createDefaultProject(prodId);
-						return options.elements === "blank" ? { ...fallback, elements: [] } : fallback;
+						return project;
 					}
 
 					yield* db.delete("projects", prodId);
 					yield* db.deleteByIndex("image-assets", "projectId", prodId);
-
-					const project = createDefaultProject(prodId);
-					if (options.elements === "blank") {
-						project.elements = [];
-					}
 
 					yield* db.put("projects", cloneProject(project));
 					return project;

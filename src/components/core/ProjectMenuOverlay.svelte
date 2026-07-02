@@ -1,10 +1,12 @@
 <script lang="ts">
 	import * as AlertDialog from "$lib/components/ui/alert-dialog";
+	import { buttonVariants } from "$lib/components/ui/button";
 	import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
 	import { Input } from "$lib/components/ui/input";
 	import { cn } from "$lib/utils";
 	import { App } from "@app";
 	import type { ProjectFilePackage } from "@app/types";
+	import CaretDown from "phosphor-svelte/lib/CaretDown";
 	import DotsThree from "phosphor-svelte/lib/DotsThree";
 
 	let { class: className = "" }: { class?: string } = $props();
@@ -21,7 +23,7 @@
 	let pendingImportedProjectName = $state("");
 	let busy = $state<"project-import" | "project-export" | "svg-export" | null>(null);
 
-	async function handleCreateNewProject(elements: "sample" | "blank" = "sample") {
+	async function handleCreateNewProject(elements: "sample" | "blank" = "blank") {
 		await App.project.create({ elements });
 		newProjectDialogOpen = false;
 	}
@@ -244,13 +246,33 @@
 		<AlertDialog.Header>
 			<AlertDialog.Title>Create new project?</AlertDialog.Title>
 			<AlertDialog.Description>
-				This will delete your current project and create a fresh one from the default settings. This action
-				cannot be undone.
+				This will delete your current project and create a fresh blank canvas unless you pick Sample Project.
+				This action cannot be undone.
 			</AlertDialog.Description>
 		</AlertDialog.Header>
 		<AlertDialog.Footer>
 			<AlertDialog.Cancel onclick={() => (newProjectDialogOpen = false)}>Cancel</AlertDialog.Cancel>
-			<AlertDialog.Action onclick={() => handleCreateNewProject()}>Create</AlertDialog.Action>
+			<div class="flex items-center">
+				<AlertDialog.Action class="rounded-r-none" onclick={() => handleCreateNewProject()}
+					>Create</AlertDialog.Action
+				>
+				<DropdownMenu.Root>
+					<DropdownMenu.Trigger
+						class={cn(
+							buttonVariants({ variant: "default", size: "default" }),
+							"-ml-1 rounded-l-none px-2!"
+						)}
+						aria-label="Create new project options"
+					>
+						<CaretDown class="size-3.5" />
+					</DropdownMenu.Trigger>
+					<DropdownMenu.Content align="end" class="min-w-32 rounded-xl p-1">
+						<DropdownMenu.Item onclick={() => handleCreateNewProject("sample")} class="text-xs">
+							Sample Project
+						</DropdownMenu.Item>
+					</DropdownMenu.Content>
+				</DropdownMenu.Root>
+			</div>
 		</AlertDialog.Footer>
 	</AlertDialog.Content>
 </AlertDialog.Root>
