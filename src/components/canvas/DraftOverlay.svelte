@@ -38,6 +38,8 @@
 		pathVertexRadius: number;
 		onClosePath: () => void;
 	} = $props();
+
+	const SELECTION_COLOR = "#2563eb";
 </script>
 
 {#if shapePreview}
@@ -46,9 +48,9 @@
 			cx={shapePreview.cx}
 			cy={shapePreview.cy}
 			r={shapePreview.r}
-			fill="var(--primary)"
+			fill={SELECTION_COLOR}
 			fill-opacity="0.12"
-			stroke="var(--primary)"
+			stroke={SELECTION_COLOR}
 			stroke-width="1"
 			pointer-events="none"
 		/>
@@ -58,9 +60,9 @@
 			y={shapePreview.y}
 			width={shapePreview.width}
 			height={shapePreview.height}
-			fill="var(--primary)"
+			fill={SELECTION_COLOR}
 			fill-opacity="0.12"
-			stroke="var(--primary)"
+			stroke={SELECTION_COLOR}
 			stroke-width="1"
 			stroke-dasharray={shapePreview.type === "image" ? "10 6" : shapePreview.type === "text" ? "4 4" : undefined}
 			pointer-events="none"
@@ -74,7 +76,7 @@
 	<polyline
 		points={points.map((point) => `${point.x},${point.y}`).join(" ")}
 		fill="none"
-		stroke="var(--primary)"
+		stroke={SELECTION_COLOR}
 		stroke-width="1"
 		pointer-events="none"
 	/>
@@ -84,7 +86,7 @@
 			y1={last.y}
 			x2={pathSession.current.x}
 			y2={pathSession.current.y}
-			stroke="var(--primary)"
+			stroke={SELECTION_COLOR}
 			stroke-width="1"
 			stroke-dasharray="4 4"
 			pointer-events="none"
@@ -98,8 +100,8 @@
 			cx={point.x}
 			cy={point.y}
 			r={radius}
-			fill={highlighted ? "var(--primary)" : "var(--background)"}
-			stroke="var(--primary)"
+			fill={highlighted ? SELECTION_COLOR : "white"}
+			stroke={SELECTION_COLOR}
 			stroke-width="1"
 			pointer-events="none"
 		/>
@@ -110,9 +112,9 @@
 			cx={first.x}
 			cy={first.y}
 			r={pathPreviewRadius}
-			fill="var(--primary)"
+			fill={SELECTION_COLOR}
 			fill-opacity="0.2"
-			stroke="var(--primary)"
+			stroke={SELECTION_COLOR}
 			stroke-width="1"
 			role="button"
 			tabindex="-1"

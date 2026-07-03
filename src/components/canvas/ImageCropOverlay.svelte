@@ -12,6 +12,7 @@
 
 	const HANDLE_SIZE_SCREEN = 10;
 	const HANDLE_OFFSET_SCREEN = 1;
+	const SELECTION_COLOR = "#2563eb";
 	const canvas = App.state.canvas;
 
 	let dragState = $state<
@@ -180,7 +181,7 @@
 			width={element.width}
 			height={element.height}
 			fill="transparent"
-			stroke="var(--primary)"
+			stroke={SELECTION_COLOR}
 			stroke-width={2.5 / $canvas.camera.zoom}
 			onpointerdown={startPan}
 			style:cursor={panCursor}
@@ -196,8 +197,8 @@
 				width={handleSize}
 				height={handleSize}
 				rx={handleOffset}
-				fill="var(--background)"
-				stroke="var(--primary)"
+				fill="white"
+				stroke={SELECTION_COLOR}
 				stroke-width={2 / $canvas.camera.zoom}
 				class={handle.cursor}
 				onpointerdown={(event) => startResize(event, handle.key)}

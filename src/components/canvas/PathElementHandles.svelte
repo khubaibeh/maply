@@ -11,6 +11,7 @@
 	const canvas = App.state.canvas;
 
 	const HANDLE_SIZE_SCREEN = 8;
+	const SELECTION_COLOR = "#2563eb";
 
 	let dragState = $state<{
 		index: number;
@@ -123,7 +124,7 @@
 				width={handleSize}
 				height={handleSize}
 				fill="white"
-				stroke="var(--primary)"
+				stroke={SELECTION_COLOR}
 				stroke-width="2"
 				role="button"
 				tabindex="-1"

@@ -27,6 +27,7 @@
 	);
 	const HANDLE_SIZE_SCREEN = 10;
 	const HANDLE_OFFSET_SCREEN = 1;
+	const SELECTION_COLOR = "#2563eb";
 
 	let bbox = $state({ x: 0, y: 0, width: 0, height: 0 });
 	let dragState = $state<
@@ -270,7 +271,7 @@
 	height={bbox.height}
 	fill="transparent"
 	stroke-width={strokeWidth}
-	stroke={hideOutline ? "transparent" : "var(--primary)"}
+	stroke={hideOutline ? "transparent" : SELECTION_COLOR}
 	stroke-dasharray={undefined}
 	pointer-events={interactive && !hideOutline ? "all" : "none"}
 	class="cursor-inherit"
@@ -289,7 +290,7 @@
 			height={handleSize}
 			rx={handleOffset}
 			fill="white"
-			stroke="var(--primary)"
+			stroke={SELECTION_COLOR}
 			stroke-width={handleStrokeWidth}
 			class={handle.cursor}
 			onpointerdown={(event) => startResize(event, handle.key)}
