@@ -14,8 +14,8 @@
 	<ContextMenu.Trigger class="contents">
 		<div
 			bind:this={canvasArea.state.container}
-			class="canvas-viewport bg-muted relative min-h-0 flex-1 overflow-hidden outline-none {canvasArea.cursorClass()}"
-			style:cursor={canvasArea.toolCursor()}
+			class="canvas-viewport bg-muted relative min-h-0 flex-1 overflow-hidden outline-none"
+			style:cursor={canvasArea.toolCursor() ?? canvasArea.cursorClass()}
 			role="application"
 			aria-label="Canvas workspace"
 			tabindex="-1"

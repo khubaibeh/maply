@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { App } from "@app";
 	import type { Element, ResizeHandle } from "@app/types";
+	import { resizeCursor } from "@components/core/cursors";
 	import { onMount } from "svelte";
 
 	interface Props {
@@ -44,6 +45,7 @@
 		| {
 				kind: "resize";
 				handle: ResizeHandle;
+				svg: SVGSVGElement;
 				grabX: number;
 				grabY: number;
 				lockAspectRatio: boolean;
@@ -58,14 +60,14 @@
 	const handleSize = $derived(HANDLE_SIZE_SCREEN / $canvas.camera.zoom);
 	const handleOffset = $derived(HANDLE_OFFSET_SCREEN / $canvas.camera.zoom);
 	const handles = $derived([
-		{ key: "nw" as const, x: bbox.x, y: bbox.y, cursor: "nwse-resize" },
-		{ key: "n" as const, x: bbox.x + bbox.width / 2, y: bbox.y, cursor: "ns-resize" },
-		{ key: "ne" as const, x: bbox.x + bbox.width, y: bbox.y, cursor: "nesw-resize" },
-		{ key: "e" as const, x: bbox.x + bbox.width, y: bbox.y + bbox.height / 2, cursor: "ew-resize" },
-		{ key: "se" as const, x: bbox.x + bbox.width, y: bbox.y + bbox.height, cursor: "nwse-resize" },
-		{ key: "s" as const, x: bbox.x + bbox.width / 2, y: bbox.y + bbox.height, cursor: "ns-resize" },
-		{ key: "sw" as const, x: bbox.x, y: bbox.y + bbox.height, cursor: "nesw-resize" },
-		{ key: "w" as const, x: bbox.x, y: bbox.y + bbox.height / 2, cursor: "ew-resize" }
+		{ key: "nw" as const, x: bbox.x, y: bbox.y },
+		{ key: "n" as const, x: bbox.x + bbox.width / 2, y: bbox.y },
+		{ key: "ne" as const, x: bbox.x + bbox.width, y: bbox.y },
+		{ key: "e" as const, x: bbox.x + bbox.width, y: bbox.y + bbox.height / 2 },
+		{ key: "se" as const, x: bbox.x + bbox.width, y: bbox.y + bbox.height },
+		{ key: "s" as const, x: bbox.x + bbox.width / 2, y: bbox.y + bbox.height },
+		{ key: "sw" as const, x: bbox.x, y: bbox.y + bbox.height },
+		{ key: "w" as const, x: bbox.x, y: bbox.y + bbox.height / 2 }
 	]);
 
 	$effect(() => {
@@ -191,6 +193,7 @@
 		dragState = {
 			kind: "resize",
 			handle,
+			svg,
 			grabX: svgPoint.x,
 			grabY: svgPoint.y,
 			lockAspectRatio: event.shiftKey,
@@ -222,10 +225,7 @@
 				return;
 			}
 
-			const svg = getSvgRoot(event.target);
-			if (!svg) return;
-
-			const svgPoint = clientToSvgPoint(svg, event.clientX, event.clientY);
+			const svgPoint = clientToSvgPoint(dragState.svg, event.clientX, event.clientY);
 			if (!svgPoint) return;
 
 			const dx = svgPoint.x - dragState.grabX;
@@ -274,7 +274,7 @@
 	stroke={hideOutline ? "transparent" : SELECTION_COLOR}
 	stroke-dasharray={undefined}
 	pointer-events={interactive && !hideOutline ? "all" : "none"}
-	class="cursor-inherit"
+	style:cursor="inherit"
 	onpointerdown={startSelectionDrag}
 />
 
@@ -292,7 +292,7 @@
 			fill="white"
 			stroke={SELECTION_COLOR}
 			stroke-width={handleStrokeWidth}
-			class={handle.cursor}
+			style:cursor={resizeCursor(handle.key)}
 			onpointerdown={(event) => startResize(event, handle.key)}
 		/>
 	{/each}

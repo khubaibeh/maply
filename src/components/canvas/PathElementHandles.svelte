@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { App } from "@app";
 	import type { Element, PathElement, Point } from "@app/types";
+	import { canvasCursor } from "@components/core/cursors";
 	import { onMount } from "svelte";
 
 	interface Props {
@@ -129,7 +130,7 @@
 				role="button"
 				tabindex="-1"
 				aria-label="Edit path vertex"
-				class="cursor-pointer"
+				style:cursor={canvasCursor.default}
 				onpointerdown={(event) => startHandleDrag(event, index)}
 			/>
 		{/each}

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { App } from "@app";
 	import type { ImageElement, ResizeHandle } from "@app/types";
+	import { canvasCursor, resizeCursor } from "@components/core/cursors";
 	import { onMount } from "svelte";
 
 	interface Props {
@@ -18,12 +19,14 @@
 	let dragState = $state<
 		| {
 				kind: "pan";
+				svg: SVGSVGElement;
 				grabX: number;
 				grabY: number;
 		  }
 		| {
 				kind: "resize";
 				handle: ResizeHandle;
+				svg: SVGSVGElement;
 				grabX: number;
 				grabY: number;
 		  }
@@ -32,17 +35,17 @@
 
 	const handleSize = $derived(HANDLE_SIZE_SCREEN / $canvas.camera.zoom);
 	const handleOffset = $derived(HANDLE_OFFSET_SCREEN / $canvas.camera.zoom);
-	const panCursor = $derived(dragState?.kind === "pan" ? "grabbing" : "default");
+	const panCursor = $derived(dragState?.kind === "pan" ? canvasCursor.grabbing : canvasCursor.hand);
 
 	const handles = $derived([
-		{ key: "nw" as const, x: element.x, y: element.y, cursor: "nwse-resize" },
-		{ key: "n" as const, x: element.x + element.width / 2, y: element.y, cursor: "ns-resize" },
-		{ key: "ne" as const, x: element.x + element.width, y: element.y, cursor: "nesw-resize" },
-		{ key: "e" as const, x: element.x + element.width, y: element.y + element.height / 2, cursor: "ew-resize" },
-		{ key: "se" as const, x: element.x + element.width, y: element.y + element.height, cursor: "nwse-resize" },
-		{ key: "s" as const, x: element.x + element.width / 2, y: element.y + element.height, cursor: "ns-resize" },
-		{ key: "sw" as const, x: element.x, y: element.y + element.height, cursor: "nesw-resize" },
-		{ key: "w" as const, x: element.x, y: element.y + element.height / 2, cursor: "ew-resize" }
+		{ key: "nw" as const, x: element.x, y: element.y },
+		{ key: "n" as const, x: element.x + element.width / 2, y: element.y },
+		{ key: "ne" as const, x: element.x + element.width, y: element.y },
+		{ key: "e" as const, x: element.x + element.width, y: element.y + element.height / 2 },
+		{ key: "se" as const, x: element.x + element.width, y: element.y + element.height },
+		{ key: "s" as const, x: element.x + element.width / 2, y: element.y + element.height },
+		{ key: "sw" as const, x: element.x, y: element.y + element.height },
+		{ key: "w" as const, x: element.x, y: element.y + element.height / 2 }
 	]);
 
 	function getSvgRoot(target: EventTarget | null): SVGSVGElement | null {
@@ -72,6 +75,7 @@
 
 		dragState = {
 			kind: "pan",
+			svg,
 			grabX: svgPoint.x,
 			grabY: svgPoint.y
 		};
@@ -90,6 +94,7 @@
 		dragState = {
 			kind: "resize",
 			handle,
+			svg,
 			grabX: svgPoint.x,
 			grabY: svgPoint.y
 		};
@@ -99,9 +104,7 @@
 		function handlePointerMove(event: PointerEvent) {
 			if (!dragState) return;
 
-			const svg = getSvgRoot(event.target);
-			if (!svg) return;
-			const svgPoint = clientToSvgPoint(svg, event.clientX, event.clientY);
+			const svgPoint = clientToSvgPoint(dragState.svg, event.clientX, event.clientY);
 			if (!svgPoint) return;
 
 			const dx = svgPoint.x - dragState.grabX;
@@ -200,7 +203,7 @@
 				fill="white"
 				stroke={SELECTION_COLOR}
 				stroke-width={2 / $canvas.camera.zoom}
-				class={handle.cursor}
+				style:cursor={resizeCursor(handle.key)}
 				onpointerdown={(event) => startResize(event, handle.key)}
 			/>
 		{/each}

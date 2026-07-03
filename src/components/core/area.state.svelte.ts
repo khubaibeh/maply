@@ -1,7 +1,6 @@
-import penToolSvg from "$lib/assets/pen-tool.svg?raw";
-import plusSvg from "$lib/assets/plus.svg?raw";
 import { App } from "@app";
 import type { ImageElement, Point } from "@app/types";
+import { canvasCursor } from "@components/core/cursors";
 import { onMount } from "svelte";
 import { fromStore } from "svelte/store";
 
@@ -77,19 +76,20 @@ export function createCanvasAreaState() {
 		tool.current.activeTool === "hand" || (state.isHovering && tool.current.isSpacePressed)
 	);
 	const cursorClass = $derived.by(() => {
-		if (state.isPanning) return "cursor-grabbing";
-		if (isHandActive) return "cursor-grab";
-		return "cursor-default";
+		if (state.isPanning) return canvasCursor.grabbing;
+		if (isHandActive) return canvasCursor.hand;
+		return canvasCursor.default;
 	});
 
 	const toolCursor = $derived.by(() => {
 		if (state.isPanning || isHandActive) return undefined;
 
 		const activeTool = tool.current.activeTool;
-		if (activeTool === "rect" || activeTool === "circle" || activeTool === "text" || activeTool === "image") {
-			return svgCursorUrl(plusSvg);
+		if (activeTool === "rect" || activeTool === "circle" || activeTool === "image") {
+			return canvasCursor.plus;
 		}
-		if (activeTool === "path") return svgCursorUrl(penToolSvg, 6, 6);
+		if (activeTool === "text") return canvasCursor.text;
+		if (activeTool === "path") return canvasCursor.pen;
 		return undefined;
 	});
 
@@ -343,10 +343,6 @@ export function createCanvasAreaState() {
 			window.removeEventListener("keyup", handleKeyUp);
 		};
 	});
-
-	function svgCursorUrl(svg: string, hotspotX = 12, hotspotY = 12): string {
-		return `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}") ${hotspotX} ${hotspotY}, none`;
-	}
 
 	function distance(a: Point, b: Point): number {
 		const dx = a.x - b.x;
