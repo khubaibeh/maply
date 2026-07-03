@@ -122,7 +122,7 @@
 				y={point.y - halfHandleSize}
 				width={handleSize}
 				height={handleSize}
-				fill="var(--background)"
+				fill="white"
 				stroke="var(--primary)"
 				stroke-width="2"
 				role="button"

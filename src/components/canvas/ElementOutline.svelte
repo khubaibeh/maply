@@ -288,7 +288,7 @@
 			width={handleSize}
 			height={handleSize}
 			rx={handleOffset}
-			fill="var(--background)"
+			fill="white"
 			stroke="var(--primary)"
 			stroke-width={handleStrokeWidth}
 			class={handle.cursor}
