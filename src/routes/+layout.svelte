@@ -13,7 +13,7 @@
 	let innerWidth = $state(0);
 	let innerHeight = $state(0);
 	let isClient = $state(false);
-	let MIN_DIM = [1000, 800];
+	let MIN_DIM = [400, 600];
 	const canvas = App.state.canvas;
 	const project = App.state.project;
 	const theme = App.theme.use();
