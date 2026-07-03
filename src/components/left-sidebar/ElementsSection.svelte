@@ -16,6 +16,10 @@
 
 	const project = App.state.project;
 
+	function hasSelectionModifier(event: MouseEvent | PointerEvent) {
+		return event.ctrlKey || event.metaKey;
+	}
+
 	let editingElementId = $state<string | null>(null);
 	let editingElementName = $state("");
 	let editingElementInputRef: HTMLInputElement | null = $state(null);
@@ -104,8 +108,8 @@
 	}
 
 	function setElementContextMenuOpen(elementId: string, open: boolean) {
-		if (open && $project.selectedElementId !== elementId) {
-			App.actions.project.selectElement(null);
+		if (open && !$project.selectedElementIds.includes(elementId)) {
+			App.actions.project.selectElement(elementId);
 		}
 		openElementContextMenuId = open
 			? elementId
@@ -237,7 +241,7 @@
 			return;
 		}
 
-		App.actions.project.selectElement(elementId);
+		App.actions.project.selectElement(elementId, { additive: hasSelectionModifier(event) });
 	}
 
 	function handleReorderPointerMove(event: PointerEvent) {
@@ -286,7 +290,7 @@
 
 {#snippet elementRow(element: Element, sidebarIndex: number)}
 	{@const Icon = elementIcons[element.type]}
-	{@const isSelected = $project.selectedElementId === element.id}
+	{@const isSelected = $project.selectedElementIds.includes(element.id)}
 	{@const isEditingElement = editingElementId === element.id}
 	{@const nameValidation = elementNameValidations.get(element.id)}
 	{@const isInvalidName = !!nameValidation && !nameValidation.valid}
@@ -375,7 +379,10 @@
 		<ContextMenu.Item
 			class="rounded-lg px-2.5 py-1.5 text-xs"
 			onclick={() => {
-				App.actions.clipboard.copy(element);
+				const selected = $project.selectedElementIds.includes(element.id)
+					? $project.elements.filter((entry) => $project.selectedElementIds.includes(entry.id))
+					: [element];
+				App.actions.clipboard.copy(selected);
 				closeElementContextMenu();
 			}}
 		>
@@ -427,7 +434,10 @@
 			class="rounded-lg px-2.5 py-1.5 text-xs"
 			variant="destructive"
 			onclick={() => {
-				void App.element.delete(element.id);
+				const ids = $project.selectedElementIds.includes(element.id)
+					? $project.selectedElementIds
+					: [element.id];
+				void App.element.delete(ids);
 				closeElementContextMenu();
 			}}
 		>

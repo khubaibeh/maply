@@ -13,10 +13,12 @@
 	const project = App.state.project;
 	const tool = App.state.tool;
 	const hideOutline = $derived(element.type === "image" && $project.cropEditingElementId === element.id);
+	const isSingleSelection = $derived($project.selectedElementIds.length === 1);
 	const canResize = $derived(
 		interactive &&
 			!hideOutline &&
 			$tool.activeTool === "select" &&
+			isSingleSelection &&
 			$project.selectedElementId === element.id &&
 			(element.type === "rect" ||
 				element.type === "text" ||
@@ -30,11 +32,12 @@
 	let dragState = $state<
 		| {
 				kind: "move";
-				elementX: number;
-				elementY: number;
+				id: string;
+				ids: string[];
+				svg: SVGSVGElement;
 				grabX: number;
 				grabY: number;
-				wasSelected: boolean;
+				toggleSelectionOnClick: boolean;
 				didMove: boolean;
 		  }
 		| {
@@ -131,18 +134,22 @@
 		return point.matrixTransform(ctm.inverse());
 	}
 
-	function getElementOrigin() {
-		if (element.type === "circle") return { x: element.cx, y: element.cy };
-		return { x: element.x, y: element.y };
-	}
-
 	function startSelectionDrag(event: PointerEvent) {
 		if (event.button !== 0) return;
 		if ($tool.activeTool !== "select") return;
 
 		event.stopPropagation();
-		const wasSelected = $project.selectedElementId === element.id;
-		if (!wasSelected) {
+		const wasSelected = $project.selectedElementIds.includes(element.id);
+		const wasMultiSelected = $project.selectedElementIds.length > 1;
+
+		if (event.ctrlKey || event.metaKey) {
+			event.preventDefault();
+			if (!wasSelected) {
+				App.actions.project.selectElement(element.id, { additive: true });
+				dragState = null;
+				return;
+			}
+		} else if (!wasSelected) {
 			App.actions.project.selectElement(element.id);
 		}
 
@@ -152,14 +159,15 @@
 		const svgPoint = clientToSvgPoint(svg, event.clientX, event.clientY);
 		if (!svgPoint) return;
 
-		const origin = getElementOrigin();
+		const ids = wasSelected && wasMultiSelected ? [...$project.selectedElementIds] : [element.id];
 		dragState = {
 			kind: "move",
-			elementX: origin.x,
-			elementY: origin.y,
+			id: element.id,
+			ids,
+			svg,
 			grabX: svgPoint.x,
 			grabY: svgPoint.y,
-			wasSelected,
+			toggleSelectionOnClick: (event.ctrlKey || event.metaKey) && wasSelected,
 			didMove: false
 		};
 	}
@@ -194,19 +202,30 @@
 		function handlePointerMove(event: PointerEvent) {
 			if (!dragState) return;
 
+			if (dragState.kind === "move") {
+				const svgPoint = clientToSvgPoint(dragState.svg, event.clientX, event.clientY);
+				if (!svgPoint) return;
+
+				const dx = svgPoint.x - dragState.grabX;
+				const dy = svgPoint.y - dragState.grabY;
+				if (dx === 0 && dy === 0) return;
+
+				dragState.didMove = true;
+				if (dragState.ids.length > 1) {
+					App.actions.project.translateElements(dragState.ids, dx, dy);
+				} else {
+					App.actions.project.translateElement(dragState.ids[0], dx, dy);
+				}
+				dragState.grabX = svgPoint.x;
+				dragState.grabY = svgPoint.y;
+				return;
+			}
+
 			const svg = getSvgRoot(event.target);
 			if (!svg) return;
 
 			const svgPoint = clientToSvgPoint(svg, event.clientX, event.clientY);
 			if (!svgPoint) return;
-
-			if (dragState.kind === "move") {
-				const nextX = dragState.elementX + (svgPoint.x - dragState.grabX);
-				const nextY = dragState.elementY + (svgPoint.y - dragState.grabY);
-				dragState.didMove = true;
-				App.actions.project.setElementPosition(element.id, nextX, nextY);
-				return;
-			}
 
 			const dx = svgPoint.x - dragState.grabX;
 			const dy = svgPoint.y - dragState.grabY;
@@ -222,8 +241,8 @@
 		}
 
 		function stopDragging() {
-			if (dragState?.kind === "move" && dragState.wasSelected && !dragState.didMove) {
-				App.actions.project.selectElement(null);
+			if (dragState?.kind === "move" && dragState.toggleSelectionOnClick && !dragState.didMove) {
+				App.actions.project.selectElement(dragState.id, { additive: true });
 			}
 			dragState = null;
 		}

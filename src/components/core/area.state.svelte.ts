@@ -46,7 +46,7 @@ export function createCanvasAreaState() {
 		pathSession: null as PathSession | null
 	});
 
-	const hasClipboardElement = $derived(!!App.actions.clipboard.get());
+	const hasClipboardElement = $derived(App.actions.clipboard.get().length > 0);
 	const contextMenuElementLayerIndex = $derived(
 		state.contextMenuElementId
 			? project.current.elements.findIndex((element) => element.id === state.contextMenuElementId)
@@ -57,9 +57,11 @@ export function createCanvasAreaState() {
 	);
 	const contextMenuElementIsBackmost = $derived(contextMenuElementLayerIndex === 0);
 	const selectedImage = $derived(
-		(project.current.elements.find(
-			(element) => element.id === project.current.selectedElementId && element.type === "image"
-		) ?? null) as ImageElement | null
+		(project.current.selectedElementIds.length === 1
+			? (project.current.elements.find(
+					(element) => element.id === project.current.selectedElementId && element.type === "image"
+				) ?? null)
+			: null) as ImageElement | null
 	);
 	const cropEditing = $derived(
 		project.current.cropEditingElementId === project.current.selectedElementId && selectedImage !== null
@@ -513,15 +515,15 @@ export function createCanvasAreaState() {
 		if (elementNode instanceof Element) {
 			const id = elementNode.getAttribute("data-canvas-element");
 			if (id) {
-				if (project.current.selectedElementId !== id) {
-					App.actions.project.selectElement(null);
+				if (!project.current.selectedElementIds.includes(id)) {
+					App.actions.project.selectElement(id);
 				}
 				state.contextMenuTarget = "element";
 				state.contextMenuElementId = id;
 				return;
 			}
 		}
-		if (project.current.selectedElementId !== null) {
+		if (project.current.selectedElementIds.length > 0) {
 			App.actions.project.selectElement(null);
 		}
 		state.contextMenuTarget = "empty";
@@ -530,44 +532,53 @@ export function createCanvasAreaState() {
 
 	function handleCopy() {
 		if (!state.contextMenuElementId) return;
-		const element = project.current.elements.find((entry) => entry.id === state.contextMenuElementId);
-		if (element) App.actions.clipboard.copy(element);
+		const elements = project.current.selectedElementIds.includes(state.contextMenuElementId)
+			? project.current.elements.filter((entry) => project.current.selectedElementIds.includes(entry.id))
+			: project.current.elements.filter((entry) => entry.id === state.contextMenuElementId);
+		if (elements.length > 0) App.actions.clipboard.copy(elements);
 		state.contextMenuOpen = false;
 	}
 
 	function handleDelete() {
 		if (!state.contextMenuElementId) return;
-		void App.element.delete(state.contextMenuElementId);
+		const ids = project.current.selectedElementIds.includes(state.contextMenuElementId)
+			? project.current.selectedElementIds
+			: [state.contextMenuElementId];
+		void App.element.delete(ids);
 		state.contextMenuOpen = false;
 	}
 
 	function handleBringToFront() {
 		if (!state.contextMenuElementId) return;
+		if (project.current.selectedElementIds.length > 1) return;
 		App.actions.project.moveElementToFront(state.contextMenuElementId);
 		state.contextMenuOpen = false;
 	}
 
 	function handleBringForward() {
 		if (!state.contextMenuElementId) return;
+		if (project.current.selectedElementIds.length > 1) return;
 		App.actions.project.moveElementForward(state.contextMenuElementId);
 		state.contextMenuOpen = false;
 	}
 
 	function handleSendBackward() {
 		if (!state.contextMenuElementId) return;
+		if (project.current.selectedElementIds.length > 1) return;
 		App.actions.project.moveElementBackward(state.contextMenuElementId);
 		state.contextMenuOpen = false;
 	}
 
 	function handleSendToBack() {
 		if (!state.contextMenuElementId) return;
+		if (project.current.selectedElementIds.length > 1) return;
 		App.actions.project.moveElementToBack(state.contextMenuElementId);
 		state.contextMenuOpen = false;
 	}
 
 	function handlePaste() {
 		const copied = App.actions.clipboard.get();
-		if (!copied) return;
+		if (copied.length === 0) return;
 		void App.element.paste(state.contextMenuPoint ?? undefined);
 		state.contextMenuOpen = false;
 	}

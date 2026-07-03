@@ -11,13 +11,14 @@
 	const project = App.state.project;
 	const tool = App.state.tool;
 
-	const selectedElement = $derived(
-		$project.elements.find((element) => element.id === $project.selectedElementId) ?? null
+	const selectedElements = $derived(
+		$project.elements.filter((element) => $project.selectedElementIds.includes(element.id))
 	);
+	const selectedElement = $derived(selectedElements.length === 1 ? (selectedElements[0] ?? null) : null);
 	const hoveredElement = $derived(
 		$tool.activeTool === "select" &&
 			$project.hoveredElementId &&
-			$project.hoveredElementId !== $project.selectedElementId
+			!$project.selectedElementIds.includes($project.hoveredElementId)
 			? ($project.elements.find((element) => element.id === $project.hoveredElementId) ?? null)
 			: null
 	);
@@ -49,13 +50,13 @@
 	<PathElementOutline element={hoveredElement} />
 {/if}
 
-{#if selectedElement && selectedElement.type !== "path"}
-	<ElementOutline element={selectedElement} />
-{/if}
-
-{#if selectedElement?.type === "path"}
-	<PathElementOutline element={selectedElement} />
-{/if}
+{#each selectedElements as element (element.id)}
+	{#if element.type !== "path"}
+		<ElementOutline {element} />
+	{:else}
+		<PathElementOutline {element} />
+	{/if}
+{/each}
 
 {#if selectedElement?.type === "image"}
 	<ImageCropOverlay element={selectedElement} cropEditing={$project.cropEditingElementId === selectedElement.id} />

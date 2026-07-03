@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Badge } from "$lib/components/ui/badge";
 	import { Input } from "$lib/components/ui/input";
 	import { ScrollArea } from "$lib/components/ui/scroll-area";
 	import { App } from "@app";
@@ -36,8 +37,11 @@
 	}
 
 	const selectedElement = $derived(
-		$project.elements.find((element) => element.id === $project.selectedElementId) ?? null
+		$project.selectedElementIds.length === 1
+			? ($project.elements.find((element) => element.id === $project.selectedElementId) ?? null)
+			: null
 	);
+	const selectedElementCount = $derived($project.selectedElementIds.length);
 	const elementNameValidations = $derived(App.validate.elementNames($project.elements));
 	const selectedElementNameValidation = $derived(
 		selectedElement ? (elementNameValidations.get(selectedElement.id) ?? null) : null
@@ -87,7 +91,16 @@
 				/>
 			</div>
 
-			{#if selectedElement}
+			{#if selectedElementCount > 1}
+				<div
+					class="border-sidebar-border/70 bg-sidebar-accent/25 flex flex-col gap-3 rounded-2xl border border-dashed px-4 py-5"
+				>
+					<div class="flex items-center gap-2">
+						<Badge variant="secondary">{selectedElementCount} selected</Badge>
+					</div>
+					<p class="text-sidebar-foreground/75 text-sm leading-6">Multi element support coming soon</p>
+				</div>
+			{:else if selectedElement}
 				<div class="flex flex-col gap-x-2 gap-y-4">
 					<hr class="mx-4 my-2 opacity-50" />
 					<span class="text-sidebar-foreground/30 text-sm font-semibold tracking-wide">Element</span>
