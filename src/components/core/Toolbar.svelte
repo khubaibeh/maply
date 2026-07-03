@@ -3,6 +3,7 @@
 	import { cn } from "$lib/utils";
 	import { App } from "@app";
 	import type { Tool } from "@app/types";
+	import { canvasCursor } from "@components/core/cursors";
 	import Circle from "phosphor-svelte/lib/Circle";
 	import Cursor from "phosphor-svelte/lib/Cursor";
 	import Hand from "phosphor-svelte/lib/Hand";
@@ -33,9 +34,10 @@
 
 <div
 	class={cn(
-		"border-border/90 bg-background/72 text-card-foreground supports-backdrop-filter:bg-background/49 flex h-12 rounded-2xl border px-2 shadow-[0_8px_30px_-18px_color-mix(in_oklab,var(--foreground)_28%,transparent)] backdrop-blur-md max-[1149px]:h-auto max-[1149px]:py-2",
+		"canvas-default-cursor border-border/90 bg-background/72 text-card-foreground supports-backdrop-filter:bg-background/49 flex h-12 rounded-2xl border px-2 shadow-[0_8px_30px_-18px_color-mix(in_oklab,var(--foreground)_28%,transparent)] backdrop-blur-md max-[1149px]:h-auto max-[1149px]:py-2",
 		className
 	)}
+	style:cursor={canvasCursor.default}
 >
 	<div
 		class="flex items-center gap-1 max-[1149px]:grid max-[1149px]:grid-cols-4 max-[1149px]:justify-items-stretch"
@@ -64,7 +66,8 @@
 					align="center"
 					sideOffset={10}
 					arrowClasses="hidden"
-					class="bg-popover/96 text-popover-foreground border-border supports-backdrop-filter:bg-popover/88 mb-1 size-6 justify-center rounded-lg border p-0 text-[11px] font-medium shadow-lg backdrop-blur-md"
+					class="canvas-default-cursor bg-popover/96 text-popover-foreground border-border supports-backdrop-filter:bg-popover/88 mb-1 size-6 justify-center rounded-lg border p-0 text-[11px] font-medium shadow-lg backdrop-blur-md"
+					style={`cursor: ${canvasCursor.default}`}
 				>
 					{tool.shortcut}
 				</Tooltip.Content>

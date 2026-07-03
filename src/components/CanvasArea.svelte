@@ -6,6 +6,7 @@
 	import DraftOverlay from "@components/canvas/DraftOverlay.svelte";
 	import ImageCropToolbar from "@components/canvas/ImageCropToolbar.svelte";
 	import { createCanvasAreaState } from "@components/core/area.state.svelte";
+	import { canvasCursor } from "@components/core/cursors";
 
 	const canvasArea = createCanvasAreaState();
 </script>
@@ -56,7 +57,10 @@
 			{/if}
 		</div>
 	</ContextMenu.Trigger>
-	<ContextMenu.Content class="min-w-40 rounded-xl p-1">
+	<ContextMenu.Content
+		class="canvas-default-cursor min-w-40 rounded-xl p-1"
+		style={`cursor: ${canvasCursor.default}`}
+	>
 		<ContextMenuContent
 			target={canvasArea.state.contextMenuTarget}
 			hasClipboardElement={canvasArea.hasClipboardElement()}

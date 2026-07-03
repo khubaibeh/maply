@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { App } from "@app";
 	import type { ImageElement } from "@app/types";
+	import { canvasCursor } from "@components/core/cursors";
 	import ArrowCounterClockwise from "phosphor-svelte/lib/ArrowCounterClockwise";
 	import Check from "phosphor-svelte/lib/Check";
 	import Crop from "phosphor-svelte/lib/Crop";
@@ -102,7 +103,8 @@
 </script>
 
 <div
-	class="border-border bg-background/96 text-foreground pointer-events-auto absolute z-10 flex items-center justify-center gap-px rounded-md border shadow-sm backdrop-blur-sm transition-[width] duration-150"
+	class="canvas-default-cursor border-border bg-background/96 text-foreground pointer-events-auto absolute z-10 flex items-center justify-center gap-px rounded-md border shadow-sm backdrop-blur-sm transition-[width] duration-150"
+	style:cursor={canvasCursor.default}
 	style:left="{left}px"
 	style:top="{top}px"
 	style:width="{toolbarWidth}px"
