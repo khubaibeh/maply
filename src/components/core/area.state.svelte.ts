@@ -231,7 +231,7 @@ export function createCanvasAreaState() {
 			if (!state.pathSession) return;
 			const point = clientToSvgPoint(event.clientX, event.clientY);
 			if (!point) return;
-			updatePathSessionCurrent(point);
+			updatePathSessionCurrent(point, event.shiftKey);
 		}
 
 		function endDrawing(event: PointerEvent) {
@@ -371,16 +371,49 @@ export function createCanvasAreaState() {
 		return { x: svgPoint.x, y: svgPoint.y };
 	}
 
-	function updatePathSessionCurrent(point: Point) {
+	function updatePathSessionCurrent(point: Point, shiftKey = false) {
 		if (!state.pathSession) return;
 		const clampedPoint = clampPointToCanvas(point);
+		const last = state.pathSession.points[state.pathSession.points.length - 1];
+		const snappedPoint = shiftKey && last ? App.geometry.snapPathSegment(last, clampedPoint) : clampedPoint;
+		const current = last ? clampPointToCanvasAlongSegment(last, snappedPoint) : snappedPoint;
 		const first = state.pathSession.points[0];
 		const threshold = CLOSE_THRESHOLD_SCREEN_PX / canvas.current.camera.zoom;
-		const nearFirst = first ? distance(first, clampedPoint) <= threshold : false;
+		const nearFirst = first ? distance(first, current) <= threshold : false;
 		state.pathSession = {
 			...state.pathSession,
-			current: clampedPoint,
+			current,
 			nearFirst
+		};
+	}
+
+	function clampPointToCanvasAlongSegment(start: Point, point: Point): Point {
+		if (point.x >= canvas.current.x && point.x <= canvas.current.x + canvas.current.width) {
+			if (point.y >= canvas.current.y && point.y <= canvas.current.y + canvas.current.height) {
+				return point;
+			}
+		}
+
+		const dx = point.x - start.x;
+		const dy = point.y - start.y;
+		let maxT = 1;
+
+		if (dx > 0) {
+			maxT = Math.min(maxT, (canvas.current.x + canvas.current.width - start.x) / dx);
+		} else if (dx < 0) {
+			maxT = Math.min(maxT, (canvas.current.x - start.x) / dx);
+		}
+
+		if (dy > 0) {
+			maxT = Math.min(maxT, (canvas.current.y + canvas.current.height - start.y) / dy);
+		} else if (dy < 0) {
+			maxT = Math.min(maxT, (canvas.current.y - start.y) / dy);
+		}
+
+		const t = Math.max(0, maxT);
+		return {
+			x: start.x + dx * t,
+			y: start.y + dy * t
 		};
 	}
 
@@ -441,14 +474,17 @@ export function createCanvasAreaState() {
 
 		if (tool.current.activeTool === "path") {
 			if (state.pathSession) {
+				updatePathSessionCurrent(drawPoint, event.shiftKey);
+				if (!state.pathSession) return;
+
 				if (state.pathSession.nearFirst) {
 					closePath();
 				} else {
 					state.pathSession = {
 						...state.pathSession,
-						points: [...state.pathSession.points, drawPoint]
+						points: [...state.pathSession.points, state.pathSession.current]
 					};
-					updatePathSessionCurrent(drawPoint);
+					updatePathSessionCurrent(drawPoint, event.shiftKey);
 				}
 			} else {
 				state.pathSession = {

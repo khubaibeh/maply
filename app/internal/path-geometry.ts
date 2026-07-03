@@ -7,7 +7,26 @@ export type PathBounds = {
 	height: number;
 };
 
+type SnapDirection = {
+	x: number;
+	y: number;
+	diagonal: boolean;
+};
+
+const SNAP_DIRECTIONS = [
+	{ x: 1, y: 0, diagonal: false },
+	{ x: Math.SQRT1_2, y: Math.SQRT1_2, diagonal: true },
+	{ x: 0, y: 1, diagonal: false },
+	{ x: -Math.SQRT1_2, y: Math.SQRT1_2, diagonal: true },
+	{ x: -1, y: 0, diagonal: false },
+	{ x: -Math.SQRT1_2, y: -Math.SQRT1_2, diagonal: true },
+	{ x: 0, y: -1, diagonal: false },
+	{ x: Math.SQRT1_2, y: -Math.SQRT1_2, diagonal: true }
+] as const satisfies readonly SnapDirection[];
+
 const TOKEN_PATTERN = /[a-zA-Z]|[-+]?(?:\d*\.\d+|\d+\.?)(?:e[-+]?\d+)?/g;
+
+const ANGLE_TIE_EPSILON = 1e-9;
 
 export function getPathDataBounds(points: Point[]): PathBounds {
 	if (points.length === 0) {
@@ -141,8 +160,43 @@ export function updatePathVertex(d: string, index: number, point: Point): { d: s
 	return { d: nextD, bounds: getPathDataBounds(nextPoints) };
 }
 
+export function snapPathSegment(anchor: Point, point: Point): Point {
+	const dx = point.x - anchor.x;
+	const dy = point.y - anchor.y;
+
+	if (dx === 0 && dy === 0) return point;
+
+	const angle = Math.atan2(dy, dx);
+	let best: SnapDirection = SNAP_DIRECTIONS[0];
+	let bestDistance = Infinity;
+
+	for (const direction of SNAP_DIRECTIONS) {
+		const directionAngle = Math.atan2(direction.y, direction.x);
+		const distance = angularDistance(angle, directionAngle);
+
+		if (
+			distance < bestDistance - ANGLE_TIE_EPSILON ||
+			(Math.abs(distance - bestDistance) <= ANGLE_TIE_EPSILON && direction.diagonal && !best.diagonal)
+		) {
+			best = direction;
+			bestDistance = distance;
+		}
+	}
+
+	const length = dx * best.x + dy * best.y;
+	return {
+		x: anchor.x + best.x * length,
+		y: anchor.y + best.y * length
+	};
+}
+
 function isCommand(token: string | undefined): boolean {
 	return !!token && /^[a-zA-Z]$/.test(token);
+}
+
+function angularDistance(a: number, b: number): number {
+	const delta = Math.abs(a - b);
+	return Math.min(delta, Math.PI * 2 - delta);
 }
 
 function apply(x: number, y: number, relative: boolean, current: Point): Point {
