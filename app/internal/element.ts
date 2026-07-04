@@ -7,8 +7,8 @@ function bridgePaste(point?: Point) {
 	return Effect.promise(() => appProjectState.pasteClipboardElement(point));
 }
 
-function bridgeDelete(id: string) {
-	return Effect.sync(() => appProjectState.deleteElement(id));
+function bridgeDelete(ids: string | string[]) {
+	return Effect.sync(() => appProjectState.deleteElements(Array.isArray(ids) ? ids : [ids]));
 }
 
 function bridgeReplaceImage(id: string, file: File) {
@@ -19,8 +19,8 @@ export function pasteElement(point?: Point) {
 	return bridgePaste(point);
 }
 
-export function deleteElement(id: string) {
-	return bridgeDelete(id);
+export function deleteElement(ids: string | string[]) {
+	return bridgeDelete(ids);
 }
 
 export function replaceElementImage(id: string, file: File) {

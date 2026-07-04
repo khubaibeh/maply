@@ -6,14 +6,18 @@
 	const project = App.state.project;
 	const tool = App.state.tool;
 
+	function hasSelectionModifier(event: PointerEvent) {
+		return event.ctrlKey || event.metaKey;
+	}
+
 	let dragState = $state<{
 		kind: "move";
 		id: string;
-		elementX: number;
-		elementY: number;
+		ids: string[];
+		svg: SVGSVGElement;
 		grabX: number;
 		grabY: number;
-		wasSelected: boolean;
+		toggleSelectionOnClick: boolean;
 		didMove: boolean;
 	} | null>(null);
 
@@ -32,22 +36,23 @@
 		return point.matrixTransform(ctm.inverse());
 	}
 
-	function getElementOrigin(element: (typeof $project.elements)[number]) {
-		if (element.type === "circle") return { x: element.cx, y: element.cy };
-		return { x: element.x, y: element.y };
-	}
-
 	function selectElement(event: PointerEvent, id: string) {
 		if ($tool.activeTool !== "select") return;
 		event.stopPropagation();
 
-		const wasSelected = $project.selectedElementId === id;
-		if (!wasSelected) {
+		const wasSelected = $project.selectedElementIds.includes(id);
+		const wasMultiSelected = $project.selectedElementIds.length > 1;
+
+		if (hasSelectionModifier(event)) {
+			event.preventDefault();
+			if (!wasSelected) {
+				App.actions.project.selectElement(id, { additive: true });
+				dragState = null;
+				return;
+			}
+		} else if (!wasSelected) {
 			App.actions.project.selectElement(id);
 		}
-
-		const element = $project.elements.find((e) => e.id === id);
-		if (!element) return;
 
 		const svg = getSvgRoot(event.target);
 		if (!svg) return;
@@ -55,15 +60,15 @@
 		const svgPoint = clientToSvgPoint(svg, event.clientX, event.clientY);
 		if (!svgPoint) return;
 
-		const origin = getElementOrigin(element);
+		const ids = wasSelected && wasMultiSelected ? [...$project.selectedElementIds] : [id];
 		dragState = {
 			kind: "move",
 			id,
-			elementX: origin.x,
-			elementY: origin.y,
+			ids,
+			svg,
 			grabX: svgPoint.x,
 			grabY: svgPoint.y,
-			wasSelected,
+			toggleSelectionOnClick: hasSelectionModifier(event) && wasSelected,
 			didMove: false
 		};
 	}
@@ -82,21 +87,26 @@
 		function handlePointerMove(event: PointerEvent) {
 			if (!dragState) return;
 
-			const svg = getSvgRoot(event.target);
-			if (!svg) return;
-
-			const svgPoint = clientToSvgPoint(svg, event.clientX, event.clientY);
+			const svgPoint = clientToSvgPoint(dragState.svg, event.clientX, event.clientY);
 			if (!svgPoint) return;
 
+			const dx = svgPoint.x - dragState.grabX;
+			const dy = svgPoint.y - dragState.grabY;
+			if (dx === 0 && dy === 0) return;
+
 			dragState.didMove = true;
-			const nextX = dragState.elementX + (svgPoint.x - dragState.grabX);
-			const nextY = dragState.elementY + (svgPoint.y - dragState.grabY);
-			App.actions.project.setElementPosition(dragState.id, nextX, nextY);
+			if (dragState.ids.length > 1) {
+				App.actions.project.translateElements(dragState.ids, dx, dy);
+			} else {
+				App.actions.project.translateElement(dragState.ids[0], dx, dy);
+			}
+			dragState.grabX = svgPoint.x;
+			dragState.grabY = svgPoint.y;
 		}
 
 		function stopDragging() {
-			if (dragState && dragState.wasSelected && !dragState.didMove) {
-				App.actions.project.selectElement(null);
+			if (dragState?.toggleSelectionOnClick && !dragState.didMove) {
+				App.actions.project.selectElement(dragState.id, { additive: true });
 			}
 			dragState = null;
 		}

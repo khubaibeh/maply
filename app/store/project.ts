@@ -15,10 +15,12 @@ import {
 import {
 	clampElementToCanvas,
 	duplicateElement,
+	getElementBounds,
 	normalizeElements,
 	resizeElementWithinCanvas,
 	resizeImageFrameWithinCanvas,
 	setElementPosition,
+	translateElement,
 	translateElementWithinCanvas
 } from "../internal/element-actions";
 import type { ResizeHandle, ResizeOptions } from "../internal/element-actions";
@@ -31,7 +33,7 @@ import {
 import { createProjectFilePackage, type ProjectFilePackage, toImportedProject } from "../internal/project-file";
 import { exportProjectSvg } from "../internal/svg-export";
 import { appCanvasState } from "./canvas";
-import { getClipboardElement } from "./clipboard.svelte";
+import { getClipboardElements } from "./clipboard.svelte";
 import { appImageAssetState } from "./image-assets";
 
 type ProjectState = {
@@ -41,6 +43,7 @@ type ProjectState = {
 	importExportState: Project["importExportState"];
 	initialized: boolean;
 	selectedElementId: string | null;
+	selectedElementIds: string[];
 	hoveredElementId: string | null;
 	cropEditingElementId: string | null;
 };
@@ -55,9 +58,22 @@ const store = writable<ProjectState>({
 	},
 	initialized: false,
 	selectedElementId: null,
+	selectedElementIds: [],
 	hoveredElementId: null,
 	cropEditingElementId: null
 });
+
+function uniqueIds(ids: string[]) {
+	return Array.from(new Set(ids));
+}
+
+function nextSelection(ids: string[]) {
+	const selectedElementIds = uniqueIds(ids);
+	return {
+		selectedElementIds,
+		selectedElementId: selectedElementIds.at(-1) ?? null
+	};
+}
 
 async function applyProjectRecord(record: Project) {
 	appCanvasState.setSize(record.canvas.width, record.canvas.height);
@@ -76,6 +92,7 @@ async function applyProjectRecord(record: Project) {
 		elements: normalizeElements(record.elements).map((element) => clampElementToCanvas(element, canvas)),
 		importExportState: record.importExportState,
 		selectedElementId: null,
+		selectedElementIds: [],
 		hoveredElementId: null,
 		cropEditingElementId: null
 	}));
@@ -140,6 +157,11 @@ export const appProjectState = {
 		return project.elements.find((element) => element.id === project.selectedElementId) ?? null;
 	},
 
+	getSelectedElements() {
+		const project = get(store);
+		return project.elements.filter((element) => project.selectedElementIds.includes(element.id));
+	},
+
 	async load(projectId = DEFAULTS.prodProjId) {
 		store.update((state) => ({ ...state, id: projectId }));
 
@@ -154,6 +176,7 @@ export const appProjectState = {
 		store.update((state) => ({
 			...state,
 			selectedElementId: null,
+			selectedElementIds: [],
 			hoveredElementId: null,
 			cropEditingElementId: null,
 			initialized: true
@@ -213,7 +236,7 @@ export const appProjectState = {
 		store.update((state) => ({
 			...state,
 			elements: [...state.elements, nextElement],
-			selectedElementId: nextElement.id
+			...nextSelection([nextElement.id])
 		}));
 	},
 
@@ -369,6 +392,31 @@ export const appProjectState = {
 		}));
 	},
 
+	translateElements(ids: string[], dx: number, dy: number) {
+		if ((dx === 0 && dy === 0) || ids.length === 0) return;
+
+		const idSet = new Set(ids);
+		const canvas = appCanvasState.getSnapshot();
+		const elements = get(store).elements.filter((element) => idSet.has(element.id));
+		if (elements.length === 0) return;
+
+		const bounds = elements.map(getElementBounds);
+		const minDx = Math.max(...bounds.map((entry) => canvas.x - entry.x));
+		const maxDx = Math.min(...bounds.map((entry) => canvas.x + canvas.width - (entry.x + entry.width)));
+		const minDy = Math.max(...bounds.map((entry) => canvas.y - entry.y));
+		const maxDy = Math.min(...bounds.map((entry) => canvas.y + canvas.height - (entry.y + entry.height)));
+		const clampedDx = Math.round(Math.min(maxDx, Math.max(minDx, dx)));
+		const clampedDy = Math.round(Math.min(maxDy, Math.max(minDy, dy)));
+		if (clampedDx === 0 && clampedDy === 0) return;
+
+		store.update((state) => ({
+			...state,
+			elements: state.elements.map((element) =>
+				idSet.has(element.id) ? translateElement(element, clampedDx, clampedDy) : element
+			)
+		}));
+	},
+
 	setElementPosition(id: string, x: number, y: number) {
 		const canvas = appCanvasState.getSnapshot();
 
@@ -405,42 +453,78 @@ export const appProjectState = {
 	toggleCropEditingElement(id: string) {
 		store.update((state) => ({
 			...state,
-			selectedElementId: id,
+			...nextSelection([id]),
 			cropEditingElementId: state.cropEditingElementId === id ? null : id
 		}));
 	},
 
 	async pasteClipboardElement(point?: Point) {
-		const copied = getClipboardElement();
-		if (!copied) return;
+		const copied = getClipboardElements();
+		if (copied.length === 0) return;
 
 		const canvas = appCanvasState.getSnapshot();
-		let nextElement = duplicateElement(copied, get(store).elements);
-		if (point) {
-			nextElement = setElementPosition(nextElement, point.x, point.y, canvas);
-		}
-		if (nextElement.type === "image" && nextElement.assetId) {
-			const asset = appImageAssetState.getAsset(nextElement.assetId);
-			if (asset) {
-				const clonedAsset = cloneStoredImageAsset(asset, get(store).id);
-				await saveImageAsset(clonedAsset);
-				appImageAssetState.setAsset(clonedAsset);
-				nextElement.assetId = clonedAsset.id;
-			} else {
-				nextElement.assetId = null;
+		const project = get(store);
+		const nextElements = [...project.elements];
+		const pasted: Element[] = [];
+
+		for (const copiedElement of copied) {
+			const nextElement = duplicateElement(copiedElement, nextElements);
+			if (nextElement.type === "image" && nextElement.assetId) {
+				const asset = appImageAssetState.getAsset(nextElement.assetId);
+				if (asset) {
+					const clonedAsset = cloneStoredImageAsset(asset, project.id);
+					await saveImageAsset(clonedAsset);
+					appImageAssetState.setAsset(clonedAsset);
+					nextElement.assetId = clonedAsset.id;
+				} else {
+					nextElement.assetId = null;
+				}
 			}
+
+			nextElements.push(nextElement);
+			pasted.push(nextElement);
 		}
 
-		this.addElement(nextElement);
-	},
+		const positioned =
+			point && pasted.length > 0
+				? (() => {
+						const bounds = pasted.map(getElementBounds);
+						const minX = Math.min(...bounds.map((entry) => entry.x));
+						const minY = Math.min(...bounds.map((entry) => entry.y));
+						const dx = point.x - minX;
+						const dy = point.y - minY;
+						return pasted.map((element) => clampElementToCanvas(translateElement(element, dx, dy), canvas));
+					})()
+				: pasted;
 
-	selectElement(id: string | null) {
 		store.update((state) => ({
 			...state,
-			selectedElementId: id,
-			hoveredElementId: null,
-			cropEditingElementId: state.cropEditingElementId === id ? state.cropEditingElementId : null
+			elements: [...state.elements, ...positioned],
+			...nextSelection(positioned.map((element) => element.id))
 		}));
+	},
+
+	selectElement(id: string | null, options: { additive?: boolean } = {}) {
+		store.update((state) => {
+			const next =
+				id === null
+					? nextSelection([])
+					: options.additive
+						? state.selectedElementIds.includes(id)
+							? nextSelection(state.selectedElementIds.filter((selectedId) => selectedId !== id))
+							: nextSelection([...state.selectedElementIds, id])
+						: nextSelection([id]);
+
+			return {
+				...state,
+				...next,
+				hoveredElementId: null,
+				cropEditingElementId:
+					state.cropEditingElementId && next.selectedElementIds.includes(state.cropEditingElementId)
+						? state.cropEditingElementId
+						: null
+			};
+		});
 	},
 
 	reorderElements(fromIndex: number, toIndex: number) {
@@ -486,18 +570,25 @@ export const appProjectState = {
 	},
 
 	deleteElement(id: string) {
-		const current = get(store).elements.find((element) => element.id === id);
+		this.deleteElements([id]);
+	},
+
+	deleteElements(ids: string[]) {
+		const idSet = new Set(ids);
+		const current = get(store).elements.filter((element) => idSet.has(element.id));
 		store.update((state) => ({
 			...state,
-			elements: state.elements.filter((element) => element.id !== id),
-			selectedElementId: state.selectedElementId === id ? null : state.selectedElementId,
-			cropEditingElementId: state.cropEditingElementId === id ? null : state.cropEditingElementId
+			elements: state.elements.filter((element) => !idSet.has(element.id)),
+			...nextSelection(state.selectedElementIds.filter((selectedId) => !idSet.has(selectedId))),
+			cropEditingElementId:
+				state.cropEditingElementId && idSet.has(state.cropEditingElementId) ? null : state.cropEditingElementId
 		}));
-		if (current?.type === "image" && current.assetId) {
-			deleteImageAsset(current.assetId).catch((error) => {
+		for (const element of current) {
+			if (element.type !== "image" || !element.assetId) continue;
+			deleteImageAsset(element.assetId).catch((error) => {
 				console.warn("Failed to delete image asset:", error);
 			});
-			appImageAssetState.removeAsset(current.assetId);
+			appImageAssetState.removeAsset(element.assetId);
 		}
 	}
 };

@@ -6,6 +6,7 @@
 	import { cn } from "$lib/utils";
 	import { App } from "@app";
 	import type { ProjectFilePackage } from "@app/types";
+	import { canvasCursor } from "@components/core/cursors";
 	import CaretDown from "phosphor-svelte/lib/CaretDown";
 	import DotsThree from "phosphor-svelte/lib/DotsThree";
 
@@ -165,9 +166,10 @@
 
 <div
 	class={cn(
-		"border-border/80 bg-background/72 text-foreground supports-backdrop-filter:bg-background/52 absolute z-10 flex items-center gap-2 rounded-2xl border px-3 py-2 shadow-[0_8px_30px_-18px_color-mix(in_oklab,var(--foreground)_28%,transparent)] backdrop-blur-md",
+		"canvas-default-cursor border-border/80 bg-background/72 text-foreground supports-backdrop-filter:bg-background/52 absolute z-10 flex items-center gap-2 rounded-2xl border px-3 py-2 shadow-[0_8px_30px_-18px_color-mix(in_oklab,var(--foreground)_28%,transparent)] backdrop-blur-md",
 		className
 	)}
+	style:cursor={canvasCursor.default}
 >
 	<input
 		bind:this={projectImportInputRef}
@@ -208,7 +210,8 @@
 			align="start"
 			side="bottom"
 			sideOffset={15}
-			class="bg-popover/96 text-popover-foreground border-border supports-backdrop-filter:bg-popover/88 w-34! min-w-0! overflow-hidden rounded-xl border p-1 shadow-xl backdrop-blur-md"
+			class="canvas-default-cursor bg-popover/96 text-popover-foreground border-border supports-backdrop-filter:bg-popover/88 w-34! min-w-0! overflow-hidden rounded-xl border p-1 shadow-xl backdrop-blur-md"
+			style={`cursor: ${canvasCursor.default}`}
 		>
 			<DropdownMenu.Group>
 				<DropdownMenu.Item class="rounded-lg px-2 py-1.5 text-xs" onclick={() => (newProjectDialogOpen = true)}

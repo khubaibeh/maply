@@ -1,7 +1,6 @@
-import penToolSvg from "$lib/assets/pen-tool.svg?raw";
-import plusSvg from "$lib/assets/plus.svg?raw";
 import { App } from "@app";
 import type { ImageElement, Point } from "@app/types";
+import { canvasCursor } from "@components/core/cursors";
 import { onMount } from "svelte";
 import { fromStore } from "svelte/store";
 
@@ -46,7 +45,7 @@ export function createCanvasAreaState() {
 		pathSession: null as PathSession | null
 	});
 
-	const hasClipboardElement = $derived(!!App.actions.clipboard.get());
+	const hasClipboardElement = $derived(App.actions.clipboard.get().length > 0);
 	const contextMenuElementLayerIndex = $derived(
 		state.contextMenuElementId
 			? project.current.elements.findIndex((element) => element.id === state.contextMenuElementId)
@@ -57,9 +56,11 @@ export function createCanvasAreaState() {
 	);
 	const contextMenuElementIsBackmost = $derived(contextMenuElementLayerIndex === 0);
 	const selectedImage = $derived(
-		(project.current.elements.find(
-			(element) => element.id === project.current.selectedElementId && element.type === "image"
-		) ?? null) as ImageElement | null
+		(project.current.selectedElementIds.length === 1
+			? (project.current.elements.find(
+					(element) => element.id === project.current.selectedElementId && element.type === "image"
+				) ?? null)
+			: null) as ImageElement | null
 	);
 	const cropEditing = $derived(
 		project.current.cropEditingElementId === project.current.selectedElementId && selectedImage !== null
@@ -75,19 +76,20 @@ export function createCanvasAreaState() {
 		tool.current.activeTool === "hand" || (state.isHovering && tool.current.isSpacePressed)
 	);
 	const cursorClass = $derived.by(() => {
-		if (state.isPanning) return "cursor-grabbing";
-		if (isHandActive) return "cursor-grab";
-		return "cursor-default";
+		if (state.isPanning) return canvasCursor.grabbing;
+		if (isHandActive) return canvasCursor.hand;
+		return canvasCursor.default;
 	});
 
 	const toolCursor = $derived.by(() => {
 		if (state.isPanning || isHandActive) return undefined;
 
 		const activeTool = tool.current.activeTool;
-		if (activeTool === "rect" || activeTool === "circle" || activeTool === "text" || activeTool === "image") {
-			return svgCursorUrl(plusSvg);
+		if (activeTool === "rect" || activeTool === "circle" || activeTool === "image") {
+			return canvasCursor.plus;
 		}
-		if (activeTool === "path") return svgCursorUrl(penToolSvg, 6, 6);
+		if (activeTool === "text") return canvasCursor.text;
+		if (activeTool === "path") return canvasCursor.pen;
 		return undefined;
 	});
 
@@ -231,7 +233,7 @@ export function createCanvasAreaState() {
 			if (!state.pathSession) return;
 			const point = clientToSvgPoint(event.clientX, event.clientY);
 			if (!point) return;
-			updatePathSessionCurrent(point);
+			updatePathSessionCurrent(point, event.shiftKey);
 		}
 
 		function endDrawing(event: PointerEvent) {
@@ -342,10 +344,6 @@ export function createCanvasAreaState() {
 		};
 	});
 
-	function svgCursorUrl(svg: string, hotspotX = 12, hotspotY = 12): string {
-		return `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}") ${hotspotX} ${hotspotY}, none`;
-	}
-
 	function distance(a: Point, b: Point): number {
 		const dx = a.x - b.x;
 		const dy = a.y - b.y;
@@ -371,16 +369,49 @@ export function createCanvasAreaState() {
 		return { x: svgPoint.x, y: svgPoint.y };
 	}
 
-	function updatePathSessionCurrent(point: Point) {
+	function updatePathSessionCurrent(point: Point, shiftKey = false) {
 		if (!state.pathSession) return;
 		const clampedPoint = clampPointToCanvas(point);
+		const last = state.pathSession.points[state.pathSession.points.length - 1];
+		const snappedPoint = shiftKey && last ? App.geometry.snapPathSegment(last, clampedPoint) : clampedPoint;
+		const current = last ? clampPointToCanvasAlongSegment(last, snappedPoint) : snappedPoint;
 		const first = state.pathSession.points[0];
 		const threshold = CLOSE_THRESHOLD_SCREEN_PX / canvas.current.camera.zoom;
-		const nearFirst = first ? distance(first, clampedPoint) <= threshold : false;
+		const nearFirst = first ? distance(first, current) <= threshold : false;
 		state.pathSession = {
 			...state.pathSession,
-			current: clampedPoint,
+			current,
 			nearFirst
+		};
+	}
+
+	function clampPointToCanvasAlongSegment(start: Point, point: Point): Point {
+		if (point.x >= canvas.current.x && point.x <= canvas.current.x + canvas.current.width) {
+			if (point.y >= canvas.current.y && point.y <= canvas.current.y + canvas.current.height) {
+				return point;
+			}
+		}
+
+		const dx = point.x - start.x;
+		const dy = point.y - start.y;
+		let maxT = 1;
+
+		if (dx > 0) {
+			maxT = Math.min(maxT, (canvas.current.x + canvas.current.width - start.x) / dx);
+		} else if (dx < 0) {
+			maxT = Math.min(maxT, (canvas.current.x - start.x) / dx);
+		}
+
+		if (dy > 0) {
+			maxT = Math.min(maxT, (canvas.current.y + canvas.current.height - start.y) / dy);
+		} else if (dy < 0) {
+			maxT = Math.min(maxT, (canvas.current.y - start.y) / dy);
+		}
+
+		const t = Math.max(0, maxT);
+		return {
+			x: start.x + dx * t,
+			y: start.y + dy * t
 		};
 	}
 
@@ -441,14 +472,17 @@ export function createCanvasAreaState() {
 
 		if (tool.current.activeTool === "path") {
 			if (state.pathSession) {
+				updatePathSessionCurrent(drawPoint, event.shiftKey);
+				if (!state.pathSession) return;
+
 				if (state.pathSession.nearFirst) {
 					closePath();
 				} else {
 					state.pathSession = {
 						...state.pathSession,
-						points: [...state.pathSession.points, drawPoint]
+						points: [...state.pathSession.points, state.pathSession.current]
 					};
-					updatePathSessionCurrent(drawPoint);
+					updatePathSessionCurrent(drawPoint, event.shiftKey);
 				}
 			} else {
 				state.pathSession = {
@@ -477,15 +511,15 @@ export function createCanvasAreaState() {
 		if (elementNode instanceof Element) {
 			const id = elementNode.getAttribute("data-canvas-element");
 			if (id) {
-				if (project.current.selectedElementId !== id) {
-					App.actions.project.selectElement(null);
+				if (!project.current.selectedElementIds.includes(id)) {
+					App.actions.project.selectElement(id);
 				}
 				state.contextMenuTarget = "element";
 				state.contextMenuElementId = id;
 				return;
 			}
 		}
-		if (project.current.selectedElementId !== null) {
+		if (project.current.selectedElementIds.length > 0) {
 			App.actions.project.selectElement(null);
 		}
 		state.contextMenuTarget = "empty";
@@ -494,44 +528,53 @@ export function createCanvasAreaState() {
 
 	function handleCopy() {
 		if (!state.contextMenuElementId) return;
-		const element = project.current.elements.find((entry) => entry.id === state.contextMenuElementId);
-		if (element) App.actions.clipboard.copy(element);
+		const elements = project.current.selectedElementIds.includes(state.contextMenuElementId)
+			? project.current.elements.filter((entry) => project.current.selectedElementIds.includes(entry.id))
+			: project.current.elements.filter((entry) => entry.id === state.contextMenuElementId);
+		if (elements.length > 0) App.actions.clipboard.copy(elements);
 		state.contextMenuOpen = false;
 	}
 
 	function handleDelete() {
 		if (!state.contextMenuElementId) return;
-		void App.element.delete(state.contextMenuElementId);
+		const ids = project.current.selectedElementIds.includes(state.contextMenuElementId)
+			? project.current.selectedElementIds
+			: [state.contextMenuElementId];
+		void App.element.delete(ids);
 		state.contextMenuOpen = false;
 	}
 
 	function handleBringToFront() {
 		if (!state.contextMenuElementId) return;
+		if (project.current.selectedElementIds.length > 1) return;
 		App.actions.project.moveElementToFront(state.contextMenuElementId);
 		state.contextMenuOpen = false;
 	}
 
 	function handleBringForward() {
 		if (!state.contextMenuElementId) return;
+		if (project.current.selectedElementIds.length > 1) return;
 		App.actions.project.moveElementForward(state.contextMenuElementId);
 		state.contextMenuOpen = false;
 	}
 
 	function handleSendBackward() {
 		if (!state.contextMenuElementId) return;
+		if (project.current.selectedElementIds.length > 1) return;
 		App.actions.project.moveElementBackward(state.contextMenuElementId);
 		state.contextMenuOpen = false;
 	}
 
 	function handleSendToBack() {
 		if (!state.contextMenuElementId) return;
+		if (project.current.selectedElementIds.length > 1) return;
 		App.actions.project.moveElementToBack(state.contextMenuElementId);
 		state.contextMenuOpen = false;
 	}
 
 	function handlePaste() {
 		const copied = App.actions.clipboard.get();
-		if (!copied) return;
+		if (copied.length === 0) return;
 		void App.element.paste(state.contextMenuPoint ?? undefined);
 		state.contextMenuOpen = false;
 	}

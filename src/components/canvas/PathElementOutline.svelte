@@ -8,6 +8,7 @@
 
 	let { element }: Props = $props();
 	const canvas = App.state.canvas;
+	const SELECTION_COLOR = "#2563eb";
 
 	const transform = $derived(App.geometry.pathRenderTransform(element));
 	const strokeWidth = $derived(2.5 / $canvas.camera.zoom);
@@ -17,7 +18,7 @@
 	d={element.d}
 	transform="translate({transform.x}, {transform.y})"
 	fill="none"
-	stroke="var(--primary)"
+	stroke={SELECTION_COLOR}
 	stroke-width={strokeWidth}
 	pointer-events="none"
 />

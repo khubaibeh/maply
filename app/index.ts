@@ -54,8 +54,8 @@ export const App = {
 			return runApp(pasteElement(point));
 		},
 
-		delete(id: string) {
-			return runApp(deleteElement(id));
+		delete(ids: string | string[]) {
+			return runApp(deleteElement(ids));
 		},
 
 		replaceImage(id: string, file: File) {

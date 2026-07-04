@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { App } from "@app";
 	import type { Element, ResizeHandle } from "@app/types";
+	import { resizeCursor } from "@components/core/cursors";
 	import { onMount } from "svelte";
 
 	interface Props {
@@ -13,10 +14,12 @@
 	const project = App.state.project;
 	const tool = App.state.tool;
 	const hideOutline = $derived(element.type === "image" && $project.cropEditingElementId === element.id);
+	const isSingleSelection = $derived($project.selectedElementIds.length === 1);
 	const canResize = $derived(
 		interactive &&
 			!hideOutline &&
 			$tool.activeTool === "select" &&
+			isSingleSelection &&
 			$project.selectedElementId === element.id &&
 			(element.type === "rect" ||
 				element.type === "text" ||
@@ -25,21 +28,24 @@
 	);
 	const HANDLE_SIZE_SCREEN = 10;
 	const HANDLE_OFFSET_SCREEN = 1;
+	const SELECTION_COLOR = "#2563eb";
 
 	let bbox = $state({ x: 0, y: 0, width: 0, height: 0 });
 	let dragState = $state<
 		| {
 				kind: "move";
-				elementX: number;
-				elementY: number;
+				id: string;
+				ids: string[];
+				svg: SVGSVGElement;
 				grabX: number;
 				grabY: number;
-				wasSelected: boolean;
+				toggleSelectionOnClick: boolean;
 				didMove: boolean;
 		  }
 		| {
 				kind: "resize";
 				handle: ResizeHandle;
+				svg: SVGSVGElement;
 				grabX: number;
 				grabY: number;
 				lockAspectRatio: boolean;
@@ -54,14 +60,14 @@
 	const handleSize = $derived(HANDLE_SIZE_SCREEN / $canvas.camera.zoom);
 	const handleOffset = $derived(HANDLE_OFFSET_SCREEN / $canvas.camera.zoom);
 	const handles = $derived([
-		{ key: "nw" as const, x: bbox.x, y: bbox.y, cursor: "nwse-resize" },
-		{ key: "n" as const, x: bbox.x + bbox.width / 2, y: bbox.y, cursor: "ns-resize" },
-		{ key: "ne" as const, x: bbox.x + bbox.width, y: bbox.y, cursor: "nesw-resize" },
-		{ key: "e" as const, x: bbox.x + bbox.width, y: bbox.y + bbox.height / 2, cursor: "ew-resize" },
-		{ key: "se" as const, x: bbox.x + bbox.width, y: bbox.y + bbox.height, cursor: "nwse-resize" },
-		{ key: "s" as const, x: bbox.x + bbox.width / 2, y: bbox.y + bbox.height, cursor: "ns-resize" },
-		{ key: "sw" as const, x: bbox.x, y: bbox.y + bbox.height, cursor: "nesw-resize" },
-		{ key: "w" as const, x: bbox.x, y: bbox.y + bbox.height / 2, cursor: "ew-resize" }
+		{ key: "nw" as const, x: bbox.x, y: bbox.y },
+		{ key: "n" as const, x: bbox.x + bbox.width / 2, y: bbox.y },
+		{ key: "ne" as const, x: bbox.x + bbox.width, y: bbox.y },
+		{ key: "e" as const, x: bbox.x + bbox.width, y: bbox.y + bbox.height / 2 },
+		{ key: "se" as const, x: bbox.x + bbox.width, y: bbox.y + bbox.height },
+		{ key: "s" as const, x: bbox.x + bbox.width / 2, y: bbox.y + bbox.height },
+		{ key: "sw" as const, x: bbox.x, y: bbox.y + bbox.height },
+		{ key: "w" as const, x: bbox.x, y: bbox.y + bbox.height / 2 }
 	]);
 
 	$effect(() => {
@@ -131,18 +137,22 @@
 		return point.matrixTransform(ctm.inverse());
 	}
 
-	function getElementOrigin() {
-		if (element.type === "circle") return { x: element.cx, y: element.cy };
-		return { x: element.x, y: element.y };
-	}
-
 	function startSelectionDrag(event: PointerEvent) {
 		if (event.button !== 0) return;
 		if ($tool.activeTool !== "select") return;
 
 		event.stopPropagation();
-		const wasSelected = $project.selectedElementId === element.id;
-		if (!wasSelected) {
+		const wasSelected = $project.selectedElementIds.includes(element.id);
+		const wasMultiSelected = $project.selectedElementIds.length > 1;
+
+		if (event.ctrlKey || event.metaKey) {
+			event.preventDefault();
+			if (!wasSelected) {
+				App.actions.project.selectElement(element.id, { additive: true });
+				dragState = null;
+				return;
+			}
+		} else if (!wasSelected) {
 			App.actions.project.selectElement(element.id);
 		}
 
@@ -152,14 +162,15 @@
 		const svgPoint = clientToSvgPoint(svg, event.clientX, event.clientY);
 		if (!svgPoint) return;
 
-		const origin = getElementOrigin();
+		const ids = wasSelected && wasMultiSelected ? [...$project.selectedElementIds] : [element.id];
 		dragState = {
 			kind: "move",
-			elementX: origin.x,
-			elementY: origin.y,
+			id: element.id,
+			ids,
+			svg,
 			grabX: svgPoint.x,
 			grabY: svgPoint.y,
-			wasSelected,
+			toggleSelectionOnClick: (event.ctrlKey || event.metaKey) && wasSelected,
 			didMove: false
 		};
 	}
@@ -182,6 +193,7 @@
 		dragState = {
 			kind: "resize",
 			handle,
+			svg,
 			grabX: svgPoint.x,
 			grabY: svgPoint.y,
 			lockAspectRatio: event.shiftKey,
@@ -194,19 +206,27 @@
 		function handlePointerMove(event: PointerEvent) {
 			if (!dragState) return;
 
-			const svg = getSvgRoot(event.target);
-			if (!svg) return;
-
-			const svgPoint = clientToSvgPoint(svg, event.clientX, event.clientY);
-			if (!svgPoint) return;
-
 			if (dragState.kind === "move") {
-				const nextX = dragState.elementX + (svgPoint.x - dragState.grabX);
-				const nextY = dragState.elementY + (svgPoint.y - dragState.grabY);
+				const svgPoint = clientToSvgPoint(dragState.svg, event.clientX, event.clientY);
+				if (!svgPoint) return;
+
+				const dx = svgPoint.x - dragState.grabX;
+				const dy = svgPoint.y - dragState.grabY;
+				if (dx === 0 && dy === 0) return;
+
 				dragState.didMove = true;
-				App.actions.project.setElementPosition(element.id, nextX, nextY);
+				if (dragState.ids.length > 1) {
+					App.actions.project.translateElements(dragState.ids, dx, dy);
+				} else {
+					App.actions.project.translateElement(dragState.ids[0], dx, dy);
+				}
+				dragState.grabX = svgPoint.x;
+				dragState.grabY = svgPoint.y;
 				return;
 			}
+
+			const svgPoint = clientToSvgPoint(dragState.svg, event.clientX, event.clientY);
+			if (!svgPoint) return;
 
 			const dx = svgPoint.x - dragState.grabX;
 			const dy = svgPoint.y - dragState.grabY;
@@ -222,8 +242,8 @@
 		}
 
 		function stopDragging() {
-			if (dragState?.kind === "move" && dragState.wasSelected && !dragState.didMove) {
-				App.actions.project.selectElement(null);
+			if (dragState?.kind === "move" && dragState.toggleSelectionOnClick && !dragState.didMove) {
+				App.actions.project.selectElement(dragState.id, { additive: true });
 			}
 			dragState = null;
 		}
@@ -251,10 +271,10 @@
 	height={bbox.height}
 	fill="transparent"
 	stroke-width={strokeWidth}
-	stroke={hideOutline ? "transparent" : "var(--primary)"}
+	stroke={hideOutline ? "transparent" : SELECTION_COLOR}
 	stroke-dasharray={undefined}
 	pointer-events={interactive && !hideOutline ? "all" : "none"}
-	class="cursor-inherit"
+	style:cursor="inherit"
 	onpointerdown={startSelectionDrag}
 />
 
@@ -269,10 +289,10 @@
 			width={handleSize}
 			height={handleSize}
 			rx={handleOffset}
-			fill="var(--background)"
-			stroke="var(--primary)"
+			fill="white"
+			stroke={SELECTION_COLOR}
 			stroke-width={handleStrokeWidth}
-			class={handle.cursor}
+			style:cursor={resizeCursor(handle.key)}
 			onpointerdown={(event) => startResize(event, handle.key)}
 		/>
 	{/each}

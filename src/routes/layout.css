@@ -134,6 +134,10 @@
 	html {
 		@apply font-sans;
 	}
+	.canvas-default-cursor,
+	.canvas-default-cursor * {
+		cursor: inherit !important;
+	}
 	/* *:not(svg *),
 	*:not(svg *)::before,
 	*:not(svg *)::after {

@@ -18,6 +18,10 @@
 
 	const project = App.state.project;
 
+	function getSelectedElements() {
+		return $project.elements.filter((element) => $project.selectedElementIds.includes(element.id));
+	}
+
 	onMount(() => {
 		function handleKeyDown(event: KeyboardEvent) {
 			if (event.defaultPrevented) return;
@@ -33,7 +37,7 @@
 
 			if (event.key === "Escape") {
 				if (isEditingText(event)) return;
-				if (!$project.selectedElementId) return;
+				if ($project.selectedElementIds.length === 0) return;
 
 				event.preventDefault();
 				App.actions.project.selectElement(null);
@@ -41,7 +45,7 @@
 			}
 
 			if (!isEditingText(event)) {
-				const selectedId = $project.selectedElementId;
+				const selectedId = $project.selectedElementIds.length === 1 ? $project.selectedElementId : null;
 				const delta = getArrowDelta(event.key, event.shiftKey ? 10 : 1);
 
 				if (selectedId && delta) {
@@ -53,11 +57,11 @@
 
 			if (event.key === "Delete" || event.key === "Backspace") {
 				if (isEditingText(event)) return;
-				const selectedId = $project.selectedElementId;
-				if (!selectedId) return;
+				const selectedIds = $project.selectedElementIds;
+				if (selectedIds.length === 0) return;
 
 				event.preventDefault();
-				void App.element.delete(selectedId);
+				void App.element.delete(selectedIds);
 				return;
 			}
 
@@ -65,15 +69,15 @@
 
 			if (event.key === "c") {
 				if (isEditingText(event)) return;
-				const selected = $project.elements.find((element) => element.id === $project.selectedElementId);
-				if (!selected) return;
+				const selected = getSelectedElements();
+				if (selected.length === 0) return;
 
 				event.preventDefault();
 				App.actions.clipboard.copy(selected);
 			} else if (event.key === "v") {
 				if (isEditingText(event)) return;
 				const copied = App.actions.clipboard.get();
-				if (!copied) return;
+				if (copied.length === 0) return;
 
 				event.preventDefault();
 				void App.element.paste();

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { App } from "@app";
 	import type { Element, PathElement, Point } from "@app/types";
+	import { canvasCursor } from "@components/core/cursors";
 	import { onMount } from "svelte";
 
 	interface Props {
@@ -11,6 +12,7 @@
 	const canvas = App.state.canvas;
 
 	const HANDLE_SIZE_SCREEN = 8;
+	const SELECTION_COLOR = "#2563eb";
 
 	let dragState = $state<{
 		index: number;
@@ -122,13 +124,13 @@
 				y={point.y - halfHandleSize}
 				width={handleSize}
 				height={handleSize}
-				fill="var(--background)"
-				stroke="var(--primary)"
+				fill="white"
+				stroke={SELECTION_COLOR}
 				stroke-width="2"
 				role="button"
 				tabindex="-1"
 				aria-label="Edit path vertex"
-				class="cursor-pointer"
+				style:cursor={canvasCursor.default}
 				onpointerdown={(event) => startHandleDrag(event, index)}
 			/>
 		{/each}

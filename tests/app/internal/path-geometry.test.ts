@@ -1,4 +1,10 @@
-import { getPathDataBounds, getPathPoints, pathDataFromPoints, updatePathVertex } from "@app/internal/path-geometry";
+import {
+	getPathDataBounds,
+	getPathPoints,
+	pathDataFromPoints,
+	snapPathSegment,
+	updatePathVertex
+} from "@app/internal/path-geometry";
 import { describe, expect, it } from "vitest";
 
 describe("pathDataFromPoints", () => {
@@ -112,5 +118,37 @@ describe("updatePathVertex", () => {
 	it("ignores out-of-range indices", () => {
 		const result = updatePathVertex("M0,0 L100,0", 5, { x: 999, y: 999 });
 		expect(result.d).toBe("M0,0 L100,0");
+	});
+});
+
+describe("snapPathSegment", () => {
+	it("snaps to the nearest horizontal direction", () => {
+		expect(snapPathSegment({ x: 0, y: 0 }, { x: 100, y: 20 })).toEqual({ x: 100, y: 0 });
+	});
+
+	it("snaps to the nearest vertical direction", () => {
+		expect(snapPathSegment({ x: 0, y: 0 }, { x: 20, y: 100 })).toEqual({ x: 0, y: 100 });
+	});
+
+	it("snaps to the nearest diagonal direction", () => {
+		const point = snapPathSegment({ x: 0, y: 0 }, { x: 100, y: 60 });
+		expect(point.x).toBeCloseTo(80, 6);
+		expect(point.y).toBeCloseTo(80, 6);
+	});
+
+	it("snaps in other quadrants", () => {
+		const point = snapPathSegment({ x: 0, y: 0 }, { x: -100, y: 60 });
+		expect(point.x).toBeCloseTo(-80, 6);
+		expect(point.y).toBeCloseTo(80, 6);
+	});
+
+	it("favors the diagonal on exact midpoint ties", () => {
+		const point = snapPathSegment({ x: 0, y: 0 }, { x: 100, y: Math.tan(Math.PI / 8) * 100 });
+		expect(point.x).toBeCloseTo(70.710678, 6);
+		expect(point.y).toBeCloseTo(70.710678, 6);
+	});
+
+	it("returns the same point when the pointer is on the anchor", () => {
+		expect(snapPathSegment({ x: 10, y: 20 }, { x: 10, y: 20 })).toEqual({ x: 10, y: 20 });
 	});
 });

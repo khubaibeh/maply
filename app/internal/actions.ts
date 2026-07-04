@@ -2,7 +2,7 @@ import type { Element } from "../domain/elements";
 import type { Camera, ImportExportState } from "../domain/project";
 import type { Tool } from "../domain/tools";
 import { appCanvasState } from "../store/canvas";
-import { clearClipboard, copyElement, getClipboardElement } from "../store/clipboard.svelte";
+import { clearClipboard, copyElements, getClipboardElements } from "../store/clipboard.svelte";
 import { appFillState } from "../store/fill";
 import { appProjectState } from "../store/project";
 import { appToolState } from "../store/tool";
@@ -20,8 +20,8 @@ export const appActions = {
 			appProjectState.setImportExportState(state);
 		},
 
-		selectElement(id: string | null) {
-			appProjectState.selectElement(id);
+		selectElement(id: string | null, options?: { additive?: boolean }) {
+			appProjectState.selectElement(id, options);
 		},
 
 		setHoveredElement(id: string | null) {
@@ -38,6 +38,10 @@ export const appActions = {
 
 		translateElement(id: string, dx: number, dy: number) {
 			appProjectState.translateElement(id, dx, dy);
+		},
+
+		translateElements(ids: string[], dx: number, dy: number) {
+			appProjectState.translateElements(ids, dx, dy);
 		},
 
 		setElementPosition(id: string, x: number, y: number) {
@@ -164,8 +168,8 @@ export const appActions = {
 	},
 
 	clipboard: {
-		copy(element: Element) {
-			copyElement(element);
+		copy(elements: Element | Element[]) {
+			copyElements(Array.isArray(elements) ? elements : [elements]);
 		},
 
 		clear() {
@@ -173,7 +177,7 @@ export const appActions = {
 		},
 
 		get() {
-			return getClipboardElement();
+			return getClipboardElements();
 		}
 	}
 } as const;
