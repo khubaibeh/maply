@@ -10,7 +10,7 @@
 		"prepare": "husky",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-		"test": "vitest run",
+		"test": "vitest run tests/",
 		"lint": "eslint --ignore-pattern \"src/lib/components/ui/**\" --fix .",
 		"fmt": "oxfmt && prettier --log-level warn --write ."
 	},
