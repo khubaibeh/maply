@@ -5,7 +5,6 @@ import type { Project } from "../domain/project";
 import { createProjectFilePackage } from "./project-file";
 
 const SVG_XMLNS = "http://www.w3.org/2000/svg";
-const FONT_FAMILY = "Maply Export Inter";
 const TEXT_FONT_FAMILY = '"Inter Variable", sans-serif';
 const IMAGE_FILL = "#e5e5e5";
 const IMAGE_STROKE = "#737373";
@@ -281,7 +280,6 @@ function renderText(element: TextElement, dx: number, dy: number, defs: string[]
 		` x="${element.x + dx}"`,
 		` y="${element.y + dy}"`,
 		` font-size="${element.fontSize}"`,
-		` font-family="${escapeXml(FONT_FAMILY)}"`,
 		` fill="${escapeXml(element.fill)}"`,
 		` xml:space="preserve"`,
 		` clip-path="url(#${clipId})"`,
