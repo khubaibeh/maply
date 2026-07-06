@@ -65,25 +65,25 @@
 		App.actions.project.updateElement(element.id, patch);
 	}
 
-	function getTextVisualX() {
-		if (element.type !== "text") return 0;
-		return App.geometry.elementBounds(element).x;
-	}
+	// function getTextVisualX() {
+	// 	if (element.type !== "text") return 0;
+	// 	return App.geometry.elementBounds(element).x;
+	// }
 
 	function getTextVisualY() {
 		if (element.type !== "text") return 0;
 		return App.geometry.elementBounds(element).y;
 	}
 
-	function updateTextVisualX(value: string) {
-		if (element.type !== "text") return;
-		const parsed = App.validate.int(value);
-		if (parsed === null) return;
-		const { left } = App.text.wrappedMetrics(element);
-		App.actions.project.updateElement(element.id, {
-			x: Math.round(parsed + left)
-		} as Partial<Element>);
-	}
+	// function updateTextVisualX(value: string) {
+	// 	if (element.type !== "text") return;
+	// 	const parsed = App.validate.int(value);
+	// 	if (parsed === null) return;
+	// 	const { left } = App.text.wrappedMetrics(element);
+	// 	App.actions.project.updateElement(element.id, {
+	// 		x: Math.round(parsed + left)
+	// 	} as Partial<Element>);
+	// }
 
 	function updateTextVisualY(value: string) {
 		if (element.type !== "text") return;
@@ -155,8 +155,8 @@
 				id="{element.id}-x"
 				type="number"
 				step={1}
-				value={getTextVisualX()}
-				onchange={(event) => updateTextVisualX((event.target as HTMLInputElement).value)}
+				value={element.x}
+				onchange={(event) => updateNumber("x", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
