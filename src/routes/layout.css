@@ -126,6 +126,21 @@
 	}
 	body {
 		@apply bg-background text-foreground;
+		cursor: var(--app-cursor-default, auto);
+	}
+	/* The UA stylesheet sets its own cursor on buttons, links, etc., which breaks
+	   inheritance and shows native cursors. Force everything to inherit so the
+	   custom default flows down; the rules below and .cursor-* utilities override. */
+	*,
+	*::before,
+	*::after {
+		cursor: inherit;
+	}
+	:where(input, textarea, [contenteditable="true"]) {
+		cursor: var(--app-cursor-text, text);
+	}
+	:where(:disabled, [aria-disabled="true"], [data-disabled]) {
+		cursor: var(--app-cursor-default, default);
 	}
 	[data-canvas-element]:focus,
 	[data-canvas-element]:focus-visible {
@@ -146,4 +161,48 @@
 			border-color 0.25s ease-out,
 			color 0.25s ease-out;
 	} */
+}
+
+@layer utilities {
+	.cursor-auto,
+	.cursor-default {
+		cursor: var(--app-cursor-default, auto);
+	}
+	.cursor-pointer {
+		cursor: var(--app-cursor-default, pointer);
+	}
+	.cursor-text {
+		cursor: var(--app-cursor-text, text);
+	}
+	.cursor-grab {
+		cursor: var(--app-cursor-hand, grab);
+	}
+	.cursor-grabbing {
+		cursor: var(--app-cursor-grabbing, grabbing);
+	}
+	.cursor-ew-resize,
+	.cursor-e-resize,
+	.cursor-w-resize,
+	.cursor-col-resize {
+		cursor: var(--app-cursor-resize-horizontal, ew-resize);
+	}
+	.cursor-ns-resize,
+	.cursor-n-resize,
+	.cursor-s-resize,
+	.cursor-row-resize {
+		cursor: var(--app-cursor-resize-vertical, ns-resize);
+	}
+	.cursor-nwse-resize,
+	.cursor-nw-resize,
+	.cursor-se-resize {
+		cursor: var(--app-cursor-resize-diagonal-down, nwse-resize);
+	}
+	.cursor-nesw-resize,
+	.cursor-ne-resize,
+	.cursor-sw-resize {
+		cursor: var(--app-cursor-resize-diagonal-up, nesw-resize);
+	}
+	.cursor-not-allowed {
+		cursor: var(--app-cursor-default, not-allowed);
+	}
 }

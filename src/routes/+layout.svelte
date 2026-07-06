@@ -5,6 +5,7 @@
 	import "./selections.css";
 	import * as Tooltip from "$lib/components/ui/tooltip";
 	import { App } from "@app";
+	import { canvasCursor } from "@components/core/cursors";
 	import Monitor from "phosphor-svelte/lib/Monitor";
 	import { onMount } from "svelte";
 
@@ -34,6 +35,18 @@
 
 	onMount(() => {
 		isClient = true;
+
+		// Expose the custom cursors as global CSS variables so layout.css can apply
+		// them app-wide. (`<svelte:body>` doesn't support `style:` directives.)
+		const root = document.documentElement;
+		root.style.setProperty("--app-cursor-default", canvasCursor.default);
+		root.style.setProperty("--app-cursor-hand", canvasCursor.hand);
+		root.style.setProperty("--app-cursor-grabbing", canvasCursor.grabbing);
+		root.style.setProperty("--app-cursor-text", canvasCursor.text);
+		root.style.setProperty("--app-cursor-resize-horizontal", canvasCursor.resizeHorizontal);
+		root.style.setProperty("--app-cursor-resize-vertical", canvasCursor.resizeVertical);
+		root.style.setProperty("--app-cursor-resize-diagonal-down", canvasCursor.resizeDiagonalDown);
+		root.style.setProperty("--app-cursor-resize-diagonal-up", canvasCursor.resizeDiagonalUp);
 
 		const flushProjectSave = () => {
 			void App.save.flush();
