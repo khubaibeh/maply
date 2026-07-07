@@ -74,6 +74,12 @@
 
 				event.preventDefault();
 				App.actions.clipboard.copy(selected);
+			} else if (event.key === "a") {
+				if (isEditingText(event)) return;
+				if ($project.elements.length === 0) return;
+
+				event.preventDefault();
+				App.actions.project.selectAll();
 			} else if (event.key === "v") {
 				if (isEditingText(event)) return;
 				const copied = App.actions.clipboard.get();

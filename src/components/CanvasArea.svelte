@@ -1,5 +1,6 @@
 <script lang="ts">
 	import * as ContextMenu from "$lib/components/ui/context-menu";
+	import { App } from "@app";
 	import Artboard from "@components/canvas/Artboard.svelte";
 	import Background from "@components/canvas/Background.svelte";
 	import ContextMenuContent from "@components/canvas/ContextMenuContent.svelte";
@@ -9,6 +10,7 @@
 	import { canvasCursor } from "@components/core/cursors";
 
 	const canvasArea = createCanvasAreaState();
+	const project = App.state.project;
 </script>
 
 <ContextMenu.Root bind:open={canvasArea.state.contextMenuOpen}>
@@ -64,6 +66,7 @@
 		<ContextMenuContent
 			target={canvasArea.state.contextMenuTarget}
 			hasClipboardElement={canvasArea.hasClipboardElement()}
+			hasElements={$project.elements.length > 0}
 			contextMenuElementIsFrontmost={canvasArea.contextMenuElementIsFrontmost()}
 			contextMenuElementIsBackmost={canvasArea.contextMenuElementIsBackmost()}
 			onCopy={canvasArea.handleCopy}
@@ -73,6 +76,7 @@
 			onSendToBack={canvasArea.handleSendToBack}
 			onDelete={canvasArea.handleDelete}
 			onPaste={canvasArea.handlePaste}
+			onSelectAll={canvasArea.handleSelectAll}
 		/>
 	</ContextMenu.Content>
 </ContextMenu.Root>

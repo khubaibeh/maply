@@ -534,6 +534,19 @@ export const appProjectState = {
 		});
 	},
 
+	selectAll() {
+		store.update((state) => ({
+			...state,
+			...nextSelection(state.elements.map((element) => element.id)),
+			hoveredElementId: null,
+			cropEditingElementId:
+				state.cropEditingElementId &&
+				state.elements.some((element) => element.id === state.cropEditingElementId)
+					? state.cropEditingElementId
+					: null
+		}));
+	},
+
 	reorderElements(fromIndex: number, toIndex: number) {
 		const project = get(store);
 		if (

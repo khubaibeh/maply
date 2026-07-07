@@ -14,10 +14,13 @@
 		onSendBackward,
 		onSendToBack,
 		onDelete,
-		onPaste
+		onPaste,
+		onSelectAll,
+		hasElements
 	}: {
 		target: "element" | "empty";
 		hasClipboardElement: boolean;
+		hasElements: boolean;
 		contextMenuElementIsFrontmost: boolean;
 		contextMenuElementIsBackmost: boolean;
 		onCopy: () => void;
@@ -27,10 +30,13 @@
 		onSendToBack: () => void;
 		onDelete: () => void;
 		onPaste: () => void;
+		onSelectAll: () => void;
 	} = $props();
 </script>
 
 {#if target === "element"}
+	<ContextMenu.Item class={itemClass} disabled={!hasElements} onclick={onSelectAll}>Select all</ContextMenu.Item>
+	<ContextMenu.Separator />
 	<ContextMenu.Item class={itemClass} onclick={onCopy}>Copy</ContextMenu.Item>
 	<ContextMenu.Separator />
 	<ContextMenu.Item class={itemClass} disabled={contextMenuElementIsFrontmost} onclick={onBringToFront}>
@@ -48,5 +54,7 @@
 	<ContextMenu.Separator />
 	<ContextMenu.Item class={itemClass} variant="destructive" onclick={onDelete}>Delete</ContextMenu.Item>
 {:else}
+	<ContextMenu.Item class={itemClass} disabled={!hasElements} onclick={onSelectAll}>Select all</ContextMenu.Item>
+	<ContextMenu.Separator />
 	<ContextMenu.Item class={itemClass} disabled={!hasClipboardElement} onclick={onPaste}>Paste</ContextMenu.Item>
 {/if}

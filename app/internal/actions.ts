@@ -24,6 +24,10 @@ export const appActions = {
 			appProjectState.selectElement(id, options);
 		},
 
+		selectAll() {
+			appProjectState.selectAll();
+		},
+
 		setHoveredElement(id: string | null) {
 			appProjectState.setHoveredElement(id);
 		},

@@ -579,6 +579,11 @@ export function createCanvasAreaState() {
 		state.contextMenuOpen = false;
 	}
 
+	function handleSelectAll() {
+		App.actions.project.selectAll();
+		state.contextMenuOpen = false;
+	}
+
 	return {
 		state,
 		hasClipboardElement: () => hasClipboardElement,
@@ -602,6 +607,7 @@ export function createCanvasAreaState() {
 		handleBringForward,
 		handleSendBackward,
 		handleSendToBack,
-		handlePaste
+		handlePaste,
+		handleSelectAll
 	};
 }
