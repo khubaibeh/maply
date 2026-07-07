@@ -3,7 +3,7 @@ import { get, writable } from "svelte/store";
 import type { Element } from "../domain/elements";
 import type { Point } from "../domain/geometry";
 import type { StoredImageAsset } from "../domain/image-assets";
-import type { Project } from "../domain/project";
+import type { Canvas, Project } from "../domain/project";
 import {
 	deleteImageAsset,
 	fetchProject,
@@ -73,6 +73,27 @@ function nextSelection(ids: string[]) {
 		selectedElementIds,
 		selectedElementId: selectedElementIds.at(-1) ?? null
 	};
+}
+
+function getTranslatedElementsWithinCanvas(elements: Element[], ids: string[], dx: number, dy: number, canvas: Canvas) {
+	if ((dx === 0 && dy === 0) || ids.length === 0) return null;
+
+	const idSet = new Set(ids);
+	const selected = elements.filter((element) => idSet.has(element.id));
+	if (selected.length === 0) return null;
+
+	const bounds = selected.map(getElementBounds);
+	const minDx = Math.max(...bounds.map((entry) => canvas.x - entry.x));
+	const maxDx = Math.min(...bounds.map((entry) => canvas.x + canvas.width - (entry.x + entry.width)));
+	const minDy = Math.max(...bounds.map((entry) => canvas.y - entry.y));
+	const maxDy = Math.min(...bounds.map((entry) => canvas.y + canvas.height - (entry.y + entry.height)));
+	const clampedDx = Math.round(Math.min(maxDx, Math.max(minDx, dx)));
+	const clampedDy = Math.round(Math.min(maxDy, Math.max(minDy, dy)));
+	if (clampedDx === 0 && clampedDy === 0) return null;
+
+	return elements.map((element) =>
+		idSet.has(element.id) ? translateElement(element, clampedDx, clampedDy) : element
+	);
 }
 
 async function applyProjectRecord(record: Project) {
@@ -393,27 +414,13 @@ export const appProjectState = {
 	},
 
 	translateElements(ids: string[], dx: number, dy: number) {
-		if ((dx === 0 && dy === 0) || ids.length === 0) return;
-
-		const idSet = new Set(ids);
 		const canvas = appCanvasState.getSnapshot();
-		const elements = get(store).elements.filter((element) => idSet.has(element.id));
-		if (elements.length === 0) return;
-
-		const bounds = elements.map(getElementBounds);
-		const minDx = Math.max(...bounds.map((entry) => canvas.x - entry.x));
-		const maxDx = Math.min(...bounds.map((entry) => canvas.x + canvas.width - (entry.x + entry.width)));
-		const minDy = Math.max(...bounds.map((entry) => canvas.y - entry.y));
-		const maxDy = Math.min(...bounds.map((entry) => canvas.y + canvas.height - (entry.y + entry.height)));
-		const clampedDx = Math.round(Math.min(maxDx, Math.max(minDx, dx)));
-		const clampedDy = Math.round(Math.min(maxDy, Math.max(minDy, dy)));
-		if (clampedDx === 0 && clampedDy === 0) return;
+		const nextElements = getTranslatedElementsWithinCanvas(get(store).elements, ids, dx, dy, canvas);
+		if (!nextElements) return;
 
 		store.update((state) => ({
 			...state,
-			elements: state.elements.map((element) =>
-				idSet.has(element.id) ? translateElement(element, clampedDx, clampedDy) : element
-			)
+			elements: nextElements
 		}));
 	},
 

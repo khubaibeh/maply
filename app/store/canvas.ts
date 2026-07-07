@@ -40,6 +40,16 @@ export const appCanvasState = {
 		}));
 	},
 
+	setFrame(nextX: number, nextY: number, nextWidth: number, nextHeight: number) {
+		store.update((state) => ({
+			...state,
+			x: Math.round(nextX),
+			y: Math.round(nextY),
+			width: sanitizeCanvasSize(nextWidth),
+			height: sanitizeCanvasSize(nextHeight)
+		}));
+	},
+
 	setColor(nextColor: string) {
 		store.update((state) => ({ ...state, color: nextColor }));
 	},

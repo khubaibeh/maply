@@ -110,6 +110,10 @@ export const appActions = {
 			appCanvasState.setSize(width, height);
 		},
 
+		setFrame(x: number, y: number, width: number, height: number) {
+			appCanvasState.setFrame(x, y, width, height);
+		},
+
 		setColor(color: string) {
 			appCanvasState.setColor(color);
 		},
