@@ -20,6 +20,7 @@
 	let newProjectDialogOpen = $state(false);
 	let importProjectDialogOpen = $state(false);
 	let projectImportInputRef: HTMLInputElement | null = $state(null);
+	let svgImportInputRef: HTMLInputElement | null = $state(null);
 	let pendingImportedProject: ProjectFilePackage | null = null;
 	let pendingImportedProjectName = $state("");
 	let busy = $state<"project-import" | "project-export" | "svg-export" | null>(null);
@@ -84,6 +85,10 @@
 		projectImportInputRef?.click();
 	}
 
+	function openSvgImportPicker() {
+		svgImportInputRef?.click();
+	}
+
 	async function handleProjectImportFileChange(event: Event) {
 		const input = event.currentTarget as HTMLInputElement;
 		const file = input.files?.[0];
@@ -92,6 +97,27 @@
 
 		try {
 			pendingImportedProject = App.codec.project.parse(await file.text());
+			pendingImportedProjectName = file.name;
+			importProjectDialogOpen = true;
+		} catch {
+			pendingImportedProject = null;
+			pendingImportedProjectName = "";
+			void 0;
+		} finally {
+			busy = null;
+		}
+
+		input.value = "";
+	}
+
+	async function handleSvgImportFileChange(event: Event) {
+		const input = event.currentTarget as HTMLInputElement;
+		const file = input.files?.[0];
+		if (!file || busy) return;
+		busy = "project-import";
+
+		try {
+			pendingImportedProject = App.codec.svg.parse(await file.text());
 			pendingImportedProjectName = file.name;
 			importProjectDialogOpen = true;
 		} catch {
@@ -178,6 +204,13 @@
 		onchange={handleProjectImportFileChange}
 		class="hidden"
 	/>
+	<input
+		bind:this={svgImportInputRef}
+		type="file"
+		accept="image/svg+xml,.svg"
+		onchange={handleSvgImportFileChange}
+		class="hidden"
+	/>
 	<div class="max-w-80 min-w-40 flex-1">
 		{#if isEditing}
 			<Input
@@ -222,7 +255,7 @@
 					class="text-muted-foreground px-2 py-1 text-[10px] font-semibold tracking-wide uppercase"
 					>Import</DropdownMenu.Label
 				>
-				<DropdownMenu.Item disabled class="rounded-lg px-2 py-1.5 text-xs"
+				<DropdownMenu.Item class="rounded-lg px-2 py-1.5 text-xs" onclick={openSvgImportPicker}
 					><span class="px-1">SVG</span></DropdownMenu.Item
 				>
 				<DropdownMenu.Item class="rounded-lg px-2 py-1.5 text-xs" onclick={openProjectImportPicker}
