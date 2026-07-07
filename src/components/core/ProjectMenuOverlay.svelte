@@ -115,15 +115,27 @@
 		const file = input.files?.[0];
 		if (!file || busy) return;
 		busy = "project-import";
+		console.info("[svg-import] selected file", {
+			name: file.name,
+			type: file.type,
+			size: file.size
+		});
 
 		try {
-			pendingImportedProject = App.codec.svg.parse(await file.text());
+			const text = await file.text();
+			console.info("[svg-import] read file contents", { name: file.name, length: text.length });
+			pendingImportedProject = App.codec.svg.parse(text);
 			pendingImportedProjectName = file.name;
 			importProjectDialogOpen = true;
-		} catch {
+			console.info("[svg-import] parsed successfully, opening replace dialog", {
+				name: file.name,
+				elements: pendingImportedProject.project.elements.length,
+				imageAssets: pendingImportedProject.imageAssets.length
+			});
+		} catch (error) {
 			pendingImportedProject = null;
 			pendingImportedProjectName = "";
-			void 0;
+			console.error("[svg-import] failed before replace dialog", { name: file.name, error });
 		} finally {
 			busy = null;
 		}
@@ -134,9 +146,11 @@
 	async function confirmProjectImport() {
 		if (!pendingImportedProject || busy) return;
 		busy = "project-import";
+		let imported = false;
 
 		try {
 			await App.project.import(pendingImportedProject);
+			imported = true;
 			importProjectDialogOpen = false;
 			pendingImportedProject = null;
 			pendingImportedProjectName = "";
@@ -144,6 +158,10 @@
 			void 0;
 		} finally {
 			busy = null;
+		}
+
+		if (imported) {
+			window.location.reload();
 		}
 	}
 
