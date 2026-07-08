@@ -12,19 +12,21 @@ Use pnpm catalogs for shared dependency versions across packages. New package ma
 
 ## Target Shape
 
-The intended dependency flow is one-way: `web` depends on editor-facing modules, editor-facing modules depend on model/storage/codec modules, and pure model code depends on nothing browser-specific.
+The intended dependency flow is one-way: `web` depends on editor-facing modules, editor-facing modules depend on model/storage/codec modules, codec modules depend on model definitions, and pure model code depends on nothing browser-specific.
 
-All extracted packages use the `@maply/*` name prefix. Import model code as `@maply/model`, storage code as `@maply/storage`, codec code as `@maply/codec`, and editor code as `@maply/editor`.
+All extracted packages use the `@maply/*` name prefix. Import model code as `@maply/model`, storage code as `@maply/storage`, project codec code as `@maply/project-codec`, SVG code as `@maply/svg` or `@maply/svg-codec`, and editor code as `@maply/editor`.
 
 `packages/web` is phase 2. It will eventually become the SvelteKit shell and own routes, layouts, global CSS, shadcn components, static assets, and app wiring. Do not move `src/` there during the `@app` migration.
 
 `packages/editor` owns live editor state and commands. It is the small interface used by the UI for selection, canvas changes, tools, element edits, clipboard, autosave, and project lifecycle.
 
-`packages/model` owns pure editor rules: project and element types, geometry, validation, path operations, element mutation, clamping, resizing, naming, and default project creation.
+`packages/model` owns pure model definitions: Effect schemas, inferred TypeScript types, constants, default project creation, and small pure helpers. Its schemas are the source of truth for model shapes. It should not own decoding workflows for unknown input, project-file compatibility, migrations, persistence recovery, or SVG parsing.
 
 `packages/storage` owns persistence. IndexedDB details stay behind this module's interface.
 
-`packages/codec` owns file formats: `.maply` project files and SVG import/export.
+`packages/project-codec` owns project boundary formats: `.maply` project files, persisted project compatibility, migrations, unknown-input decoding, and tagged parse/import errors. It depends on `@maply/model` schemas instead of redefining model shapes.
+
+`packages/svg` or `packages/svg-codec` owns SVG import/export mapping. Keep it separate from project-file decoding unless shared logic proves the packages should merge.
 
 During the `@app` migration, prefer Effect for workflows, persistence, resource management, typed errors, and testable seams when it materially benefits the Effect ecosystem. Do not wrap trivial pass-throughs or local synchronous state changes in Effect just to make them look Effect-shaped.
 
@@ -40,7 +42,7 @@ Prefer moving before refactoring. Preserve imports through temporary aliases whe
 
 Reject pass-through modules. If a new module only forwards the same parameters to another module, do not add it. Move behavior behind a smaller interface or wait.
 
-Keep effects at the edges. Pure model code must not import Svelte, browser globals, IndexedDB, Effect runtime wiring, routes, or UI components.
+Keep effects at the edges. Pure model code may expose Effect schemas, but it must not import Svelte, browser globals, IndexedDB, Effect runtime wiring, routes, UI components, or boundary decode workflows.
 
 Make dependency direction enforceable. Before relying on package boundaries, add tooling that fails CI for forbidden imports.
 
@@ -50,7 +52,7 @@ Do not leave half-finished migrations untracked. Any chunk that introduces a new
 
 ## Package Shape
 
-Every extracted package should use the `@maply/*` name prefix and expose a small public interface from `src/index.ts`. Callers should import from the package root, such as `@maply/model`, unless a package explicitly documents an additional export path.
+Every extracted package should use the `@maply/*` name prefix and expose a small public interface from `src/index.ts`. Callers should import from the package root, such as `@maply/model`, unless a package explicitly documents an additional export path. `@maply/model` also documents `@maply/model/types` for inferred TypeScript types and `@maply/model/effect` for Effect schemas.
 
 Each package should have a `package.json`, `tsconfig.json`, and `src/index.ts`. The only files allowed directly under a package `src/` root are `index.ts`, `types.ts`, and `effect.ts`. Put all other implementation files in meaningful folders that reflect the package's model. Avoid catch-all folders like `core` unless there is a specific reason. Use `src/internal/*` for private implementation details that callers must not import. Keep public types either in `src/index.ts` or a deliberately exported `src/types.ts` when that makes the interface clearer.
 
@@ -58,10 +60,13 @@ Package manifests should use pnpm catalog references for shared dependencies. Do
 
 Package checks should be runnable through package scripts. Pure TypeScript packages should support `pnpm --filter <package> check`.
 
+Package-specific README files should document exported subpaths and ownership boundaries. Keep root documentation app-level; use `packages/README.md` as the package index.
+
 ## First Chunks
 
 1. Add workspace package globs to `pnpm-workspace.yaml`.
 2. Create `@maply/model` as the first real extraction target.
-3. Copy a cohesive pure slice from `app/` into `@maply/model`, switch `app/` imports to it, then delete the old copied source.
+3. Keep `@maply/model` focused on schemas, inferred types, constants, defaults, and pure helpers.
 4. Keep the `@app` alias working until the single `src/` import-replacement chunk.
-5. Add import-boundary tooling before extracting `storage`, `codec`, or `editor`.
+5. Extract project decoding/import/export into `@maply/project-codec` rather than adding decode workflows to `@maply/model`.
+6. Add import-boundary tooling before extracting `storage`, SVG codec, or `editor`.

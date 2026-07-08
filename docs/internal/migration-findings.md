@@ -19,6 +19,15 @@ Describe the finding in one short paragraph. Include the behavior or module seam
 
 ## Open Findings
 
+### Extract project boundary decoding
+
+Type: decision
+Found in: `packages/model/src/project/schema.ts`, `app/internal/project-file.ts`, `app/internal/svg-import.ts`, `app/internal/svg-export.ts`
+Migration chunk: `@maply/model` schema setup
+Status: planned
+
+`@maply/model` now owns model schemas and inferred types, but decoding unknown input should live in a codec package. Extract project file parsing, persisted compatibility, migrations, and decode helpers into `@maply/project-codec`, using `@maply/model/effect` schemas as the source of truth. Keep SVG import/export in a separate SVG package unless the extraction shows shared codec logic is substantial.
+
 ### Remove import/export panel state
 
 Type: cleanup

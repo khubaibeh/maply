@@ -6,5 +6,7 @@
 - Package `src/` roots may contain only `index.ts`, `types.ts`, and `effect.ts`.
 - Put package implementation under meaningful folders; avoid catch-all folders like `core` unless there is a specific reason.
 - Use explicit package exports; avoid barrels and deep imports unless documented.
+- Keep `@maply/model` pure: schemas, inferred types, constants, defaults, and pure helpers only.
+- Put unknown-input decoding, migrations, project-file compatibility, and SVG parsing in codec packages that depend on `@maply/model`.
 - Use pnpm catalogs for shared dependency versions.
 - Do not edit shadcn-generated files under `src/lib/components/ui/*`.
