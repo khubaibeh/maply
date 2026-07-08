@@ -10,11 +10,18 @@
 	}
 
 	let { element }: Props = $props();
+	const canvas = App.state.canvas;
 
-	function updateNumber(key: string, value: string) {
+	function updateCanvasX(key: "x" | "cx", value: string) {
 		const parsed = App.validate.int(value);
 		if (parsed === null) return;
-		App.actions.project.updateElement(element.id, { [key]: parsed } as Partial<Element>);
+		App.actions.project.updateElement(element.id, { [key]: $canvas.x + parsed } as Partial<Element>);
+	}
+
+	function updateCanvasY(key: "y" | "cy", value: string) {
+		const parsed = App.validate.int(value);
+		if (parsed === null) return;
+		App.actions.project.updateElement(element.id, { [key]: $canvas.y + parsed } as Partial<Element>);
 	}
 
 	function updatePositiveInt(key: string, value: string) {
@@ -67,12 +74,12 @@
 
 	function getTextVisualX() {
 		if (element.type !== "text") return 0;
-		return App.geometry.elementBounds(element).x;
+		return App.geometry.elementBounds(element).x - $canvas.x;
 	}
 
 	function getTextVisualY() {
 		if (element.type !== "text") return 0;
-		return App.geometry.elementBounds(element).y;
+		return App.geometry.elementBounds(element).y - $canvas.y;
 	}
 
 	function updateTextVisualX(value: string) {
@@ -81,7 +88,7 @@
 		if (parsed === null) return;
 		const { left } = App.text.wrappedMetrics(element);
 		App.actions.project.updateElement(element.id, {
-			x: Math.round(parsed + left)
+			x: Math.round($canvas.x + parsed + left)
 		} as Partial<Element>);
 	}
 
@@ -91,7 +98,7 @@
 		if (parsed === null) return;
 		const { ascent } = App.text.wrappedMetrics(element);
 		App.actions.project.updateElement(element.id, {
-			y: Math.round(parsed + ascent)
+			y: Math.round($canvas.y + parsed + ascent)
 		} as Partial<Element>);
 	}
 
@@ -155,8 +162,8 @@
 				id="{element.id}-x"
 				type="number"
 				step={1}
-				value={getTextVisualX()}
-				onchange={(event) => updateTextVisualX((event.target as HTMLInputElement).value)}
+				value={element.x - $canvas.x}
+				onchange={(event) => updateCanvasX("x", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
@@ -166,8 +173,8 @@
 				id="{element.id}-y"
 				type="number"
 				step={1}
-				value={element.y}
-				onchange={(event) => updateNumber("y", (event.target as HTMLInputElement).value)}
+				value={element.y - $canvas.y}
+				onchange={(event) => updateCanvasY("y", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
@@ -210,8 +217,8 @@
 				id="{element.id}-cx"
 				type="number"
 				step={1}
-				value={element.cx}
-				onchange={(event) => updateNumber("cx", (event.target as HTMLInputElement).value)}
+				value={element.cx - $canvas.x}
+				onchange={(event) => updateCanvasX("cx", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
@@ -221,8 +228,8 @@
 				id="{element.id}-cy"
 				type="number"
 				step={1}
-				value={element.cy}
-				onchange={(event) => updateNumber("cy", (event.target as HTMLInputElement).value)}
+				value={element.cy - $canvas.y}
+				onchange={(event) => updateCanvasY("cy", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
@@ -253,8 +260,8 @@
 				id="{element.id}-x"
 				type="number"
 				step={1}
-				value={element.x}
-				onchange={(event) => updateNumber("x", (event.target as HTMLInputElement).value)}
+				value={getTextVisualX()}
+				onchange={(event) => updateTextVisualX((event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
@@ -332,8 +339,8 @@
 				id="{element.id}-x"
 				type="number"
 				step={1}
-				value={element.x}
-				onchange={(event) => updateNumber("x", (event.target as HTMLInputElement).value)}
+				value={element.x - $canvas.x}
+				onchange={(event) => updateCanvasX("x", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
@@ -343,8 +350,8 @@
 				id="{element.id}-y"
 				type="number"
 				step={1}
-				value={element.y}
-				onchange={(event) => updateNumber("y", (event.target as HTMLInputElement).value)}
+				value={element.y - $canvas.y}
+				onchange={(event) => updateCanvasY("y", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
@@ -397,8 +404,8 @@
 				id="{element.id}-x"
 				type="number"
 				step={1}
-				value={element.x}
-				onchange={(event) => updateNumber("x", (event.target as HTMLInputElement).value)}
+				value={element.x - $canvas.x}
+				onchange={(event) => updateCanvasX("x", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>
@@ -408,8 +415,8 @@
 				id="{element.id}-y"
 				type="number"
 				step={1}
-				value={element.y}
-				onchange={(event) => updateNumber("y", (event.target as HTMLInputElement).value)}
+				value={element.y - $canvas.y}
+				onchange={(event) => updateCanvasY("y", (event.target as HTMLInputElement).value)}
 				class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 			/>
 		</div>

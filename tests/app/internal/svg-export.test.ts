@@ -90,7 +90,7 @@ describe("buildSvgExport", () => {
 
 		expect(svg).toContain("@font-face");
 		expect(svg).toContain("maply-recovery");
-		expect(svg).toContain("Maply Export Inter");
+		expect(svg).not.toContain("Maply Export Inter");
 		expect(svg).toContain("<text ");
 	});
 

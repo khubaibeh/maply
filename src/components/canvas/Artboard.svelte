@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { App } from "@app";
 
+	import CanvasResizeHandles from "./CanvasResizeHandles.svelte";
 	import ElementOutline from "./ElementOutline.svelte";
 	import ElementShapes from "./ElementShapes.svelte";
 	import ImageCropOverlay from "./ImageCropOverlay.svelte";
@@ -39,6 +40,8 @@
 	stroke="var(--border)"
 	filter="url(#canvas-shadow)"
 />
+
+<CanvasResizeHandles />
 
 <ElementShapes />
 

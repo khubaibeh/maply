@@ -38,6 +38,7 @@
 		timer: ReturnType<typeof setTimeout>;
 	} | null = null;
 	let openElementContextMenuId: string | null = $state(null);
+	let backgroundContextMenuOpen = $state(false);
 	let autoScrollFrame: number | null = null;
 	let autoScrollVelocity = 0;
 	let suppressNextElementClick = false;
@@ -120,6 +121,16 @@
 
 	function closeElementContextMenu() {
 		openElementContextMenuId = null;
+	}
+
+	function closeBackgroundContextMenu() {
+		backgroundContextMenuOpen = false;
+	}
+
+	function selectAllElements() {
+		App.actions.project.selectAll();
+		closeElementContextMenu();
+		closeBackgroundContextMenu();
 	}
 
 	function getInsertionIndex(clientY: number) {
@@ -378,6 +389,14 @@
 	<ContextMenu.Content class="min-w-40 rounded-xl p-1">
 		<ContextMenu.Item
 			class="rounded-lg px-2.5 py-1.5 text-xs"
+			disabled={$project.elements.length === 0}
+			onclick={selectAllElements}
+		>
+			Select all
+		</ContextMenu.Item>
+		<ContextMenu.Separator />
+		<ContextMenu.Item
+			class="rounded-lg px-2.5 py-1.5 text-xs"
 			onclick={() => {
 				const selected = $project.selectedElementIds.includes(element.id)
 					? $project.elements.filter((entry) => $project.selectedElementIds.includes(entry.id))
@@ -451,21 +470,34 @@
 		<span class="text-sidebar-foreground/80 text-sm font-bold">Elements</span>
 	</div>
 	<hr class="mx-4 opacity-50" />
-	<ScrollArea
-		class="min-h-0 flex-1 [mask-image:linear-gradient(to_bottom,black_calc(100%-2rem),transparent)]"
-		bind:viewportRef={elementScrollViewport}
-	>
-		<div
-			bind:this={elementListRef}
-			class="flex min-h-full flex-col gap-0.5 p-2"
-			onpointerdown={handleElementTreeBackgroundPointerDown}
-			role="presentation"
-		>
-			{#each sidebarElements() as element, sidebarIndex (element.id)}
-				{@render elementRow(element, sidebarIndex)}
-			{:else}
-				<p class="text-muted-foreground px-2 py-1 text-xs">No elements</p>
-			{/each}
-		</div>
-	</ScrollArea>
+	<ContextMenu.Root bind:open={backgroundContextMenuOpen}>
+		<ContextMenu.Trigger class="contents">
+			<ScrollArea
+				class="min-h-0 flex-1 [mask-image:linear-gradient(to_bottom,black_calc(100%-2rem),transparent)]"
+				bind:viewportRef={elementScrollViewport}
+			>
+				<div
+					bind:this={elementListRef}
+					class="flex min-h-full flex-col gap-0.5 p-2"
+					onpointerdown={handleElementTreeBackgroundPointerDown}
+					role="presentation"
+				>
+					{#each sidebarElements() as element, sidebarIndex (element.id)}
+						{@render elementRow(element, sidebarIndex)}
+					{:else}
+						<p class="text-muted-foreground px-2 py-1 text-xs">No elements</p>
+					{/each}
+				</div>
+			</ScrollArea>
+		</ContextMenu.Trigger>
+		<ContextMenu.Content class="min-w-40 rounded-xl p-1">
+			<ContextMenu.Item
+				class="rounded-lg px-2.5 py-1.5 text-xs"
+				disabled={$project.elements.length === 0}
+				onclick={selectAllElements}
+			>
+				Select all
+			</ContextMenu.Item>
+		</ContextMenu.Content>
+	</ContextMenu.Root>
 </div>

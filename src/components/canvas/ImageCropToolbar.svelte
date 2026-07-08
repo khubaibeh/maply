@@ -224,7 +224,7 @@
 
 	.toolbar-button:disabled {
 		opacity: 0.4;
-		cursor: default;
+		cursor: var(--app-cursor-default, default);
 	}
 
 	.toolbar-button:disabled:hover {

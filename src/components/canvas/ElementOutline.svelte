@@ -55,7 +55,7 @@
 		| null
 	>(null);
 
-	const strokeWidth = $derived(canResize ? 2.5 / $canvas.camera.zoom : 0.5);
+	const strokeWidth = $derived(2.5 / $canvas.camera.zoom);
 	const handleStrokeWidth = $derived(2 / $canvas.camera.zoom);
 	const handleSize = $derived(HANDLE_SIZE_SCREEN / $canvas.camera.zoom);
 	const handleOffset = $derived(HANDLE_OFFSET_SCREEN / $canvas.camera.zoom);

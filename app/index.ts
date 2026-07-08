@@ -12,6 +12,7 @@ import {
 } from "./internal/project-bridge";
 import { parseProjectFilePackage, stringifyProjectFilePackage } from "./internal/project-file";
 import { flushProjectSave, queueProjectSave } from "./internal/save";
+import { parseSvgProjectFilePackage } from "./internal/svg-import";
 import { appText } from "./internal/text";
 import { appTheme } from "./internal/theme";
 import { appValidate } from "./internal/validate";
@@ -95,6 +96,12 @@ export const App = {
 
 			stringify(projectFile: ProjectFilePackage) {
 				return stringifyProjectFilePackage(projectFile);
+			}
+		},
+
+		svg: {
+			parse(text: string) {
+				return parseSvgProjectFilePackage(text);
 			}
 		}
 	}

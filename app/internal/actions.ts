@@ -24,6 +24,10 @@ export const appActions = {
 			appProjectState.selectElement(id, options);
 		},
 
+		selectAll() {
+			appProjectState.selectAll();
+		},
+
 		setHoveredElement(id: string | null) {
 			appProjectState.setHoveredElement(id);
 		},
@@ -108,6 +112,10 @@ export const appActions = {
 	canvas: {
 		setSize(width: number, height: number) {
 			appCanvasState.setSize(width, height);
+		},
+
+		setFrame(x: number, y: number, width: number, height: number) {
+			appCanvasState.setFrame(x, y, width, height);
 		},
 
 		setColor(color: string) {
