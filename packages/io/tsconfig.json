@@ -1,0 +1,15 @@
+{
+	"compilerOptions": {
+		"allowArbitraryExtensions": true,
+		"esModuleInterop": true,
+		"forceConsistentCasingInFileNames": true,
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"noEmit": true,
+		"skipLibCheck": true,
+		"strict": true,
+		"target": "ES2022",
+		"verbatimModuleSyntax": true
+	},
+	"include": ["src/**/*.ts", "tests/**/*.ts"]
+}

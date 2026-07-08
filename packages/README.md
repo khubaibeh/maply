@@ -5,3 +5,4 @@ Maply `@app` code will be extracted here first into named `@maply/*` packages. T
 ## Packages
 
 - [`@maply/model`](./model): pure project model schemas, inferred types, defaults, and small helpers.
+- [`@maply/io`](./io): project file IO and, later, other external format conversions.

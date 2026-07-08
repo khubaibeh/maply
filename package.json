@@ -12,11 +12,13 @@
 		"check:deps": "depcruise --validate .dependency-cruiser.cjs app packages",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"test": "vitest run tests/",
+		"test:io": "pnpm --filter @maply/io test",
 		"test:model": "pnpm --filter @maply/model test",
 		"lint": "eslint --ignore-pattern \"src/lib/components/ui/**\" --fix .",
 		"fmt": "oxfmt && prettier --log-level warn --write ."
 	},
 	"dependencies": {
+		"@maply/io": "workspace:*",
 		"effect": "catalog:"
 	},
 	"devDependencies": {

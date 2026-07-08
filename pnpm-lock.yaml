@@ -125,6 +125,9 @@ importers:
 
   .:
     dependencies:
+      '@maply/io':
+        specifier: workspace:*
+        version: link:packages/io
       effect:
         specifier: 'catalog:'
         version: 4.0.0-beta.90
@@ -237,6 +240,22 @@ importers:
       vite:
         specifier: 'catalog:'
         version: 8.1.0(@types/node@24.13.2)(jiti@2.7.0)(yaml@2.9.0)
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.9(@types/node@24.13.2)(vite@8.1.0(@types/node@24.13.2)(jiti@2.7.0)(yaml@2.9.0))
+
+  packages/io:
+    dependencies:
+      '@maply/model':
+        specifier: workspace:*
+        version: link:../model
+      effect:
+        specifier: 'catalog:'
+        version: 4.0.0-beta.90
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
       vitest:
         specifier: 'catalog:'
         version: 4.1.9(@types/node@24.13.2)(vite@8.1.0(@types/node@24.13.2)(jiti@2.7.0)(yaml@2.9.0))
