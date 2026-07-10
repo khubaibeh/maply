@@ -67,20 +67,27 @@ function validateAssetRefs(
 	);
 }
 
-// Every project-file boundary normalizes legacy-tolerant model values, then decodes again so callers only receive schema-valid payloads.
+/**
+ * Normalizes legacy-tolerant model values, then decodes the result again before returning it.
+ * This keeps compatibility repairs at the file boundary while callers receive schema-valid data.
+ */
 export function normalizePackage(
 	operation: ProjectFileOperation,
 	project: Project,
 	imageAssets: readonly StoredImageAsset[]
 ): Effect.Effect<ProjectFilePackage, ProjectFileSchemaError | ProjectFileAssetReferenceError> {
 	return Effect.gen(function* () {
+		// Normalize project-specific derived fields before validating its current schema.
 		const normalizedProject = yield* decodeProject(normalizeProject(project)).pipe(
 			Effect.mapError(schemaError(operation, "project"))
 		);
+
+		// Decode each asset independently to report the failing section precisely.
 		const normalizedAssets = yield* Effect.forEach(imageAssets, (asset) =>
 			decodeImageAsset(asset).pipe(Effect.mapError(schemaError(operation, "asset")))
 		);
 
+		// References are valid only after both the project and assets have been normalized.
 		yield* validateAssetRefs(operation, normalizedProject, normalizedAssets);
 
 		return {

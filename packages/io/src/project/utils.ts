@@ -1,7 +1,7 @@
 import { createDefaultProject } from "@maply/model";
 import type { Element, Project, StoredImageAsset } from "@maply/model/types";
 
-const TEXT_LINE_HEIGHT_RATIO = 1.2;
+import { TEXT_CHARACTER_WIDTH_RATIO, TEXT_LINE_HEIGHT_RATIO } from "../common";
 
 export type AssetReferenceIssue =
 	| {
@@ -15,14 +15,17 @@ export type AssetReferenceIssue =
 	  };
 
 function estimateSingleLineTextWidth(text: string, fontSize: number) {
-	return Math.max(1, text.length * fontSize * 0.6);
+	return Math.max(1, text.length * fontSize * TEXT_CHARACTER_WIDTH_RATIO);
 }
 
 function estimateTextBoxHeight(fontSize: number, text: string) {
 	return Math.max(1, Math.ceil(text.split("\n").length * fontSize * TEXT_LINE_HEIGHT_RATIO));
 }
 
-// Project files preserve older export quirks; normalize only derived fields before schema decoding returns trusted data.
+/**
+ * Repairs derived fields that older project files may have omitted or serialized inconsistently.
+ * Schema decoding follows this function, so it deliberately preserves authoritative user data.
+ */
 export function normalizeElement(element: Element): Element {
 	if (element.type === "path") {
 		const closed = /\s*[Zz]\s*$/.test(element.d);
@@ -54,7 +57,7 @@ export function normalizeElement(element: Element): Element {
 	return element;
 }
 
-// Merge through current defaults so older project payloads pick up fields added after they were exported.
+/** Merges current defaults so older project payloads gain fields added after export. */
 export function normalizeProject(project: Project): Project {
 	return {
 		...createDefaultProject(project.id),

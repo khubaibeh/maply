@@ -19,15 +19,6 @@ Describe the finding in one short paragraph. Include the behavior or module seam
 
 ## Open Findings
 
-### Extract project boundary decoding
-
-Type: decision
-Found in: `packages/model/src/project/schema.ts`, `app/internal/project-file.ts`, `app/internal/svg-import.ts`, `app/internal/svg-export.ts`
-Migration chunk: `@maply/model` schema setup
-Status: planned
-
-`@maply/model` now owns model schemas and inferred types, but decoding unknown input should live in a codec package. Extract project file parsing, persisted compatibility, migrations, and decode helpers into `@maply/project-codec`, using `@maply/model/effect` schemas as the source of truth. Keep SVG import/export in a separate SVG package unless the extraction shows shared codec logic is substantial.
-
 ### Remove import/export panel state
 
 Type: cleanup
@@ -39,4 +30,11 @@ Status: open
 
 ## Done Findings
 
-No findings completed yet.
+### Extract external format boundaries
+
+Type: decision
+Found in: `packages/io/src/project`, `packages/io/src/svg`, `app/internal/project-file.ts`, `app/internal/svg-import.ts`, `app/internal/svg-export.ts`
+Migration chunk: `@maply/io` external format extraction
+Status: done
+
+`@maply/io` now owns `.maply` project-file decoding and serialization plus SVG recovery/Synoptic conversion, using `@maply/model/effect` schemas as the source of truth. The active package boundary is `@maply/io`, not separate project or SVG codec packages. Legacy `app/internal/*` implementations remain until the dedicated consumer migration chunk. The package is verified through type checks and SVG/project IO tests.

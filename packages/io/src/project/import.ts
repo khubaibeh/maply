@@ -1,19 +1,20 @@
 import { Effect } from "effect";
 
-import { decodeProjectFilePackage, normalizePackage, schemaError, type ProjectFilePackage } from "./common";
-import { PROJECT_FILE_FORMAT, PROJECT_FILE_VERSION } from "./common";
+import { isRecord } from "../common";
+import {
+	decodeProjectFilePackage,
+	normalizePackage,
+	PROJECT_FILE_FORMAT,
+	PROJECT_FILE_VERSION,
+	schemaError,
+	type ProjectFilePackage
+} from "./common";
 import {
 	ProjectFileAssetReferenceError,
 	ProjectFileJsonError,
 	ProjectFileSchemaError,
 	UnsupportedProjectFileError
 } from "./errors";
-
-type UnknownRecord = Record<string, unknown>;
-
-function isRecord(value: unknown): value is UnknownRecord {
-	return typeof value === "object" && value !== null && !Array.isArray(value);
-}
 
 function checkSupport(parsed: unknown): Effect.Effect<void, UnsupportedProjectFileError | ProjectFileSchemaError> {
 	if (!isRecord(parsed)) {
@@ -61,6 +62,7 @@ export function parse(
 	ProjectFileJsonError | UnsupportedProjectFileError | ProjectFileSchemaError | ProjectFileAssetReferenceError
 > {
 	return Effect.gen(function* () {
+		// Decode JSON before inspecting format/version so malformed input gets a distinct error.
 		const parsed = yield* Effect.try({
 			try: () => JSON.parse(text) as unknown,
 			catch: (error) =>
@@ -73,6 +75,7 @@ export function parse(
 
 		yield* checkSupport(parsed);
 
+		// Schema decoding establishes the package shape before legacy normalization runs.
 		const projectFile = yield* decodeProjectFilePackage(parsed).pipe(
 			Effect.mapError(schemaError("parse", "package"))
 		);
@@ -89,6 +92,7 @@ export function assign(
 	return Effect.gen(function* () {
 		const normalized = yield* normalizePackage("import", projectFile.project, projectFile.imageAssets);
 
+		// Rebinding requires normalization again because every asset must match the active project id.
 		return yield* normalizePackage(
 			"import",
 			{ ...normalized.project, id: projectId },

@@ -12,9 +12,9 @@ Use pnpm catalogs for shared dependency versions across packages. New package ma
 
 ## Target Shape
 
-The intended dependency flow is one-way: `web` depends on editor-facing modules, editor-facing modules depend on model/storage/codec modules, codec modules depend on model definitions, and pure model code depends on nothing browser-specific.
+The intended dependency flow is one-way: `web` depends on editor-facing modules, editor-facing modules depend on model/storage/IO modules, IO modules depend on model definitions, and pure model code depends on nothing browser-specific.
 
-All extracted packages use the `@maply/*` name prefix. Import model code as `@maply/model`, storage code as `@maply/storage`, project codec code as `@maply/project-codec`, SVG code as `@maply/svg` or `@maply/svg-codec`, and editor code as `@maply/editor`.
+All extracted packages use the `@maply/*` name prefix. Import model code as `@maply/model`, external format boundaries as `@maply/io`, storage code as `@maply/storage`, and editor code as `@maply/editor`.
 
 `packages/web` is phase 2. It will eventually become the SvelteKit shell and own routes, layouts, global CSS, shadcn components, static assets, and app wiring. Do not move `src/` there during the `@app` migration.
 
@@ -24,9 +24,9 @@ All extracted packages use the `@maply/*` name prefix. Import model code as `@ma
 
 `packages/storage` owns persistence. IndexedDB details stay behind this module's interface.
 
-`packages/project-codec` owns project boundary formats: `.maply` project files, persisted project compatibility, migrations, unknown-input decoding, and tagged parse/import errors. It depends on `@maply/model` schemas instead of redefining model shapes.
+`packages/io` owns external-format boundaries. It currently owns `.maply` project files and SVG import/export, including unknown-input decoding, project-file compatibility normalization, tagged errors, and recovery metadata. It depends on `@maply/model` schemas instead of redefining model shapes.
 
-`packages/svg` or `packages/svg-codec` owns SVG import/export mapping. Keep it separate from project-file decoding unless shared logic proves the packages should merge.
+Keep project-file and SVG implementations in their own `@maply/io` feature folders. Share only format-neutral primitives such as record guards and typography ratios.
 
 During the `@app` migration, prefer Effect for workflows, persistence, resource management, typed errors, and testable seams when it materially benefits the Effect ecosystem. Do not wrap trivial pass-throughs or local synchronous state changes in Effect just to make them look Effect-shaped.
 
@@ -52,7 +52,7 @@ Do not leave half-finished migrations untracked. Any chunk that introduces a new
 
 ## Package Shape
 
-Every extracted package should use the `@maply/*` name prefix and expose a small public interface from `src/index.ts`. Callers should import from the package root, such as `@maply/model`, unless a package explicitly documents an additional export path. `@maply/model` also documents `@maply/model/types` for inferred TypeScript types and `@maply/model/effect` for Effect schemas.
+Every extracted package should use the `@maply/*` name prefix and expose a small public interface from `src/index.ts`. Callers should import from the package root, such as `@maply/model`, unless a package explicitly documents an additional export path. `@maply/model` also documents `@maply/model/types` for inferred TypeScript types and `@maply/model/effect` for Effect schemas. `@maply/io` documents `@maply/io/effect` for raw Effect workflows and tagged IO errors.
 
 Each package should have a `package.json`, `tsconfig.json`, and `src/index.ts`. The only files allowed directly under a package `src/` root are `index.ts`, `types.ts`, and `effect.ts`. Put all other implementation files in meaningful folders that reflect the package's model. Avoid catch-all folders like `core` unless there is a specific reason. Use `src/internal/*` for private implementation details that callers must not import. Keep public types either in `src/index.ts` or a deliberately exported `src/types.ts` when that makes the interface clearer.
 
@@ -68,5 +68,16 @@ Package-specific README files should document exported subpaths and ownership bo
 2. Create `@maply/model` as the first real extraction target.
 3. Keep `@maply/model` focused on schemas, inferred types, constants, defaults, and pure helpers.
 4. Keep the `@app` alias working until the single `src/` import-replacement chunk.
-5. Extract project decoding/import/export into `@maply/project-codec` rather than adding decode workflows to `@maply/model`.
-6. Add import-boundary tooling before extracting `storage`, SVG codec, or `editor`.
+5. Extract project decoding/import/export and SVG conversion into `@maply/io` rather than adding boundary workflows to `@maply/model`. Completed: `@maply/io` exposes handled root APIs and raw `@maply/io/effect` workflows.
+6. Add import-boundary tooling before extracting `storage` or `editor`. Completed: dependency-cruiser validates package dependency direction.
+
+## Current State
+
+`@maply/model` owns schemas, inferred types, defaults, constants, and pure model helpers. `@maply/io` owns the current external boundaries:
+
+- `.maply` create, serialize, parse, and assign workflows under `project.file`.
+- SVG recovery export/import and Synoptic SVG import under `svg`.
+- Root `@maply/io` exposes handled Promise-based operations.
+- `@maply/io/effect` exposes raw Effect workflows, tagged errors, and runtime wiring.
+
+The legacy equivalents remain in `app/internal/project-file.ts`, `app/internal/svg-import.ts`, and `app/internal/svg-export.ts`. Do not migrate `app/` or `src/` consumers until the dedicated import-replacement chunk.
