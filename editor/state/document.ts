@@ -1,3 +1,4 @@
+import type { Element } from "@maply/model/types";
 import { writable } from "svelte/store";
 
 import type { ProjectState } from "../types";
@@ -18,3 +19,6 @@ export const projectState = writable<ProjectState>(initialProjectState);
 
 /** The default fill used by newly created fillable elements. */
 export const fillState = writable("#e5e5e5");
+
+/** The in-memory editor clipboard. Its contents are never persisted. */
+export const clipboardState = writable<Element[]>([]);

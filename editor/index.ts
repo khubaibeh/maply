@@ -11,7 +11,9 @@ import {
 	translateElement,
 	updateElement
 } from "./elements/mutate";
+import { copy, getClipboard, paste } from "./selection/clipboard";
 import { select, selectAll, setHover, toggleCrop } from "./selection/commands";
+import { deleteElements } from "./selection/delete";
 import { loadEditorSession } from "./session/load";
 import { flushEditorSave, queueEditorSave } from "./session/save";
 import { imageAssetState } from "./state/assets";
@@ -55,6 +57,7 @@ export const Editor = {
 
 	element: {
 		add: addElement,
+		delete: deleteElements,
 		translate: translateElement,
 		setPosition: setElementPosition,
 		update: updateElement,
@@ -62,6 +65,8 @@ export const Editor = {
 	},
 
 	selection: { select, selectAll, setHover, toggleCrop },
+
+	clipboard: { copy, get: getClipboard, paste },
 
 	create: { rectFromDrag, circleFromDrag, textFromDrag, imageFromDrag, pathFromPoints },
 
