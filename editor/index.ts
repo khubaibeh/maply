@@ -1,20 +1,22 @@
-import { centerCamera, pan, resetCamera, resetZoom, setCamera, zoomIn, zoomOut } from "editor/canvas/camera";
-import { setColor, setFrame, setPosition, setSize } from "editor/canvas/commands";
-import { setSpacePressed, setTool } from "editor/canvas/tool";
-import { circleFromDrag, imageFromDrag, pathFromPoints, rectFromDrag, textFromDrag } from "editor/elements/create";
+import { readonly } from "svelte/store";
+
+import { centerCamera, pan, resetCamera, resetZoom, setCamera, zoomIn, zoomOut } from "./canvas/camera";
+import { setColor, setFrame, setPosition, setSize } from "./canvas/commands";
+import { setSpacePressed, setTool } from "./canvas/tool";
+import { circleFromDrag, imageFromDrag, pathFromPoints, rectFromDrag, textFromDrag } from "./elements/create";
 import {
 	addElement,
 	clampElementsToCanvas,
 	setElementPosition,
 	translateElement,
 	updateElement
-} from "editor/elements/mutate";
-import { loadEditorSession } from "editor/session/load";
-import { flushEditorSave, queueEditorSave } from "editor/session/save";
-import { imageAssetState } from "editor/state/assets";
-import { fillState, projectState } from "editor/state/document";
-import { toolState, canvasState } from "editor/state/workspace";
-import { readonly } from "svelte/store";
+} from "./elements/mutate";
+import { select, selectAll, setHover, toggleCrop } from "./selection/commands";
+import { loadEditorSession } from "./session/load";
+import { flushEditorSave, queueEditorSave } from "./session/save";
+import { imageAssetState } from "./state/assets";
+import { fillState, projectState } from "./state/document";
+import { toolState, canvasState } from "./state/workspace";
 
 /** Maply's application-specific editing composition boundary. */
 export const Editor = {
@@ -58,6 +60,8 @@ export const Editor = {
 		update: updateElement,
 		clampAll: clampElementsToCanvas
 	},
+
+	selection: { select, selectAll, setHover, toggleCrop },
 
 	create: { rectFromDrag, circleFromDrag, textFromDrag, imageFromDrag, pathFromPoints },
 
