@@ -20,6 +20,7 @@
 	},
 	"dependencies": {
 		"@maply/io": "workspace:*",
+		"@maply/model": "workspace:*",
 		"effect": "catalog:"
 	},
 	"devDependencies": {
