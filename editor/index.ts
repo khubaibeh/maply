@@ -14,6 +14,7 @@ import {
 import { copy, getClipboard, paste } from "./selection/clipboard";
 import { select, selectAll, setHover, toggleCrop } from "./selection/commands";
 import { deleteElements } from "./selection/delete";
+import { moveBackward, moveForward, moveToBack, moveToFront, reorder } from "./selection/ordering";
 import { loadEditorSession } from "./session/load";
 import { flushEditorSave, queueEditorSave } from "./session/save";
 import { imageAssetState } from "./state/assets";
@@ -58,6 +59,11 @@ export const Editor = {
 	element: {
 		add: addElement,
 		delete: deleteElements,
+		reorder,
+		moveToFront,
+		moveForward,
+		moveBackward,
+		moveToBack,
 		translate: translateElement,
 		setPosition: setElementPosition,
 		update: updateElement,
