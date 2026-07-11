@@ -80,4 +80,11 @@ Package-specific README files should document exported subpaths and ownership bo
 - Root `@maply/io` exposes handled Promise-based operations.
 - `@maply/io/effect` exposes raw Effect workflows, tagged errors, and runtime wiring.
 
-The legacy equivalents remain in `app/internal/project-file.ts`, `app/internal/svg-import.ts`, and `app/internal/svg-export.ts`. Do not migrate `app/` or `src/` consumers until the dedicated import-replacement chunk.
+`@maply/storage` owns browser-only IndexedDB persistence for projects and image assets:
+
+- Root `@maply/storage` exposes handled Promise-based project and image-asset operations.
+- `@maply/storage/effect` exposes raw Effect workflows, tagged errors, services, layers, and runtime wiring.
+- `@maply/storage/types` exposes its public TypeScript types.
+- Project and image-asset replacement is atomic across both IndexedDB stores.
+
+The legacy IO equivalents remain in `app/internal/project-file.ts`, `app/internal/svg-import.ts`, and `app/internal/svg-export.ts`. The legacy storage equivalents remain in `app/services/indexed-db.ts`, `app/services/project-repo.ts`, `app/runtime/browser-runtime.ts`, and `app/internal/db.ts`. Do not migrate `app/` or `src/` consumers until the dedicated import-replacement chunk.

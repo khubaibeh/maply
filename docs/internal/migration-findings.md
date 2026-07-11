@@ -19,6 +19,33 @@ Describe the finding in one short paragraph. Include the behavior or module seam
 
 ## Open Findings
 
+### Test IndexedDB version-3 upgrades
+
+Type: missing-test
+Found in: `packages/storage/src/indexed-db/service.ts`
+Migration chunk: `@maply/storage` extraction
+Status: planned
+
+The storage test suite covers fresh database creation and project/image-asset replacement, but not upgrading an existing version-3 `maply` database. Add a fixture database at version 3 without the `image-assets.projectId` index, open it through storage, and verify that version 4 preserves records while creating the index.
+
+### Replace legacy package consumers
+
+Type: cleanup
+Found in: `app/services/indexed-db.ts`, `app/services/project-repo.ts`, `app/runtime/browser-runtime.ts`, `app/internal/db.ts`, `app/internal/project-file.ts`, `app/internal/svg-import.ts`, `app/internal/svg-export.ts`
+Migration chunk: package consumer replacement
+Status: planned
+
+`@maply/io` and `@maply/storage` have complete public seams, but `app/` still uses their legacy implementations. In one dedicated compatibility chunk, switch the app-facing workflows and runtime wiring to package imports, preserve current client-only behavior, and delete the duplicated legacy modules only after all callers are moved.
+
+### Complete generic SVG import diagnostics
+
+Type: behavior-risk
+Found in: `packages/io/src/svg/import/parser-generic.ts`, `packages/io/src/svg/import/parser-synoptic.ts`, `packages/io/src/svg/types.ts`
+Migration chunk: `@maply/io` SVG import fallback
+Status: planned
+
+Recovery SVG import is lossless and Synoptic/generic SVG import covers the currently supported primitives, but generic fidelity work remains. Emit the defined warning types with structured `source` data for incomplete and unsupported elements, transforms, groups, path commands, styles, viewBoxes, and positioned text; validate image data URL MIME/base64 payloads; and add focused coverage. The generic parser also needs independent ownership if its behavior diverges from Synoptic extraction. Keep this as a follow-up unless a caller requires one of these unsupported SVG features.
+
 ### Remove import/export panel state
 
 Type: cleanup
@@ -29,6 +56,15 @@ Status: open
 `importExportState` is still part of the project model and app store, but it is not used by the UI anymore. Remove it from `app`, `src`, and the migrated model after package extraction is stable, including project defaults, project-file parsing, persistence merge logic, and any compatibility handling needed for persisted projects.
 
 ## Done Findings
+
+### Extract browser persistence
+
+Type: decision
+Found in: `packages/storage/src/indexed-db`, `packages/storage/src/project`, `app/services/indexed-db.ts`, `app/services/project-repo.ts`
+Migration chunk: `@maply/storage` extraction
+Status: done
+
+`@maply/storage` now owns client-side IndexedDB persistence for projects and image assets. Its only public subpaths are `@maply/storage`, `@maply/storage/effect`, and `@maply/storage/types`; the root API handles tagged failures as values, while the Effect subpath exposes raw workflows and runtime wiring. The package preserves IndexedDB schema version 4, retries failed opens, and atomically replaces a project's asset set. Legacy app modules remain until the dedicated consumer-replacement chunk.
 
 ### Extract external format boundaries
 
