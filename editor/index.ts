@@ -11,6 +11,8 @@ import {
 	translateElement,
 	updateElement
 } from "./elements/mutate";
+import { resetImageCrop, setImageCropScale, translateImageCrop } from "./image/commands";
+import { replaceImageAsset } from "./image/upload";
 import { copy, getClipboard, paste } from "./selection/clipboard";
 import { select, selectAll, setHover, toggleCrop } from "./selection/commands";
 import { deleteElements } from "./selection/delete";
@@ -73,6 +75,13 @@ export const Editor = {
 	selection: { select, selectAll, setHover, toggleCrop },
 
 	clipboard: { copy, get: getClipboard, paste },
+
+	image: {
+		translateCrop: translateImageCrop,
+		setCropScale: setImageCropScale,
+		resetCrop: resetImageCrop,
+		replace: replaceImageAsset
+	},
 
 	create: { rectFromDrag, circleFromDrag, textFromDrag, imageFromDrag, pathFromPoints },
 

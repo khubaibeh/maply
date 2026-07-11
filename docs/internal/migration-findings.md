@@ -64,6 +64,15 @@ Status: open
 
 `importExportState` is still part of the project model and app store, but it is not used by the UI anymore. Remove it from `app`, `src`, and the migrated model after package extraction is stable, including project defaults, project-file parsing, persistence merge logic, and any compatibility handling needed for persisted projects.
 
+### Make image replacement crash-atomic
+
+Type: behavior-risk
+Found in: `editor/image/upload.ts`
+Migration chunk: editor image workflows
+Status: open
+
+`replaceImageAsset` persists the new asset, mutates in-memory state, then independently deletes the old asset as three separate operations. A crash or tab close after old-asset deletion but before the separately queued project save leaves persisted project data referencing a deleted asset. Use `storage.project.replace` (or an equivalent transactional boundary) to commit the changed project record and its complete asset set atomically. The concurrent-replacement race (two rapid replacements applying out of order) should be addressed in the same pass.
+
 ## Done Findings
 
 ### Extract browser persistence
