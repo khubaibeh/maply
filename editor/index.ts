@@ -1,6 +1,14 @@
 import { centerCamera, pan, resetCamera, resetZoom, setCamera, zoomIn, zoomOut } from "editor/canvas/camera";
 import { setColor, setFrame, setPosition, setSize } from "editor/canvas/commands";
 import { setSpacePressed, setTool } from "editor/canvas/tool";
+import { circleFromDrag, imageFromDrag, pathFromPoints, rectFromDrag, textFromDrag } from "editor/elements/create";
+import {
+	addElement,
+	clampElementsToCanvas,
+	setElementPosition,
+	translateElement,
+	updateElement
+} from "editor/elements/mutate";
 import { loadEditorSession } from "editor/session/load";
 import { flushEditorSave, queueEditorSave } from "editor/session/save";
 import { imageAssetState } from "editor/state/assets";
@@ -43,14 +51,19 @@ export const Editor = {
 		}
 	},
 
-	save: {
-		queue() {
-			queueEditorSave();
-		},
+	element: {
+		add: addElement,
+		translate: translateElement,
+		setPosition: setElementPosition,
+		update: updateElement,
+		clampAll: clampElementsToCanvas
+	},
 
-		flush() {
-			return flushEditorSave();
-		}
+	create: { rectFromDrag, circleFromDrag, textFromDrag, imageFromDrag, pathFromPoints },
+
+	save: {
+		queue: queueEditorSave,
+		flush: flushEditorSave
 	}
 } as const;
 
