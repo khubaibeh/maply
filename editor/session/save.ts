@@ -1,8 +1,9 @@
 import type { Project } from "@maply/model/types";
 import { storage } from "@maply/storage";
-import { projectState } from "editor/state/document";
-import { canvasState } from "editor/state/workspace";
 import { get } from "svelte/store";
+
+import { projectState } from "../state/document";
+import { canvasState } from "../state/workspace";
 
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 

@@ -1,5 +1,6 @@
 import type { Tool } from "@maply/model/types";
-import { toolState } from "editor/state/workspace";
+
+import { toolState } from "../state/workspace";
 
 /** Selects the active editor tool. */
 export function setTool(tool: Tool): void {

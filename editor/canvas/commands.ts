@@ -1,4 +1,4 @@
-import { canvasState } from "editor/state/workspace";
+import { canvasState } from "../state/workspace";
 
 function sanitizeSize(value: number) {
 	return Math.max(1, Math.round(value));

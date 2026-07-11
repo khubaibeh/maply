@@ -1,5 +1,6 @@
-import type { ProjectState } from "editor/types";
 import { writable } from "svelte/store";
+
+import type { ProjectState } from "../types";
 
 const initialProjectState: ProjectState = {
 	id: "prod",

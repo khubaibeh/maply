@@ -1,5 +1,6 @@
-import type { CanvasState, ToolState } from "editor/types";
 import { writable } from "svelte/store";
+
+import type { CanvasState, ToolState } from "../types";
 
 /** The fixed camera scale range: 0.1 is 10% and 5 is 500% of canvas pixels. */
 export const zoomLimits = { min: 0.1, max: 5 } as const;
