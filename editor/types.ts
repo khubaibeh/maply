@@ -20,8 +20,6 @@ export type CanvasState = {
 	x: number;
 	y: number;
 	camera: Camera;
-	minZoom: number;
-	maxZoom: number;
 };
 
 /** The active drawing tool and temporary Space-to-hand state. */

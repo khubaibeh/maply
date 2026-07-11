@@ -1,24 +1,19 @@
 import type { Element, Project } from "@maply/model/types";
 import { storage } from "@maply/storage";
-import { imageAssetState } from "editor/state/assets";
-import { projectState } from "editor/state/document";
-import { canvasState } from "editor/state/workspace";
-import { get } from "svelte/store";
+
+import { clampZoom } from "../canvas/camera";
+import { imageAssetState } from "../state/assets";
+import { projectState } from "../state/document";
+import { canvasState, createInitialCanvasState } from "../state/workspace";
 
 const defaultProjectId = "prod";
-const minZoom = 0.1;
-const maxZoom = 5;
-
-function clampZoom(zoom: number) {
-	return Math.min(maxZoom, Math.max(minZoom, zoom));
-}
 
 function imageAssetIds(elements: readonly Element[]) {
 	return elements.flatMap((element) => (element.type === "image" && element.assetId ? [element.assetId] : []));
 }
 
 function applyProject(project: Project) {
-	const canvas = get(canvasState);
+	const canvas = createInitialCanvasState();
 
 	canvasState.set({
 		...canvas,

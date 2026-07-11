@@ -1,3 +1,6 @@
+import { centerCamera, pan, resetCamera, resetZoom, setCamera, zoomIn, zoomOut } from "editor/canvas/camera";
+import { setColor, setFrame, setPosition, setSize } from "editor/canvas/commands";
+import { setSpacePressed, setTool } from "editor/canvas/tool";
 import { loadEditorSession } from "editor/session/load";
 import { flushEditorSave, queueEditorSave } from "editor/session/save";
 import { imageAssetState } from "editor/state/assets";
@@ -17,6 +20,27 @@ export const Editor = {
 		fill: readonly(fillState),
 		tool: readonly(toolState),
 		imageAssets: readonly(imageAssetState)
+	},
+
+	actions: {
+		canvas: {
+			setSize,
+			setFrame,
+			setColor,
+			setPosition,
+			setCamera,
+			pan,
+			zoomIn,
+			zoomOut,
+			resetZoom,
+			resetCamera,
+			centerCamera
+		},
+
+		tool: {
+			set: setTool,
+			setSpacePressed
+		}
 	},
 
 	save: {
