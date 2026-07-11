@@ -17,7 +17,7 @@ module.exports = {
 			severity: "error",
 			from: { path: "^packages/model/" },
 			to: {
-				path: "^(src/|packages/(web|editor|storage|codec)/)",
+				path: "^(src/|editor/|packages/(web|storage|codec)/)",
 				pathNot: "^packages/model/"
 			}
 		},
@@ -34,19 +34,25 @@ module.exports = {
 			name: "storage-no-ui-imports",
 			severity: "error",
 			from: { path: "^packages/storage/" },
-			to: { path: "^(src/|packages/(web|editor)/)" }
+			to: { path: "^(src/|editor/|packages/web/)" }
 		},
 		{
-			name: "codec-no-ui-or-editor-imports",
+			name: "io-no-ui-or-editor-imports",
 			severity: "error",
-			from: { path: "^packages/codec/" },
-			to: { path: "^(src/|packages/(web|editor|storage)/)" }
+			from: { path: "^packages/io/" },
+			to: { path: "^(src/|editor/|packages/(web|storage)/)" }
 		},
 		{
 			name: "editor-no-web-imports",
 			severity: "error",
-			from: { path: "^packages/editor/" },
+			from: { path: "^editor/" },
 			to: { path: "^(src/|packages/web/)" }
+		},
+		{
+			name: "editor-no-legacy-app-imports",
+			severity: "error",
+			from: { path: "^editor/" },
+			to: { path: "^app/" }
 		}
 	],
 	options: {

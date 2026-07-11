@@ -7,3 +7,7 @@ Maply `@app` code will be extracted here first into named `@maply/*` packages. T
 - [`@maply/model`](./model): pure project model schemas, inferred types, defaults, and small helpers.
 - [`@maply/io`](./io): project file IO and, later, other external format conversions.
 - [`@maply/storage`](./storage): browser persistence for projects and image assets.
+
+## Application Modules
+
+- [`editor/`](../editor): Maply-specific editor state, commands, lifecycle, and autosave. It composes the reusable packages for this application and is not a workspace package.

@@ -30,6 +30,7 @@
 		"src/**/*.svelte",
 		"app/**/*.js",
 		"app/**/*.ts",
+		"editor/**/*.ts",
 		"test/**/*.js",
 		"test/**/*.ts",
 		"tests/**/*.js",
