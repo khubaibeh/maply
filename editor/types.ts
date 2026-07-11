@@ -1,11 +1,10 @@
-import type { Camera, Element, ImportExportState, StoredImageAsset, Tool } from "@maply/model/types";
+import type { Camera, Element, StoredImageAsset, Tool } from "@maply/model/types";
 
 /** The live project data and editor-only selection state. */
 export type ProjectState = {
 	id: string;
 	name: string;
 	elements: Element[];
-	importExportState: ImportExportState;
 	initialized: boolean;
 	selectedElementId: string | null;
 	selectedElementIds: string[];

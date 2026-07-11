@@ -19,6 +19,15 @@ Describe the finding in one short paragraph. Include the behavior or module seam
 
 ## Open Findings
 
+### Normalize and clamp hydrated editor elements
+
+Type: behavior-risk
+Found in: `editor/session/load.ts`
+Migration chunk: editor session lifecycle
+Status: planned
+
+`loadEditorSession` currently applies persisted elements without the legacy normalization and canvas clamping performed by `app/store/project.ts`. Before `src` switches to `Editor`, add editor-owned pure normalization and bounds helpers, then apply them during hydration. The legacy text bounds helper uses browser canvas measurement, so decide whether `src` provides that measurement or the editor adopts a documented pure fallback; `editor/` must not import `app/` or browser DOM APIs.
+
 ### Test IndexedDB version-3 upgrades
 
 Type: missing-test

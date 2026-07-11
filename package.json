@@ -21,6 +21,7 @@
 	"dependencies": {
 		"@maply/io": "workspace:*",
 		"@maply/model": "workspace:*",
+		"@maply/storage": "workspace:*",
 		"effect": "catalog:"
 	},
 	"devDependencies": {
