@@ -13,6 +13,10 @@ import {
 } from "./elements/mutate";
 import { resetImageCrop, setImageCropScale, translateImageCrop } from "./image/commands";
 import { replaceImageAsset } from "./image/upload";
+import { create, rename } from "./project/commands";
+import { exportProject } from "./project/export";
+import { importProject } from "./project/import";
+import { exportSvg, importSvg } from "./project/svg";
 import { copy, getClipboard, paste } from "./selection/clipboard";
 import { select, selectAll, setHover, toggleCrop } from "./selection/commands";
 import { deleteElements } from "./selection/delete";
@@ -82,6 +86,8 @@ export const Editor = {
 		resetCrop: resetImageCrop,
 		replace: replaceImageAsset
 	},
+
+	project: { rename, create, export: exportProject, import: importProject, exportSvg, importSvg },
 
 	create: { rectFromDrag, circleFromDrag, textFromDrag, imageFromDrag, pathFromPoints },
 
