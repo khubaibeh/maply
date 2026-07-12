@@ -3,7 +3,7 @@ import { get } from "svelte/store";
 
 import { projectState } from "../state/document";
 import { canvasState } from "../state/workspace";
-import { clampElementToCanvas } from "./geometry";
+import { clampElementToCanvas, getElementBounds } from "./geometry";
 
 function translate(element: Element, dx: number, dy: number): Element {
 	switch (element.type) {
@@ -42,6 +42,45 @@ export function translateElement(id: string, dx: number, dy: number): void {
 			element.id === id ? clampElementToCanvas(translate(element, dx, dy), canvas) : element
 		)
 	}));
+}
+
+/** Moves a selection as one canvas-constrained group. */
+export function translateElements(ids: readonly string[], dx: number, dy: number): void {
+	if (ids.length === 0 || (dx === 0 && dy === 0)) return;
+
+	const idSet = new Set(ids);
+	const canvas = get(canvasState);
+
+	projectState.update((state) => {
+		const selected = state.elements.filter((element) => idSet.has(element.id));
+		if (selected.length === 0) return state;
+
+		const bounds = selected.map(getElementBounds);
+
+		const groupX = Math.min(...bounds.map((b) => b.x));
+		const groupY = Math.min(...bounds.map((b) => b.y));
+		const groupWidth = Math.max(...bounds.map((b) => b.x + b.width)) - groupX;
+		const groupHeight = Math.max(...bounds.map((b) => b.y + b.height)) - groupY;
+
+		const minDx = Math.max(...bounds.map((b) => canvas.x - b.x));
+		const maxDx = Math.min(...bounds.map((b) => canvas.x + canvas.width - b.x - b.width));
+		const minDy = Math.max(...bounds.map((b) => canvas.y - b.y));
+		const maxDy = Math.min(...bounds.map((b) => canvas.y + canvas.height - b.y - b.height));
+
+		const nextDx = Math.round(groupWidth > canvas.width ? canvas.x - groupX : Math.min(maxDx, Math.max(minDx, dx)));
+		const nextDy = Math.round(
+			groupHeight > canvas.height ? canvas.y - groupY : Math.min(maxDy, Math.max(minDy, dy))
+		);
+
+		if (nextDx === 0 && nextDy === 0) return state;
+
+		return {
+			...state,
+			elements: state.elements.map((element) =>
+				idSet.has(element.id) ? translate(element, nextDx, nextDy) : element
+			)
+		};
+	});
 }
 
 /** Positions one element using its circle center or top-left anchor. */

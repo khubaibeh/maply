@@ -2,6 +2,7 @@ import type { Element, Project } from "@maply/model/types";
 import { storage } from "@maply/storage";
 
 import { clampZoom } from "../canvas/camera";
+import { clampElementToCanvas } from "../elements/geometry";
 import { imageAssetState } from "../state/assets";
 import { projectState } from "../state/document";
 import { canvasState, createInitialCanvasState } from "../state/workspace";
@@ -29,7 +30,7 @@ function applyProject(project: Project) {
 		...state,
 		id: project.id,
 		name: project.name,
-		elements: project.elements.map((element) => ({ ...element })),
+		elements: project.elements.map((element) => clampElementToCanvas(element, project.canvas)),
 		// TODO: This single one needs to go away at a later time, this is code smell
 		selectedElementId: null,
 		selectedElementIds: [],

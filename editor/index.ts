@@ -9,6 +9,7 @@ import {
 	clampElementsToCanvas,
 	setElementPosition,
 	translateElement,
+	translateElements,
 	updateElement
 } from "./elements/mutate";
 import { resetImageCrop, setImageCropScale, translateImageCrop } from "./image/commands";
@@ -71,6 +72,7 @@ export const Editor = {
 		moveBackward,
 		moveToBack,
 		translate: translateElement,
+		translateAll: translateElements,
 		setPosition: setElementPosition,
 		update: updateElement,
 		clampAll: clampElementsToCanvas
