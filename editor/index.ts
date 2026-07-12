@@ -11,8 +11,10 @@ import {
 	translateElement,
 	translateElements,
 	updateElement,
-	updatePathVertex
+	updatePathVertex,
+	renameElement
 } from "./elements/mutate";
+import { autofixElementName, validateElementNames } from "./elements/naming";
 import { resetImageCrop, setImageCropScale, translateImageCrop } from "./image/commands";
 import { replaceImageAsset } from "./image/upload";
 import { create, rename } from "./project/commands";
@@ -76,11 +78,14 @@ export const Editor = {
 		translateAll: translateElements,
 		setPosition: setElementPosition,
 		update: updateElement,
+		rename: renameElement,
 		updatePathVertex,
 		clampAll: clampElementsToCanvas
 	},
 
 	selection: { select, selectAll, setHover, toggleCrop },
+
+	naming: { validate: validateElementNames, autofix: autofixElementName },
 
 	clipboard: { copy, get: getClipboard, paste },
 

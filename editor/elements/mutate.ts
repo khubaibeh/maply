@@ -109,6 +109,14 @@ export function updateElement(id: string, patch: Partial<Element>): void {
 	}));
 }
 
+/** Raw name commit — callers may write invalid or duplicate names; validation is advisory. */
+export function renameElement(id: string, name: string): void {
+	projectState.update((state) => ({
+		...state,
+		elements: state.elements.map((element) => (element.id === id ? { ...element, name } : element))
+	}));
+}
+
 /** Clamps every element after a canvas frame change. */
 export function clampElementsToCanvas(): void {
 	const canvas = get(canvasState);
