@@ -1,12 +1,31 @@
 # Package Migration
 
-Maply is extracting root-level `app/` code into named `@maply/*` capability packages and the application-specific `editor/` module first. The `src/` SvelteKit UI is phase 2. During phase 1, `src/` import replacements happen once, in a single compatibility chunk, after the migrated interfaces are ready.
+Maply is extracting root-level `app/` code into named `@maply/*` capability packages and the application-specific `editor/` module first. The `src/` SvelteKit UI is phase 2. The package and editor seams now exist; the remaining phase-1 work is the compatibility chunk that switches `src/` from `@app` to `editor`/`@maply/*`, then deletes legacy `app/` code that no longer has callers.
 
 The first phase is focused on hollowing out `@app` by extracting cohesive capability packages and the editor composition module. Prefer copy, switch imports, then delete the old `app/` source in one focused chunk. Do not move the whole `app/` tree into a package or `editor/` as a holding pen unless there is a concrete compatibility blocker.
 
 Do not edit generated shadcn files under `src/lib/components/ui/*` or their future package equivalent except through the shadcn workflow. Keep UI-system changes separate from architecture changes.
 
 Run verification after each chunk with `pnpm check`, `pnpm test`, and `pnpm build`. Do not run the dev server.
+
+## Status Snapshot
+
+Done:
+
+- Workspace packages are configured and dependency-cruiser validates package/root-module import direction.
+- `@maply/model` owns schemas, inferred types, defaults, constants, and pure model helpers.
+- `@maply/io` owns project-file IO, SVG import/export, image/SVG validation, handled facade APIs, and Effect-native APIs.
+- `@maply/storage` owns IndexedDB project/image-asset persistence, handled facade APIs, Effect-native APIs, and atomic project/asset replacement.
+- Root `editor/` exists as the application composition module with live stores, session load/save, canvas/tool commands, element creation/mutation, selection, clipboard, image workflows, and project import/export composition.
+- Package and editor README files document public surfaces and ownership boundaries.
+
+Left:
+
+- Switch `src/` UI imports from `@app` to the `editor` alias and package types/helpers in one compatibility chunk.
+- Preserve browser event routing, pointer drafts, dialogs, file pickers, downloads, theme preference, and shadcn UI in `src/`.
+- Delete replaced legacy `app/` modules only after no active `src/` or test callers remain.
+- Remove obsolete `importExportState` after compatibility and persistence concerns are handled.
+- Finish the open findings in `migration-findings.md`, especially IndexedDB upgrade coverage, SVG generic diagnostics, and hydrated normalization parity.
 
 Use pnpm catalogs for shared dependency versions across packages. New package manifests should reference catalog entries instead of repeating concrete versions when a dependency is shared by more than one package or is part of the app's standard toolchain. Root application modules do not need package manifests.
 
@@ -54,7 +73,7 @@ Do not leave half-finished migrations untracked. Any chunk that introduces a new
 
 Every extracted package should use the `@maply/*` name prefix and expose a small public interface from `src/index.ts`. Callers should import from the package root, such as `@maply/model`, unless a package explicitly documents an additional export path. `@maply/model` also documents `@maply/model/types` for inferred TypeScript types and `@maply/model/effect` for Effect schemas. `@maply/io` documents `@maply/io/effect` for raw Effect workflows and tagged IO errors.
 
-Each package should have a `package.json`, `tsconfig.json`, and `src/index.ts`. The only files allowed directly under a package `src/` root are `index.ts`, `types.ts`, and `effect.ts`. Put all other implementation files in meaningful folders that reflect the package's model. Avoid catch-all folders like `core` unless there is a specific reason. Use `src/internal/*` for private implementation details that callers must not import. Keep public types either in `src/index.ts` or a deliberately exported `src/types.ts` when that makes the interface clearer.
+Each package should have a `package.json`, `tsconfig.json`, and `src/index.ts`. The package `src/` root should be limited to public entrypoints (`index.ts`, `types.ts`, `effect.ts`) and deliberately shared package-internal primitives such as `common.ts`. Put feature implementation files in meaningful folders that reflect the package's model. Avoid catch-all folders like `core` unless there is a specific reason. Use `src/internal/*` for private implementation details that callers must not import. Keep public types either in `src/index.ts` or a deliberately exported `src/types.ts` when that makes the interface clearer.
 
 Package manifests should use pnpm catalog references for shared dependencies. Do not repeat concrete versions inside package manifests unless the package intentionally diverges and documents why.
 
@@ -62,7 +81,7 @@ Package checks should be runnable through package scripts. Pure TypeScript packa
 
 Package-specific README files should document exported subpaths and ownership boundaries. Keep root documentation app-level; use `packages/README.md` as the package index.
 
-## First Chunks
+## Completed Chunks
 
 1. Add workspace package globs to `pnpm-workspace.yaml`.
 2. Create `@maply/model` as the first real extraction target.
@@ -70,6 +89,8 @@ Package-specific README files should document exported subpaths and ownership bo
 4. Keep the `@app` alias working until the single `src/` import-replacement chunk.
 5. Extract project decoding/import/export and SVG conversion into `@maply/io` rather than adding boundary workflows to `@maply/model`. Completed: `@maply/io` exposes handled root APIs and raw `@maply/io/effect` workflows.
 6. Add import-boundary tooling before extracting `storage` or `editor/`. Completed: dependency-cruiser validates package and root-module dependency direction.
+7. Extract browser persistence into `@maply/storage`. Completed: root handled APIs, `types`, and Effect-native services/layers/errors are available.
+8. Extract application editing composition into `editor/`. Completed: the `Editor` API composes model, IO, storage, and Svelte stores without importing `app/` or `src/`.
 
 ## Current State
 
@@ -87,10 +108,23 @@ Package-specific README files should document exported subpaths and ownership bo
 - `@maply/storage/types` exposes its public TypeScript types.
 - Project and image-asset replacement is atomic across both IndexedDB stores.
 
-The legacy IO equivalents remain in `app/internal/project-file.ts`, `app/internal/svg-import.ts`, and `app/internal/svg-export.ts`. The legacy storage equivalents remain in `app/services/indexed-db.ts`, `app/services/project-repo.ts`, `app/runtime/browser-runtime.ts`, and `app/internal/db.ts`. Do not migrate `app/` or `src/` consumers until the dedicated import-replacement chunk.
+The legacy IO equivalents remain in `app/internal/project-file.ts`, `app/internal/svg-import.ts`, and `app/internal/svg-export.ts`. The legacy storage equivalents remain in `app/services/indexed-db.ts`, `app/services/project-repo.ts`, `app/runtime/browser-runtime.ts`, and `app/internal/db.ts`. Legacy editor-state and command equivalents also remain throughout `app/store/*`, `app/internal/*`, and `app/domain/*` because `src/` still imports `@app`.
+
+Do not remove `app/` modules opportunistically. First switch active UI callers to `editor` and package imports, then delete only the legacy files proven unused by search and checks.
 
 ## Editor Module Shape
 
 The root `editor/` module is the application composition boundary for live editing. Its `index.ts` entrypoint is imported through the `editor` alias. It may depend on `@maply/model`, `@maply/io`, `@maply/storage`, and Svelte stores, but must not import `src/`, `packages/web`, or legacy `app/` code. Keep DOM event handling, component rendering, routes, global theme behavior, and shadcn components in `src/`.
 
 `docs/internal/editor-workflows.md` is the migration reference for current user-visible behavior. Update it when a migration chunk discovers or intentionally changes a workflow invariant.
+
+## Next Compatibility Chunk
+
+The next implementation chunk should be treated as a compatibility migration, not a redesign:
+
+- Replace `App.state.*` reads with `Editor.state.*` where the state exists.
+- Replace `App.actions.*`, `App.element.*`, `App.project.*`, and `App.save.*` calls with the matching `Editor` groups.
+- Replace `@app/types` imports with `@maply/model/types` or `editor` exported types.
+- Replace `@app` validation, geometry, text, and canvas helpers with package or `editor/` helpers only where an equivalent already exists.
+- Keep UI-owned logic in place when no editor API exists yet; add the smallest missing editor helper rather than importing legacy `app/` from `editor/`.
+- Run `pnpm check`, package tests touched by the chunk, and `pnpm test` before deleting legacy modules.

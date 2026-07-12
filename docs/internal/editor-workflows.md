@@ -4,6 +4,25 @@ This is the behavior inventory for the `app/` to `editor/` migration. It records
 
 `editor/` owns live Maply editing state and commands. `src/` owns UI rendering, browser events, dialogs, file pickers, downloads, and pointer interaction. `@maply/model`, `@maply/io`, and `@maply/storage` own reusable model, external-format, and persistence capabilities.
 
+## Migration Status
+
+The editor module exists and implements the target ownership for most workflows below. The active Svelte UI still imports `@app`, so the `Current flow` entries describe the production caller path until the compatibility chunk switches `src/` to `editor`.
+
+Done in `editor/`:
+
+- Session load/save with `@maply/storage`.
+- Project rename/create plus project-file and SVG import/export composition with `@maply/io` and `@maply/storage`.
+- Canvas frame/color/camera commands and tool state.
+- Element creation, mutation, resize, text/path helpers, naming validation, ordering, selection, deletion, and clipboard.
+- Image upload/replacement and crop commands, including atomic project/asset replacement through storage.
+
+Left before `app/` deletion:
+
+- Switch `src/` callers from `@app` to `editor` and package types/helpers.
+- Keep UI-only workflows in `src`: pointer draft state, DOM events, dialogs, file picker/download mechanics, and theme preference.
+- Verify behavior parity for hydrated element normalization, text metrics, path bounds, crop-frame resize gesture inputs, and SVG generic import diagnostics.
+- Remove `importExportState` after persisted compatibility is handled.
+
 ## Session Lifecycle
 
 ### Load editor session
@@ -14,7 +33,7 @@ Current flow: `app/internal/lifecycle.ts` delegates to `app/store/project.ts`. T
 
 Invariants: loading clears selection, hover, and crop editing state. A failed load keeps startup defaults and clears the in-memory asset cache. Initialization completes only after this workflow so startup defaults cannot overwrite persisted work.
 
-Target: `editor/session.ts` composes live stores with `@maply/storage`.
+Editor status: implemented by `editor/session/load.ts` using `@maply/storage`.
 
 ### Autosave and flush
 
@@ -24,7 +43,7 @@ Current flow: `app/internal/save.ts` serializes `appProjectState.toProject()` af
 
 Invariants: queueing a save replaces the previous debounce. Flushing cancels a pending debounce before saving. Canvas changes are persisted together with project fields and elements.
 
-Target: `editor/save.ts` exposes queue and flush commands; the layout continues to own browser event registration and store observation.
+Editor status: implemented by `editor/session/save.ts`; the layout still owns browser event registration and store observation after UI migration.
 
 ## Project Workflows
 
@@ -34,7 +53,7 @@ Entry: project-name controls in `src/components/core/ProjectMenuOverlay.svelte` 
 
 Current flow: Enter or blur commits the name; Escape restores the displayed value. `app/store/project.ts` updates the live name and normal autosave persists it.
 
-Target: editor project command.
+Editor status: implemented by `Editor.project.rename`.
 
 ### Create blank or sample project
 
@@ -44,7 +63,7 @@ Current flow: `App.project.create()` resets the production project to a blank or
 
 Invariants: this is destructive and removes all image assets belonging to the active project. The confirmation remains a UI concern.
 
-Target: `editor/project.ts` composes live-state replacement with `@maply/storage.project.reset`.
+Editor status: implemented by `Editor.project.create`, composed with `@maply/storage.project.reset`.
 
 ## Project File And SVG Workflows
 
@@ -56,7 +75,7 @@ Current flow: the live project is assembled with all assets referenced by image 
 
 Invariants: export fails if any referenced asset is missing. File shape, compatibility normalization, and serialization are external-format behavior.
 
-Target: editor gathers the active-session snapshot; `@maply/io.project.file.create` and `serialize` own the file format. Download creation remains in `src`.
+Editor status: `Editor.project.export` gathers the active-session snapshot and delegates packaging to `@maply/io.project.file`. Download creation remains in `src`.
 
 ### Import project file
 
@@ -66,7 +85,7 @@ Current flow: the UI reads file text and parses it before showing confirmation. 
 
 Invariants: cancel discards staged input. Imported project and asset records are reassigned to the active project ID. Missing referenced assets and duplicate asset IDs are rejected before replacement.
 
-Target: `@maply/io.project.file.parse` handles untrusted input; editor atomically applies a valid payload through `@maply/storage.project.replace` and updates live stores. Dialog and reload remain in `src`.
+Editor status: `@maply/io.project.file.parse` handles untrusted input before confirmation; `Editor.project.import` atomically applies a valid payload through `@maply/storage.project.replace` and reloads live editor state. Dialog/reload policy remains in `src`.
 
 ### Export SVG
 
@@ -76,7 +95,7 @@ Current flow: the current project and assets are converted into a standalone SVG
 
 Invariants: export rejects missing referenced assets. SVG construction, recovery metadata, and font/rendering rules belong to IO.
 
-Target: editor gathers current data; `@maply/io.svg.export` performs conversion; `src` downloads the result.
+Editor status: `Editor.project.exportSvg` gathers current data and delegates conversion to `@maply/io.svg.export`; `src` downloads the result.
 
 ### Import SVG
 
@@ -86,7 +105,7 @@ Current flow: the UI parses SVG text before confirmation. The current legacy imp
 
 Invariants: imported content replaces the active project only after confirmation. Fallback imports can fit an undeclared canvas, drop elements outside a declared canvas, and deduplicate element IDs.
 
-Target: `@maply/io.svg.import` handles input and diagnostics; editor applies the returned project payload. The migration must decide how generic-import warnings are surfaced in the UI.
+Editor status: `Editor.project.importSvg` delegates input and diagnostics to `@maply/io.svg.import`, then applies the returned project payload. The migration must still decide how generic-import warnings are surfaced in the UI.
 
 ## Canvas, Camera, And Tool Workflows
 
@@ -98,7 +117,7 @@ Current flow: width, height, origin, and background color update the canvas stor
 
 Invariants: dimensions are finite positive rounded values. Every canvas resize clamps all elements into the resulting canvas.
 
-Target: editor canvas and project commands; pointer-handle arithmetic remains in `src`.
+Editor status: canvas commands are implemented; pointer-handle arithmetic remains in `src`.
 
 ### Pan and zoom camera
 
@@ -108,7 +127,7 @@ Current flow: UI converts pointer input to camera changes; the canvas store appl
 
 Invariants: camera changes are autosaved and included in project import/export. Holding Space restores the prior non-Hand tool when released.
 
-Target: editor canvas/tool commands; event orchestration remains in `src`.
+Editor status: canvas/tool commands are implemented; event orchestration remains in `src`.
 
 ### Select and switch tools
 
@@ -118,7 +137,7 @@ Current flow: the tool store holds the active tool, previous tool, and Space-key
 
 Invariants: Space must not lose the user-selected tool. Keyboard shortcuts do not run while a text input is being edited.
 
-Target: editor tool state and commands; shortcut routing remains in `src`.
+Editor status: tool state and commands are implemented; shortcut routing remains in `src`.
 
 ## Element Creation Workflows
 
@@ -130,7 +149,7 @@ Current flow: `area.state.svelte.ts` owns the pointer draft and preview. Editor 
 
 Invariants: points are constrained to the canvas. Shapes below the minimum size are discarded. Shift creates a square rectangle. Circle diameter uses the shorter drag-box axis. New elements have generated IDs, unique default names, default style values, and return the tool to Select.
 
-Target: editor creation factories and add/select command; draft interactions remain in `src`.
+Editor status: creation factories and add/select command are implemented; draft interactions remain in `src`.
 
 ### Draw a path
 
@@ -140,7 +159,7 @@ Current flow: the UI manages pending vertices, Shift segment snapping, close aff
 
 Invariants: closed paths require at least three points; a path with fewer than two points is invalid. Current UI only commits closed paths, which use the current default fill, no stroke, and `closed: true`.
 
-Target: editor path geometry and factory; draft lifecycle remains in `src`.
+Editor status: path geometry and factory are implemented; draft lifecycle remains in `src`.
 
 ## Selection And Mutation Workflows
 
@@ -152,7 +171,7 @@ Current flow: project state tracks ordered selected IDs, the latest selected ID,
 
 Invariants: additive selection toggles membership. Selection changes clear hover. Crop mode is exited unless its image remains selected. Multi-selection is supported for selection, movement, copy, delete, and reordering context but not property editing.
 
-Target: editor project state and selection commands; hit testing and event handling remain in `src`.
+Editor status: project state and selection commands are implemented; hit testing and event handling remain in `src`.
 
 ### Move and position elements
 
@@ -162,7 +181,7 @@ Current flow: a drag moves every current selection when its target is selected; 
 
 Invariants: all movement is constrained to the canvas. Group movement is clamped as a group, preserving relative positions whenever possible.
 
-Target: editor mutation commands and geometry helpers.
+Editor status: mutation commands and geometry helpers are implemented.
 
 ### Resize elements
 
@@ -172,7 +191,7 @@ Current flow: UI owns pointer deltas. Editor geometry resizes and clamps the ele
 
 Invariants: minimum sizes and canvas bounds apply. Circle radius remains bounded by every canvas edge. Text baseline is recalculated when its frame changes. Image crop mode uses a different frame-resize workflow.
 
-Target: editor resize commands and geometry helpers.
+Editor status: resize commands and geometry helpers are implemented.
 
 ### Edit element properties
 
@@ -182,7 +201,7 @@ Current flow: inputs validate numbers and colors, then patch individual elements
 
 Invariants: every patch is clamped to the canvas. Editing fill also changes the default fill for future rect, circle, and closed-path creation. Text metric changes preserve visual bounds rather than raw baseline coordinates.
 
-Target: editor update command, validation, geometry, and text helpers; form state remains in `src`.
+Editor status: update command, validation, geometry, and text helpers are implemented; form state remains in `src`.
 
 ### Edit names
 
@@ -192,7 +211,7 @@ Current flow: names may be committed even when invalid. Validation reports empty
 
 Invariants: sidebar Escape cancels; Enter and blur commit. Name validation itself does not mutate until an explicit commit or autofix.
 
-Target: editor naming validation and rename command.
+Editor status: naming validation and rename command are implemented.
 
 ### Edit path data and vertices
 
@@ -202,7 +221,7 @@ Current flow: editing SVG path data infers open or closed state and updates fill
 
 Invariants: closed paths use fill and zero stroke width. Open paths use no fill and a visible stroke.
 
-Target: editor path parsing, normalization, and update commands; textarea and vertex dragging remain in `src`.
+Editor status: path parsing, normalization, and update commands are implemented; textarea and vertex dragging remain in `src`.
 
 ## Image Workflows
 
@@ -214,7 +233,7 @@ Current flow: PNG, JPEG, and SVG files are read to data URLs and image dimension
 
 Invariants: persist the replacement before mutating the image element. Reset crop values on replacement. Do not remove the old asset when it is already the replacement asset.
 
-Target: editor browser image workflow with `@maply/storage.imageAsset` persistence.
+Editor status: browser image workflow is implemented with `@maply/io` validation and atomic `@maply/storage.project.replace` persistence.
 
 ### Edit image crop and frame
 
@@ -224,7 +243,7 @@ Current flow: crop mode tracks the selected image. Image pan changes crop offset
 
 Invariants: crop offsets remain within -100 to 100 and scale within 100 to 800. Crop mode is valid only while the same image remains selected. Crop-frame resizing remains inside the canvas and preserves visible content when possible.
 
-Target: editor crop state, commands, and geometry; overlay interaction remains in `src`.
+Editor status: crop state, commands, and geometry are implemented; overlay interaction remains in `src`.
 
 ### Download source image
 
@@ -234,7 +253,7 @@ Current flow: the UI downloads the stored asset data URL with its stored name or
 
 Invariants: unavailable for empty image frames. This is a UI download concern, not an editor persistence workflow.
 
-Target: `src` retains download behavior; editor exposes read-only image-asset state.
+Editor status: unchanged target. `src` retains download behavior; editor exposes read-only image-asset state.
 
 ## Clipboard And Deletion Workflows
 
@@ -246,7 +265,7 @@ Current flow: copy saves immutable element snapshots in an application-memory cl
 
 Invariants: clipboard contents are neither persisted nor connected to the operating-system clipboard. Keyboard paste uses the standard duplicate offset. Context-menu paste positions the pasted group so its upper-left bounds begin at the clicked canvas point. Missing copied image assets yield an unlinked pasted image.
 
-Target: editor clipboard state, duplicate helpers, and asset cloning workflow; shortcut and context-menu handling remain in `src`.
+Editor status: clipboard state, duplicate helpers, and asset cloning workflow are implemented; shortcut and context-menu handling remain in `src`.
 
 ### Delete elements
 
@@ -256,7 +275,7 @@ Current flow: selected deletion removes all selected elements if the target is s
 
 Invariants: selection is repaired after deletion. Crop mode exits when its image is deleted. UI removal is immediate even if asset persistence cleanup fails; cleanup failure is logged.
 
-Target: editor delete command with `@maply/storage.imageAsset.delete`.
+Editor status: delete command is implemented with `@maply/storage.imageAsset.delete` cleanup.
 
 ## Layering Workflows
 
@@ -268,7 +287,7 @@ Current flow: the sidebar displays reverse paint order, so its drag indices are 
 
 Invariants: sidebar drag begins after 220ms and supports edge autoscroll. Context actions are disabled at the appropriate ordering boundary. Layer order is the element-array paint order.
 
-Target: editor ordering commands; drag state and menu presentation remain in `src`.
+Editor status: ordering commands are implemented; drag state and menu presentation remain in `src`.
 
 ## Non-Editor Workflows
 
@@ -282,4 +301,4 @@ Target: remains in `src` because it owns document and browser preference effects
 
 `App.start`, `App.element.replaceImage`, several camera convenience commands, clipboard clear, import/export panel state, and `app/internal/project.ts` have no production caller. Do not preserve these as editor APIs without a current workflow requiring them.
 
-The legacy project-file, SVG, and IndexedDB implementations duplicate capabilities in `@maply/io` and `@maply/storage`. Their replacement is tracked by the import/export and session workflows above; they should be deleted only after all active editor consumers use the package boundaries.
+The legacy project-file, SVG, IndexedDB, store, and command implementations duplicate capabilities now available in `@maply/io`, `@maply/storage`, and `editor/`. They should be deleted only after all active `src` consumers move off `@app`.
