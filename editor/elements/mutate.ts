@@ -5,6 +5,7 @@ import { projectState } from "../state/document";
 import { canvasState } from "../state/workspace";
 import { clampElementToCanvas, getElementBounds, getPointBounds } from "./geometry";
 import { toPathPoints, toPath } from "./path";
+import { resizeElement as resizeElementPure, type ResizeHandle, type ResizeOptions } from "./resize";
 
 function translate(element: Element, dx: number, dy: number): Element {
 	switch (element.type) {
@@ -95,6 +96,24 @@ export function setElementPosition(id: string, x: number, y: number): void {
 		x - (element.type === "circle" ? element.cx : element.x),
 		y - (element.type === "circle" ? element.cy : element.y)
 	);
+}
+
+/** Resizes an element by a handle delta within canvas bounds. */
+export function resizeElementByHandle(
+	id: string,
+	handle: ResizeHandle,
+	dx: number,
+	dy: number,
+	options?: ResizeOptions
+): void {
+	const canvas = get(canvasState);
+
+	projectState.update((state) => ({
+		...state,
+		elements: state.elements.map((element) =>
+			element.id === id ? resizeElementPure(element, handle, dx, dy, canvas, options) : element
+		)
+	}));
 }
 
 /** Applies an element property patch and clamps the resulting element. */

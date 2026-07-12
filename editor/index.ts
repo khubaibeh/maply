@@ -7,6 +7,7 @@ import { circleFromDrag, imageFromDrag, pathFromPoints, rectFromDrag, textFromDr
 import {
 	addElement,
 	clampElementsToCanvas,
+	resizeElementByHandle,
 	setElementPosition,
 	translateElement,
 	translateElements,
@@ -15,7 +16,7 @@ import {
 	renameElement
 } from "./elements/mutate";
 import { autofixElementName, validateElementNames } from "./elements/naming";
-import { resetImageCrop, setImageCropScale, translateImageCrop } from "./image/commands";
+import { resetImageCrop, resizeImageCropFrame, setImageCropScale, translateImageCrop } from "./image/commands";
 import { replaceImageAsset } from "./image/upload";
 import { create, rename } from "./project/commands";
 import { exportProject } from "./project/export";
@@ -77,6 +78,7 @@ export const Editor = {
 		translate: translateElement,
 		translateAll: translateElements,
 		setPosition: setElementPosition,
+		resize: resizeElementByHandle,
 		update: updateElement,
 		rename: renameElement,
 		updatePathVertex,
@@ -93,6 +95,7 @@ export const Editor = {
 		translateCrop: translateImageCrop,
 		setCropScale: setImageCropScale,
 		resetCrop: resetImageCrop,
+		resizeFrame: resizeImageCropFrame,
 		replace: replaceImageAsset
 	},
 
@@ -107,3 +110,4 @@ export const Editor = {
 } as const;
 
 export type EditorApi = typeof Editor;
+export type { ResizeHandle, ResizeOptions } from "./elements/resize";

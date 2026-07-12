@@ -1,8 +1,10 @@
 import { get } from "svelte/store";
 
+import { resizeElement, type ResizeHandle, type ResizeOptions } from "../elements/resize";
 import { imageAssetState } from "../state/assets";
 import { projectState } from "../state/document";
-import { clampCropScale, translateCrop } from "./crop";
+import { canvasState } from "../state/workspace";
+import { clampCropScale, cropForFrameResize, translateCrop } from "./crop";
 
 /** Pans an image inside its crop frame. */
 export function translateImageCrop(id: string, dx: number, dy: number): void {
@@ -57,5 +59,50 @@ export function resetImageCrop(id: string): void {
 		elements: state.elements.map((element) =>
 			element.id === id && element.type === "image" ? { ...element, cropX: 0, cropY: 0, cropScale: 100 } : element
 		)
+	}));
+}
+
+/** Resizes an image frame and recalculates crop to preserve visible content. */
+export function resizeImageCropFrame(
+	id: string,
+	handle: ResizeHandle,
+	dx: number,
+	dy: number,
+	options?: ResizeOptions
+): void {
+	const canvas = get(canvasState);
+	const assets = get(imageAssetState);
+
+	projectState.update((state) => ({
+		...state,
+		elements: state.elements.map((element) => {
+			if (element.id !== id || element.type !== "image") return element;
+
+			const nextFrame = resizeElement(element, handle, dx, dy, canvas, options) as typeof element;
+			if (!element.assetId) return nextFrame;
+
+			const asset = assets[element.assetId];
+			if (!asset) return nextFrame;
+
+			const nextCrop = cropForFrameResize(
+				{ cropX: element.cropX, cropY: element.cropY, cropScale: element.cropScale },
+				{
+					width: element.width,
+					height: element.height,
+					assetWidth: asset.width,
+					assetHeight: asset.height,
+					cropScale: element.cropScale
+				},
+				{
+					width: nextFrame.width,
+					height: nextFrame.height,
+					assetWidth: asset.width,
+					assetHeight: asset.height,
+					cropScale: element.cropScale
+				}
+			);
+
+			return { ...nextFrame, ...nextCrop };
+		})
 	}));
 }
