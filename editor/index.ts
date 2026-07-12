@@ -10,7 +10,8 @@ import {
 	setElementPosition,
 	translateElement,
 	translateElements,
-	updateElement
+	updateElement,
+	updatePathVertex
 } from "./elements/mutate";
 import { resetImageCrop, setImageCropScale, translateImageCrop } from "./image/commands";
 import { replaceImageAsset } from "./image/upload";
@@ -75,6 +76,7 @@ export const Editor = {
 		translateAll: translateElements,
 		setPosition: setElementPosition,
 		update: updateElement,
+		updatePathVertex,
 		clampAll: clampElementsToCanvas
 	},
 

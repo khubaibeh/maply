@@ -12,19 +12,7 @@ import { get } from "svelte/store";
 import { fillState } from "../state/document";
 import { getPointBounds, getShapeDragBox } from "./geometry";
 import { createElementId, nextElementName } from "./naming";
-
-function roundPoint(point: Point): string {
-	return `${Math.round(point.x)},${Math.round(point.y)}`;
-}
-
-function pathDataFromPoints(points: readonly Point[], closed: boolean): string {
-	if (points.length === 0) return "";
-
-	const [first, ...rest] = points;
-	const segments = rest.map((point) => `L${roundPoint(point)}`);
-
-	return `M${roundPoint(first)} ${segments.join(" ")}${closed ? " Z" : ""}`;
-}
+import { toPath } from "./path";
 
 /** Creates a rectangle from a pointer drag. */
 export function rectFromDrag(
@@ -130,7 +118,7 @@ export function pathFromPoints(
 		type: "path",
 		x: Math.round(bounds.x),
 		y: Math.round(bounds.y),
-		d: pathDataFromPoints(points, closed),
+		d: toPath(points, closed),
 		fill: closed ? get(fillState) : "none",
 		stroke: "#000000",
 		strokeWidth: closed ? 0 : 2,

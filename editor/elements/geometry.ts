@@ -1,5 +1,6 @@
 import type { Canvas, Element, Point } from "@maply/model/types";
 
+import { toPathPoints } from "./path";
 import { getTextBounds } from "./text";
 
 const minShapeSize = 5;
@@ -37,14 +38,7 @@ export function getPointBounds(points: readonly Point[]) {
 }
 
 function getPathBounds(d: string) {
-	const values = [...d.matchAll(/[-+]?(?:\d*\.\d+|\d+\.?)(?:e[-+]?\d+)?/g)].map((match) => Number(match[0]));
-	const points: Point[] = [];
-
-	for (let index = 0; index + 1 < values.length; index += 2) {
-		points.push({ x: values[index], y: values[index + 1] });
-	}
-
-	return getPointBounds(points);
+	return getPointBounds(toPathPoints(d));
 }
 
 /** Returns the rendered axis-aligned bounds used for pure editor clamping. */

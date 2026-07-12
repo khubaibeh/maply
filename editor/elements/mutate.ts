@@ -3,7 +3,8 @@ import { get } from "svelte/store";
 
 import { projectState } from "../state/document";
 import { canvasState } from "../state/workspace";
-import { clampElementToCanvas, getElementBounds } from "./geometry";
+import { clampElementToCanvas, getElementBounds, getPointBounds } from "./geometry";
+import { toPathPoints, toPath } from "./path";
 
 function translate(element: Element, dx: number, dy: number): Element {
 	switch (element.type) {
@@ -115,5 +116,34 @@ export function clampElementsToCanvas(): void {
 	projectState.update((state) => ({
 		...state,
 		elements: state.elements.map((element) => clampElementToCanvas(element, canvas))
+	}));
+}
+
+/** Rewrites one linear-path vertex and clamps the resulting path frame. */
+export function updatePathVertex(id: string, index: number, point: { x: number; y: number }): void {
+	const canvas = get(canvasState);
+
+	projectState.update((state) => ({
+		...state,
+		elements: state.elements.map((element) => {
+			if (element.id !== id || element.type !== "path") return element;
+
+			const points = toPathPoints(element.d);
+			if (index < 0 || index >= points.length) return element;
+
+			const oldBounds = getPointBounds(points);
+			points[index] = point;
+			const newBounds = getPointBounds(points);
+
+			return clampElementToCanvas(
+				{
+					...element,
+					d: toPath(points, element.closed),
+					x: Math.round(element.x + (newBounds.x - oldBounds.x)),
+					y: Math.round(element.y + (newBounds.y - oldBounds.y))
+				},
+				canvas
+			);
+		})
 	}));
 }
