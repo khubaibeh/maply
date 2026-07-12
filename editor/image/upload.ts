@@ -5,51 +5,69 @@ import { get } from "svelte/store";
 import { createElementId } from "../elements/naming";
 import { imageAssetState } from "../state/assets";
 import { projectState } from "../state/document";
+import { acquireMutex } from "../state/mutex";
+import { canvasState } from "../state/workspace";
 
-/** Persists a prepared image asset before attaching it to an image element. */
+/** Atomically attaches a prepared asset and replaces the active project's referenced asset set. */
 export async function replaceImageAsset(id: string, asset: StoredImageAsset): Promise<void> {
-	const project = get(projectState);
-	const current = project.elements.find((element) => element.id === id);
+	const release = await acquireMutex();
 
-	if (!current || current.type !== "image") return;
+	try {
+		const project = get(projectState);
+		const current = project.elements.find((element) => element.id === id);
 
-	const nextAsset = { ...asset, id: createElementId(), projectId: project.id };
-	const saved = await storage.imageAsset.save(nextAsset);
+		if (!current || current.type !== "image") return;
 
-	if (!saved.ok) {
-		console.warn("Failed to save image asset:", saved.error);
-		return;
-	}
+		const nextAsset = { ...asset, id: createElementId(), projectId: project.id };
 
-	imageAssetState.update((assets) => ({ ...assets, [nextAsset.id]: nextAsset }));
-
-	let previousAssetId: string | null = null;
-	projectState.update((state) => ({
-		...state,
-		elements: state.elements.map((element) => {
+		const elements = project.elements.map((element) => {
 			if (element.id !== id || element.type !== "image") return element;
-
-			previousAssetId = element.assetId;
-
 			return { ...element, assetId: nextAsset.id, href: undefined, cropX: 0, cropY: 0, cropScale: 100 };
-		})
-	}));
+		});
 
-	if (!previousAssetId || previousAssetId === nextAsset.id) return;
+		const currentAssets = get(imageAssetState);
+		const mergedAssets = { ...currentAssets, [nextAsset.id]: nextAsset };
 
-	const stillUsed = get(projectState).elements.some(
-		(element) => element.type === "image" && element.assetId === previousAssetId
-	);
+		const assetIdSet = new Set(
+			elements.flatMap((element) => (element.type === "image" && element.assetId ? [element.assetId] : []))
+		);
+		const referencedAssets = [...assetIdSet].map((assetId) => mergedAssets[assetId]);
 
-	if (stillUsed) return;
+		if (referencedAssets.some((entry) => !entry)) {
+			console.warn("Cannot replace image because a referenced asset is unavailable.");
+			return;
+		}
 
-	imageAssetState.update((assets) => {
-		const next = { ...assets };
-		delete next[previousAssetId!];
-		return next;
-	});
+		const canvas = get(canvasState);
+		const replaced = await storage.project.replace(
+			{
+				id: project.id,
+				name: project.name,
+				canvas: { width: canvas.width, height: canvas.height, color: canvas.color, x: canvas.x, y: canvas.y },
+				camera: { ...canvas.camera },
+				elements,
+				importExportState: { importsOpen: true, elementsOpen: true }
+			},
+			referencedAssets.filter((entry): entry is StoredImageAsset => entry !== undefined)
+		);
 
-	storage.imageAsset.delete(previousAssetId).then((result) => {
-		if (!result.ok) console.warn("Failed to delete replaced image asset:", result.error);
-	});
+		if (!replaced.ok) {
+			console.warn("Failed to replace image asset:", replaced.error);
+			return;
+		}
+
+		projectState.update((state) => ({ ...state, elements }));
+
+		imageAssetState.update((assets) => {
+			const next = { ...assets, [nextAsset.id]: nextAsset };
+			for (const key of Object.keys(next)) {
+				if (!assetIdSet.has(key) && next[key]?.projectId === project.id) {
+					delete next[key];
+				}
+			}
+			return next;
+		});
+	} finally {
+		release();
+	}
 }

@@ -1,4 +1,4 @@
-import { clampCropScale, getCropMetrics, translateCrop } from "editor/image/crop";
+import { clampCropScale, cropForFrameResize, getCropMetrics, translateCrop } from "editor/image/crop";
 import { describe, expect, it } from "vitest";
 
 describe("clampCropScale", () => {
@@ -146,5 +146,81 @@ describe("getCropMetrics edge cases", () => {
 		const metrics = getCropMetrics({ width: 1000, height: 1000, assetWidth: 10, assetHeight: 10, cropScale: 100 });
 		expect(metrics.overflowX).toBeGreaterThanOrEqual(0);
 		expect(metrics.overflowY).toBeGreaterThanOrEqual(0);
+	});
+});
+
+describe("cropForFrameResize", () => {
+	const asset = { assetWidth: 400, assetHeight: 200 };
+
+	it("preserves centered crop when scaling proportionally", () => {
+		const prev = { width: 200, height: 100, ...asset, cropScale: 200 };
+		const next = { width: 400, height: 200, ...asset, cropScale: 200 };
+		const crop = cropForFrameResize({ cropX: 0, cropY: 0, cropScale: 200 }, prev, next);
+		expect(crop.cropX).toBe(0);
+		expect(crop.cropY).toBe(0);
+	});
+
+	it("preserves off-center crop through proportional resize", () => {
+		const prev = { width: 200, height: 100, ...asset, cropScale: 200 };
+		const crop = cropForFrameResize({ cropX: 50, cropY: -30, cropScale: 200 }, prev, prev);
+		expect(crop.cropX).toBe(50);
+		expect(crop.cropY).toBe(-30);
+	});
+
+	it("adjusts cropScale to maintain effective zoom", () => {
+		const prev = { width: 200, height: 100, ...asset, cropScale: 200 };
+		const next = { width: 100, height: 50, ...asset, cropScale: 200 };
+		const crop = cropForFrameResize({ cropX: 0, cropY: 0, cropScale: 200 }, prev, next);
+		expect(crop.cropScale).toBeGreaterThan(200);
+	});
+
+	it("clamps cropScale to 800 when frame shrinks dramatically", () => {
+		const prev = { width: 400, height: 400, ...asset, cropScale: 800 };
+		const next = { width: 10, height: 10, ...asset, cropScale: 800 };
+		const crop = cropForFrameResize({ cropX: 0, cropY: 0, cropScale: 800 }, prev, next);
+		expect(crop.cropScale).toBeLessThanOrEqual(800);
+	});
+
+	it("clamps crop offsets to -100..100 after resize", () => {
+		const prev = { width: 200, height: 100, ...asset, cropScale: 800 };
+		const next = { width: 200, height: 100, ...asset, cropScale: 100 };
+		const crop = cropForFrameResize({ cropX: 100, cropY: -100, cropScale: 800 }, prev, next);
+		expect(crop.cropX).toBeGreaterThanOrEqual(-100);
+		expect(crop.cropX).toBeLessThanOrEqual(100);
+		expect(crop.cropY).toBeGreaterThanOrEqual(-100);
+		expect(crop.cropY).toBeLessThanOrEqual(100);
+	});
+
+	it("returns zero offsets when new frame has no overflow", () => {
+		const prev = { width: 200, height: 100, ...asset, cropScale: 200 };
+		const next = { width: 800, height: 400, ...asset, cropScale: 100 };
+		const crop = cropForFrameResize({ cropX: 50, cropY: 50, cropScale: 200 }, prev, next);
+		expect(crop.cropX).toBe(0);
+		expect(crop.cropY).toBe(0);
+	});
+
+	it("handles zero next dimensions without producing NaN", () => {
+		const prev = { width: 200, height: 100, ...asset, cropScale: 200 };
+		const next = { width: 0, height: 0, ...asset, cropScale: 200 };
+		const crop = cropForFrameResize({ cropX: 50, cropY: 50, cropScale: 200 }, prev, next);
+		expect(Number.isFinite(crop.cropX)).toBe(true);
+		expect(Number.isFinite(crop.cropY)).toBe(true);
+		expect(Number.isFinite(crop.cropScale)).toBe(true);
+	});
+
+	it("handles zero previous overflow (no pan was possible)", () => {
+		const prev = { width: 400, height: 200, assetWidth: 400, assetHeight: 200, cropScale: 100 };
+		const next = { width: 200, height: 100, assetWidth: 400, assetHeight: 200, cropScale: 100 };
+		const crop = cropForFrameResize({ cropX: 0, cropY: 0, cropScale: 100 }, prev, next);
+		expect(crop.cropX).toBe(0);
+		expect(crop.cropY).toBe(0);
+	});
+
+	it("identity: same previous and next returns same crop", () => {
+		const frame = { width: 300, height: 150, ...asset, cropScale: 300 };
+		const crop = cropForFrameResize({ cropX: -42, cropY: 73, cropScale: 300 }, frame, frame);
+		expect(crop.cropX).toBe(-42);
+		expect(crop.cropY).toBe(73);
+		expect(crop.cropScale).toBe(300);
 	});
 });

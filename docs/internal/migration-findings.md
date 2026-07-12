@@ -73,6 +73,17 @@ Status: open
 
 `replaceImageAsset` persists the new asset, mutates in-memory state, then independently deletes the old asset as three separate operations. A crash or tab close after old-asset deletion but before the separately queued project save leaves persisted project data referencing a deleted asset. Use `storage.project.replace` (or an equivalent transactional boundary) to commit the changed project record and its complete asset set atomically. The concurrent-replacement race (two rapid replacements applying out of order) should be addressed in the same pass.
 
+### Fix incremental rounding drift in crop-scale during image frame resize
+
+Type: behavior-risk
+Found in: `app/internal/image-assets.ts` (`getImageCropStateForFrameResize`), `src/components/canvas/ImageCropOverlay.svelte`
+Migration chunk: editor element resize
+Status: open
+
+The legacy `resizeImageFrame` store action calls `getImageCropStateForFrameResize` on every incremental `pointermove` delta during a handle drag. Each call reads `previousRect.width` (which is `Math.round`ed) and derives `previousCombinedScale = previousRect.width / assetWidth`. Because rounding introduces ±0.5px per frame, accumulated over many small moves the `cropScale` drifts downward — producing a visible zoom-out during what should be a pure frame resize.
+
+When porting to `editor/`, the caller must pass the **original pre-drag crop state** as `current` and the **original pre-drag frame** as `previous` for the entire drag gesture, with only `next` updating per-frame. This applies a single round at the end rather than N rounds during the drag. The pure `cropForFrameResize` function in `editor/image/crop.ts` is correct in isolation; the bug is a caller-pattern issue that must be addressed in the resize interaction wiring.
+
 ## Done Findings
 
 ### Extract browser persistence

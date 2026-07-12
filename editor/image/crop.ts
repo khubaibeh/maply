@@ -36,3 +36,40 @@ export function translateCrop(current: Crop, dx: number, dy: number, metrics: Me
 export function clampCropScale(scale: number): number {
 	return Math.round(clamp(scale, 100, 800));
 }
+
+/** Recalculates crop scale and offsets to preserve the visible content center across a frame resize. */
+export function cropForFrameResize(current: Crop, previous: Metrics, next: Metrics): Crop {
+	const prevBase = Math.max(
+		previous.width / Math.max(1, previous.assetWidth),
+		previous.height / Math.max(1, previous.assetHeight)
+	);
+	const nextBase = Math.max(next.width / Math.max(1, next.assetWidth), next.height / Math.max(1, next.assetHeight));
+
+	const cropScale = clampCropScale(
+		nextBase > 1e-6 ? ((prevBase * Math.max(1, current.cropScale / 100)) / nextBase) * 100 : current.cropScale
+	);
+
+	const prevMetrics = getCropMetrics(previous);
+	const nextMetrics = getCropMetrics({ ...next, cropScale });
+
+	const prevRenderedW = Math.max(1, previous.width) + prevMetrics.overflowX;
+	const prevRenderedH = Math.max(1, previous.height) + prevMetrics.overflowY;
+	const nextRenderedW = Math.max(1, next.width) + nextMetrics.overflowX;
+	const nextRenderedH = Math.max(1, next.height) + nextMetrics.overflowY;
+
+	const cropX =
+		nextMetrics.overflowX === 0 || prevRenderedW === 0
+			? 0
+			: (current.cropX * (prevMetrics.overflowX * nextRenderedW)) / (prevRenderedW * nextMetrics.overflowX);
+
+	const cropY =
+		nextMetrics.overflowY === 0 || prevRenderedH === 0
+			? 0
+			: (current.cropY * (prevMetrics.overflowY * nextRenderedH)) / (prevRenderedH * nextMetrics.overflowY);
+
+	return {
+		cropX: Math.round(clamp(cropX, -100, 100)),
+		cropY: Math.round(clamp(cropY, -100, 100)),
+		cropScale
+	};
+}
