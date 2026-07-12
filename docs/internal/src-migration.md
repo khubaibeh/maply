@@ -242,7 +242,7 @@ Notes:
 
 ### Chunk 1: Public Editor And Package Exports
 
-Status: pending
+Status: done
 
 Scope:
 
@@ -259,6 +259,11 @@ Exit criteria:
 Notes:
 
 - Do not reshape the full editor API into the old `App` shape.
+- Completed 2026-07-13.
+- Added public `Editor.fill.set`, `Editor.geometry.*`, and `Editor.text.*` seams needed by `src` migration without exposing private editor folders.
+- Exported `ElementNameValidation` from `editor` and use existing `ProjectFilePackage` from `@maply/io/types`.
+- Isolated legacy-parity text metrics, path bounds/render transform, path snapping, and image render rect behavior under `editor/compat/*` bridges so final ownership can be patched back into packages/modules later.
+- Verified with `pnpm test:model`, `pnpm test:io`, focused editor tests, and `pnpm check`.
 
 ### Chunk 2: Theme Ownership Move
 

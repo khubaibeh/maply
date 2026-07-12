@@ -3,7 +3,17 @@ import { readonly } from "svelte/store";
 import { centerCamera, pan, resetCamera, resetZoom, setCamera, zoomIn, zoomOut } from "./canvas/camera";
 import { setColor, setFrame, setPosition, setSize } from "./canvas/commands";
 import { setSpacePressed, setTool } from "./canvas/tool";
+import { getImageRenderRect, getPathDataBounds, getPathRenderTransform } from "./compat/geometry";
+import { validateElementNames } from "./compat/naming";
+import { snapPathSegment } from "./compat/path";
+import {
+	getTextLayoutMetrics,
+	getWrappedTextLineHeight,
+	getWrappedTextLines,
+	getWrappedTextMetrics
+} from "./compat/text";
 import { circleFromDrag, imageFromDrag, pathFromPoints, rectFromDrag, textFromDrag } from "./elements/create";
+import { getElementBounds, getShapeDragBox } from "./elements/geometry";
 import {
 	addElement,
 	clampElementsToCanvas,
@@ -15,7 +25,8 @@ import {
 	updatePathVertex,
 	renameElement
 } from "./elements/mutate";
-import { autofixElementName, validateElementNames } from "./elements/naming";
+import { autofixElementName } from "./elements/naming";
+import { toPathPoints } from "./elements/path";
 import { resetImageCrop, resizeImageCropFrame, setImageCropScale, translateImageCrop } from "./image/commands";
 import { imageFromFile, replaceImageAsset } from "./image/upload";
 import { create, rename } from "./project/commands";
@@ -31,6 +42,10 @@ import { flushEditorSave, queueEditorSave } from "./session/save";
 import { imageAssetState } from "./state/assets";
 import { fillState, projectState } from "./state/document";
 import { toolState, canvasState } from "./state/workspace";
+
+function setFill(fill: string): void {
+	fillState.set(fill);
+}
 
 /** Maply's application-specific editing composition boundary. */
 export const Editor = {
@@ -89,6 +104,25 @@ export const Editor = {
 
 	naming: { validate: validateElementNames, autofix: autofixElementName },
 
+	fill: { set: setFill },
+
+	geometry: {
+		shapeDragBox: getShapeDragBox,
+		elementBounds: getElementBounds,
+		pathPoints: toPathPoints,
+		pathBounds: getPathDataBounds,
+		pathRenderTransform: getPathRenderTransform,
+		snapPathSegment,
+		imageRenderRect: getImageRenderRect
+	},
+
+	text: {
+		wrappedLines: getWrappedTextLines,
+		wrappedLineHeight: getWrappedTextLineHeight,
+		wrappedMetrics: getWrappedTextMetrics,
+		layoutMetrics: getTextLayoutMetrics
+	},
+
 	clipboard: { copy, get: getClipboard, paste },
 
 	image: {
@@ -112,3 +146,4 @@ export const Editor = {
 
 export type EditorApi = typeof Editor;
 export type { ResizeHandle, ResizeOptions } from "./elements/resize";
+export type { ElementNameIssue, ElementNameValidation } from "./compat/naming";
