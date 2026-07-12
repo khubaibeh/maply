@@ -4,8 +4,9 @@
 	import "./layout.css";
 	import "./selections.css";
 	import * as Tooltip from "$lib/components/ui/tooltip";
-	import { App } from "@app";
+	import { useTheme } from "$lib/state/theme.svelte";
 	import { canvasCursor } from "@components/core/cursors";
+	import { Editor } from "editor";
 	import Monitor from "phosphor-svelte/lib/Monitor";
 	import { onMount } from "svelte";
 
@@ -15,9 +16,9 @@
 	let innerHeight = $state(0);
 	let isClient = $state(false);
 	let MIN_DIM = [400, 600];
-	const canvas = App.state.canvas;
-	const project = App.state.project;
-	const theme = App.theme.use();
+	const canvas = Editor.state.canvas;
+	const project = Editor.state.project;
+	const theme = useTheme();
 
 	let isTooSmall = $derived(isClient && (innerWidth < MIN_DIM[0] || innerHeight < MIN_DIM[1]));
 
@@ -30,7 +31,7 @@
 
 		// Layout owns autosave because it observes both project and canvas state.
 		void canvasState;
-		App.save.queue();
+		Editor.save.queue();
 	});
 
 	onMount(() => {
@@ -49,7 +50,7 @@
 		root.style.setProperty("--app-cursor-resize-diagonal-up", canvasCursor.resizeDiagonalUp);
 
 		const flushProjectSave = () => {
-			void App.save.flush();
+			void Editor.save.flush();
 		};
 
 		const handleVisibilityChange = () => {
@@ -59,7 +60,7 @@
 		};
 
 		// Load once on the client and flush pending saves through browser shutdown paths.
-		void App.load();
+		void Editor.load();
 		window.addEventListener("pagehide", flushProjectSave);
 		window.addEventListener("beforeunload", flushProjectSave);
 		document.addEventListener("visibilitychange", handleVisibilityChange);

@@ -2,9 +2,9 @@
 	import * as ContextMenu from "$lib/components/ui/context-menu";
 	import { Input } from "$lib/components/ui/input";
 	import { ScrollArea } from "$lib/components/ui/scroll-area";
-	import { App } from "@app";
-	import type { Element } from "@app/types";
 	import ElementNameValidation from "@components/core/ElementNameValidation.svelte";
+	import type { Element } from "@maply/model/types";
+	import { Editor } from "editor";
 	import Circle from "phosphor-svelte/lib/Circle";
 	import Image from "phosphor-svelte/lib/Image";
 	import Pencil from "phosphor-svelte/lib/Pencil";
@@ -14,7 +14,7 @@
 	import { onDestroy } from "svelte";
 	import type { Component } from "svelte";
 
-	const project = App.state.project;
+	const project = Editor.state.project;
 
 	function hasSelectionModifier(event: MouseEvent | PointerEvent) {
 		return event.ctrlKey || event.metaKey;
@@ -44,7 +44,7 @@
 	let suppressNextElementClick = false;
 
 	const REORDER_HOLD_DELAY_MS = 220;
-	const elementNameValidations = $derived(App.validate.elementNames($project.elements));
+	const elementNameValidations = $derived(Editor.naming.validate($project.elements));
 	const sidebarElements = $derived(() => {
 		const elements = [...$project.elements].reverse();
 		const activeReorder = reorderState;
@@ -82,13 +82,13 @@
 	function saveElementEdit() {
 		const trimmed = editingElementName.trim();
 		if (editingElementId) {
-			App.actions.project.renameElement(editingElementId, trimmed);
+			Editor.element.rename(editingElementId, trimmed);
 		}
 		editingElementId = null;
 	}
 
 	function autofixElementName(elementId: string, suggestion: string) {
-		App.actions.project.renameElement(elementId, suggestion);
+		Editor.element.rename(elementId, suggestion);
 	}
 
 	function cancelElementEdit() {
@@ -105,12 +105,12 @@
 
 	function handleElementTreeBackgroundPointerDown(event: PointerEvent) {
 		if (event.target !== event.currentTarget) return;
-		App.actions.project.selectElement(null);
+		Editor.selection.select(null);
 	}
 
 	function setElementContextMenuOpen(elementId: string, open: boolean) {
 		if (open && !$project.selectedElementIds.includes(elementId)) {
-			App.actions.project.selectElement(elementId);
+			Editor.selection.select(elementId);
 		}
 		openElementContextMenuId = open
 			? elementId
@@ -128,7 +128,7 @@
 	}
 
 	function selectAllElements() {
-		App.actions.project.selectAll();
+		Editor.selection.selectAll();
 		closeElementContextMenu();
 		closeBackgroundContextMenu();
 	}
@@ -252,7 +252,7 @@
 			return;
 		}
 
-		App.actions.project.selectElement(elementId, { additive: hasSelectionModifier(event) });
+		Editor.selection.select(elementId, hasSelectionModifier(event));
 	}
 
 	function handleReorderPointerMove(event: PointerEvent) {
@@ -280,7 +280,7 @@
 		const toProjectIndex = elementCount - 1 - reorderState.insertionIndex;
 
 		if (fromProjectIndex !== toProjectIndex) {
-			App.actions.project.reorderElements(fromProjectIndex, toProjectIndex);
+			Editor.element.reorder(fromProjectIndex, toProjectIndex);
 		}
 
 		reorderState = null;
@@ -343,7 +343,7 @@
 						: ''}"
 					onclick={(event) => {
 						event.stopPropagation();
-						void App.element.delete(element.id);
+						void Editor.element.delete(element.id);
 					}}
 					aria-label="Delete {element.name}"
 				>
@@ -401,7 +401,7 @@
 				const selected = $project.selectedElementIds.includes(element.id)
 					? $project.elements.filter((entry) => $project.selectedElementIds.includes(entry.id))
 					: [element];
-				App.actions.clipboard.copy(selected);
+				Editor.clipboard.copy(selected);
 				closeElementContextMenu();
 			}}
 		>
@@ -412,7 +412,7 @@
 			class="rounded-lg px-2.5 py-1.5 text-xs"
 			disabled={isFrontmost}
 			onclick={() => {
-				App.actions.project.moveElementToFront(element.id);
+				Editor.element.moveToFront(element.id);
 				closeElementContextMenu();
 			}}
 		>
@@ -422,7 +422,7 @@
 			class="rounded-lg px-2.5 py-1.5 text-xs"
 			disabled={isFrontmost}
 			onclick={() => {
-				App.actions.project.moveElementForward(element.id);
+				Editor.element.moveForward(element.id);
 				closeElementContextMenu();
 			}}
 		>
@@ -432,7 +432,7 @@
 			class="rounded-lg px-2.5 py-1.5 text-xs"
 			disabled={isBackmost}
 			onclick={() => {
-				App.actions.project.moveElementBackward(element.id);
+				Editor.element.moveBackward(element.id);
 				closeElementContextMenu();
 			}}
 		>
@@ -442,7 +442,7 @@
 			class="rounded-lg px-2.5 py-1.5 text-xs"
 			disabled={isBackmost}
 			onclick={() => {
-				App.actions.project.moveElementToBack(element.id);
+				Editor.element.moveToBack(element.id);
 				closeElementContextMenu();
 			}}
 		>
@@ -456,7 +456,7 @@
 				const ids = $project.selectedElementIds.includes(element.id)
 					? $project.selectedElementIds
 					: [element.id];
-				void App.element.delete(ids);
+				void Editor.element.delete(ids);
 				closeElementContextMenu();
 			}}
 		>

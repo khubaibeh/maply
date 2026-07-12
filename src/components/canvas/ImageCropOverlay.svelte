@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { App } from "@app";
-	import type { ImageElement, ResizeHandle } from "@app/types";
 	import { canvasCursor, resizeCursor } from "@components/core/cursors";
+	import type { ImageElement } from "@maply/model/types";
+	import { Editor, type ResizeHandle } from "editor";
 	import { onMount } from "svelte";
 
 	interface Props {
@@ -14,7 +14,7 @@
 	const HANDLE_SIZE_SCREEN = 10;
 	const HANDLE_OFFSET_SCREEN = 1;
 	const SELECTION_COLOR = "#2563eb";
-	const canvas = App.state.canvas;
+	const canvas = Editor.state.canvas;
 
 	let dragState = $state<
 		| {
@@ -29,6 +29,7 @@
 				svg: SVGSVGElement;
 				grabX: number;
 				grabY: number;
+				source: ImageElement;
 		  }
 		| null
 	>(null);
@@ -96,7 +97,8 @@
 			handle,
 			svg,
 			grabX: svgPoint.x,
-			grabY: svgPoint.y
+			grabY: svgPoint.y,
+			source: { ...element }
 		};
 	}
 
@@ -111,13 +113,12 @@
 			const dy = svgPoint.y - dragState.grabY;
 
 			if (dragState.kind === "pan") {
-				App.actions.project.translateImageCrop(element.id, dx, dy);
+				Editor.image.translateCrop(element.id, dx, dy);
+				dragState.grabX = svgPoint.x;
+				dragState.grabY = svgPoint.y;
 			} else {
-				App.actions.project.resizeImageFrame(element.id, dragState.handle, dx, dy);
+				Editor.image.resizeFrame(element.id, dragState.handle, dx, dy, undefined, dragState.source);
 			}
-
-			dragState.grabX = svgPoint.x;
-			dragState.grabY = svgPoint.y;
 		}
 
 		function stopDragging() {

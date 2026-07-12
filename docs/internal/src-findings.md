@@ -72,9 +72,9 @@ Owner: `packages/io/src/index.ts`
 
 #### Theme module — Move out of `app/`
 
-`App.theme.set` and `App.theme.use` manage light/dark/system preference via `localStorage` and document class mutation. This is browser-only UI state and should not live in `editor`. Move to `src/lib/theme.svelte.ts` during Chunk 2.
+`App.theme.set` and `App.theme.use` manage light/dark/system preference via `localStorage` and document class mutation. This is browser-only UI state and should not live in `editor`. Move to `src/lib/state/theme.svelte.ts` during Chunk 2.
 
-Owner: `src/lib/theme.svelte.ts`
+Owner: `src/lib/state/theme.svelte.ts`
 
 ### No Gap (Confirmed Covered)
 

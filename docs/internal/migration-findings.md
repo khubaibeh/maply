@@ -37,15 +37,6 @@ Status: planned
 
 The storage test suite covers fresh database creation and project/image-asset replacement, but not upgrading an existing version-3 `maply` database. Add a fixture database at version 3 without the `image-assets.projectId` index, open it through storage, and verify that version 4 preserves records while creating the index.
 
-### Replace legacy app consumers
-
-Type: cleanup
-Found in: `app/services/indexed-db.ts`, `app/services/project-repo.ts`, `app/runtime/browser-runtime.ts`, `app/internal/db.ts`, `app/internal/project-file.ts`, `app/internal/svg-import.ts`, `app/internal/svg-export.ts`
-Migration chunk: package consumer replacement
-Status: planned
-
-`@maply/io`, `@maply/storage`, and `editor/` now have public seams, but `src/` still imports `@app` and therefore keeps legacy `app/` implementations alive. In one dedicated compatibility chunk, switch UI callers to `editor` plus package type/helper imports, preserve current client-only behavior, and delete duplicated legacy modules only after all callers are moved.
-
 ### Complete generic SVG import diagnostics
 
 Type: behavior-risk
@@ -64,18 +55,25 @@ Status: open
 
 `importExportState` is still part of the project model and app store, but it is not used by the UI anymore. Remove it from `app`, `src`, and the migrated model after package extraction is stable, including project defaults, project-file parsing, persistence merge logic, and any compatibility handling needed for persisted projects.
 
+## Done Findings
+
+### Replace legacy app consumers
+
+Type: cleanup
+Found in: `src/`, `editor/`, `tests/`, legacy `app/`
+Migration chunk: package consumer replacement
+Status: done
+
+Production callers now use `Editor` and `@maply/*`, replacement package/editor tests cover the retired legacy suites, and the `app/` tree plus `@app` alias were removed.
+
 ### Fix incremental rounding drift in crop-scale during image frame resize
 
 Type: behavior-risk
-Found in: `app/internal/image-assets.ts` (`getImageCropStateForFrameResize`), `src/components/canvas/ImageCropOverlay.svelte`
+Found in: `editor/image/commands.ts`, `src/components/canvas/ImageCropOverlay.svelte`
 Migration chunk: editor element resize
-Status: open
+Status: done
 
-The legacy `resizeImageFrame` store action calls `getImageCropStateForFrameResize` on every incremental `pointermove` delta during a handle drag. Each call reads `previousRect.width` (which is `Math.round`ed) and derives `previousCombinedScale = previousRect.width / assetWidth`. Because rounding introduces ±0.5px per frame, accumulated over many small moves the `cropScale` drifts downward — producing a visible zoom-out during what should be a pure frame resize.
-
-When porting to `editor/`, the caller must pass the **original pre-drag crop state** as `current` and the **original pre-drag frame** as `previous` for the entire drag gesture, with only `next` updating per-frame. This applies a single round at the end rather than N rounds during the drag. The pure `cropForFrameResize` function in `editor/image/crop.ts` is correct in isolation; the bug is a caller-pattern issue that must be addressed in the resize interaction wiring.
-
-## Done Findings
+The resize interaction captures the original image frame and crop state at pointerdown. Every pointermove sends the total drag delta with that snapshot, so crop/frame calculations no longer compound rounded intermediate values.
 
 ### Extract editor composition module
 

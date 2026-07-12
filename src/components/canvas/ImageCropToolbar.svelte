@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { App } from "@app";
-	import type { ImageElement } from "@app/types";
 	import { canvasCursor } from "@components/core/cursors";
+	import type { ImageElement } from "@maply/model/types";
+	import { Editor } from "editor";
 	import ArrowCounterClockwise from "phosphor-svelte/lib/ArrowCounterClockwise";
 	import Check from "phosphor-svelte/lib/Check";
 	import Crop from "phosphor-svelte/lib/Crop";
@@ -25,8 +25,8 @@
 	const TOOLBAR_ICON_SIZE = 15;
 
 	let fileInputRef: HTMLInputElement | null = $state(null);
-	const canvas = App.state.canvas;
-	const imageAssets = App.state.imageAssets;
+	const canvas = Editor.state.canvas;
+	const imageAssets = Editor.state.imageAssets;
 
 	const imageAsset = $derived(element.assetId ? ($imageAssets[element.assetId] ?? null) : null);
 	const imageHref = $derived(imageAsset?.dataUrl ?? element.href ?? "");
@@ -50,34 +50,34 @@
 
 	function keepSelected(event: PointerEvent | WheelEvent) {
 		event.stopPropagation();
-		App.actions.project.selectElement(element.id);
+		Editor.selection.select(element.id);
 	}
 
 	function resetCrop() {
-		App.actions.project.resetImageCrop(element.id);
-		App.actions.project.selectElement(element.id);
+		Editor.image.resetCrop(element.id);
+		Editor.selection.select(element.id);
 	}
 
 	function updateCropScale(event: Event) {
 		const value = Number((event.currentTarget as HTMLInputElement).value);
 		if (Number.isNaN(value)) return;
-		App.actions.project.setImageCropScale(element.id, value);
-		App.actions.project.selectElement(element.id);
+		Editor.image.setCropScale(element.id, value);
+		Editor.selection.select(element.id);
 	}
 
 	function finishCrop() {
-		App.actions.project.setCropEditingElement(null);
-		App.actions.project.selectElement(element.id);
+		Editor.selection.toggleCrop(element.id);
+		Editor.selection.select(element.id);
 	}
 
 	function startCrop() {
 		if (!hasImage) return;
-		App.actions.project.setCropEditingElement(element.id);
-		App.actions.project.selectElement(element.id);
+		Editor.selection.toggleCrop(element.id);
+		Editor.selection.select(element.id);
 	}
 
 	function openImagePicker() {
-		App.actions.project.selectElement(element.id);
+		Editor.selection.select(element.id);
 		fileInputRef?.click();
 	}
 
@@ -86,8 +86,8 @@
 		const file = input.files?.[0];
 		if (!file) return;
 
-		await App.actions.project.setImageAssetFromFile(element.id, file);
-		App.actions.project.selectElement(element.id);
+		await Editor.image.fromFile(element.id, file);
+		Editor.selection.select(element.id);
 		input.value = "";
 	}
 
@@ -98,7 +98,7 @@
 		link.href = imageHref;
 		link.download = downloadName;
 		link.click();
-		App.actions.project.selectElement(element.id);
+		Editor.selection.select(element.id);
 	}
 </script>
 

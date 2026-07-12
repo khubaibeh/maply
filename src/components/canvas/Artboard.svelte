@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { App } from "@app";
+	import { Editor } from "editor";
 
 	import CanvasResizeHandles from "./CanvasResizeHandles.svelte";
 	import ElementOutline from "./ElementOutline.svelte";
@@ -8,9 +8,9 @@
 	import PathElementHandles from "./PathElementHandles.svelte";
 	import PathElementOutline from "./PathElementOutline.svelte";
 
-	const canvas = App.state.canvas;
-	const project = App.state.project;
-	const tool = App.state.tool;
+	const canvas = Editor.state.canvas;
+	const project = Editor.state.project;
+	const tool = Editor.state.tool;
 
 	const selectedElements = $derived(
 		$project.elements.filter((element) => $project.selectedElementIds.includes(element.id))

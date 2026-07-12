@@ -1,17 +1,17 @@
 <script lang="ts">
 	import Logo from "$lib/assets/favicon.svg";
 	import * as ToggleGroup from "$lib/components/ui/toggle-group";
-	import { App } from "@app";
+	import { useTheme } from "$lib/state/theme.svelte";
 	import Monitor from "phosphor-svelte/lib/Monitor";
 	import Moon from "phosphor-svelte/lib/Moon";
 	import Sun from "phosphor-svelte/lib/Sun";
 
-	const theme = App.theme.use();
+	const theme = useTheme();
 	let value = $derived(theme.theme);
 
 	function handleChange(next: string | undefined) {
 		if (next === "light" || next === "dark" || next === "system") {
-			App.theme.set(next);
+			theme.theme = next;
 			return;
 		}
 

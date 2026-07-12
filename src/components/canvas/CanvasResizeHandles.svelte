@@ -1,8 +1,7 @@
 <script lang="ts">
-	import { App } from "@app";
-	import { sanitizeCanvasSize } from "@app/internal/canvas";
-	import type { Canvas, ResizeHandle } from "@app/types";
 	import { resizeCursor } from "@components/core/cursors";
+	import type { Canvas } from "@maply/model/types";
+	import { Editor, type ResizeHandle } from "editor";
 	import { onMount } from "svelte";
 
 	const HANDLE_SIZE_SCREEN = 12;
@@ -12,9 +11,9 @@
 	const HANDLE_OFFSET_SCREEN = 8;
 	const STROKE_WIDTH_SCREEN = 2;
 
-	const canvas = App.state.canvas;
-	const project = App.state.project;
-	const tool = App.state.tool;
+	const canvas = Editor.state.canvas;
+	const project = Editor.state.project;
+	const tool = Editor.state.tool;
 
 	let dragState = $state<{
 		handle: ResizeHandle;
@@ -166,8 +165,8 @@
 			let nextRight = dragState.handle.includes("e") ? right + dx : right;
 			let nextBottom = dragState.handle.includes("s") ? bottom + dy : bottom;
 
-			const nextWidth = sanitizeCanvasSize(nextRight - nextLeft);
-			const nextHeight = sanitizeCanvasSize(nextBottom - nextTop);
+			const nextWidth = Math.max(1, Math.round(nextRight - nextLeft));
+			const nextHeight = Math.max(1, Math.round(nextBottom - nextTop));
 
 			if (dragState.handle.includes("w")) {
 				nextLeft = nextRight - nextWidth;
@@ -188,8 +187,8 @@
 				height: nextBottom - nextTop,
 				color: $canvas.color
 			};
-			App.actions.canvas.setFrame(nextCanvas.x, nextCanvas.y, nextCanvas.width, nextCanvas.height);
-			App.actions.project.clampElementsToCanvas();
+			Editor.actions.canvas.setFrame(nextCanvas.x, nextCanvas.y, nextCanvas.width, nextCanvas.height);
+			Editor.element.clampAll();
 			dragState.grabX = svgPoint.x;
 			dragState.grabY = svgPoint.y;
 			dragState.didResize = true;

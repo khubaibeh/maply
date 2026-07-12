@@ -1,4 +1,4 @@
-import type { Tool } from "@app/types";
+import type { Tool } from "@maply/model/types";
 
 export const LEFT_SIDEBAR_MIN_WIDTH = 240;
 export const RIGHT_SIDEBAR_MIN_WIDTH = 285;

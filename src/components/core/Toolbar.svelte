@@ -1,9 +1,9 @@
 <script lang="ts">
 	import * as Tooltip from "$lib/components/ui/tooltip";
 	import { cn } from "$lib/utils";
-	import { App } from "@app";
-	import type { Tool } from "@app/types";
 	import { canvasCursor } from "@components/core/cursors";
+	import type { Tool } from "@maply/model/types";
+	import { Editor } from "editor";
 	import Circle from "phosphor-svelte/lib/Circle";
 	import Cursor from "phosphor-svelte/lib/Cursor";
 	import Hand from "phosphor-svelte/lib/Hand";
@@ -23,11 +23,11 @@
 		{ id: "text", label: "Text", shortcut: "T", icon: TextT },
 		{ id: "image", label: "Image", shortcut: "I", icon: Image }
 	] as const;
-	const toolState = App.state.tool;
+	const toolState = Editor.state.tool;
 
 	function selectTool(nextTool: Tool) {
 		if ($toolState.isSpacePressed) return;
-		App.actions.tool.set(nextTool);
+		Editor.actions.tool.set(nextTool);
 		(document.activeElement as HTMLElement | null)?.blur();
 	}
 </script>

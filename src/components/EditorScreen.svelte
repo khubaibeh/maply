@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { App } from "@app";
 	import CanvasArea from "@components/CanvasArea.svelte";
 	import ProjectMenuOverlay from "@components/core/ProjectMenuOverlay.svelte";
 	import Toolbar from "@components/core/Toolbar.svelte";
 	import Topbar from "@components/core/Topbar.svelte";
 	import LeftSidebar from "@components/LeftSidebar.svelte";
 	import RightSidebar from "@components/RightSidebar.svelte";
+	import { Editor } from "editor";
 	import { onMount } from "svelte";
 
 	import {
@@ -16,7 +16,7 @@
 		RIGHT_SIDEBAR_MIN_WIDTH
 	} from "./core.ts";
 
-	const project = App.state.project;
+	const project = Editor.state.project;
 
 	function getSelectedElements() {
 		return $project.elements.filter((element) => $project.selectedElementIds.includes(element.id));
@@ -30,7 +30,7 @@
 				const shortcutTool = getShortcutTool(event.key);
 				if (shortcutTool) {
 					event.preventDefault();
-					App.actions.tool.set(shortcutTool);
+					Editor.actions.tool.set(shortcutTool);
 					return;
 				}
 			}
@@ -40,7 +40,7 @@
 				if ($project.selectedElementIds.length === 0) return;
 
 				event.preventDefault();
-				App.actions.project.selectElement(null);
+				Editor.selection.select(null);
 				return;
 			}
 
@@ -50,7 +50,7 @@
 
 				if (selectedId && delta) {
 					event.preventDefault();
-					App.actions.project.translateElement(selectedId, delta.dx, delta.dy);
+					Editor.element.translate(selectedId, delta.dx, delta.dy);
 					return;
 				}
 			}
@@ -61,7 +61,7 @@
 				if (selectedIds.length === 0) return;
 
 				event.preventDefault();
-				void App.element.delete(selectedIds);
+				Editor.element.delete(selectedIds);
 				return;
 			}
 
@@ -73,20 +73,20 @@
 				if (selected.length === 0) return;
 
 				event.preventDefault();
-				App.actions.clipboard.copy(selected);
+				Editor.clipboard.copy(selected);
 			} else if (event.key === "a") {
 				if (isEditingText(event)) return;
 				if ($project.elements.length === 0) return;
 
 				event.preventDefault();
-				App.actions.project.selectAll();
+				Editor.selection.selectAll();
 			} else if (event.key === "v") {
 				if (isEditingText(event)) return;
-				const copied = App.actions.clipboard.get();
+				const copied = Editor.clipboard.get();
 				if (copied.length === 0) return;
 
 				event.preventDefault();
-				void App.element.paste();
+				Editor.clipboard.paste();
 			}
 		}
 

@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { App } from "@app";
-	import type { Element, ResizeHandle } from "@app/types";
 	import { resizeCursor } from "@components/core/cursors";
+	import type { Element } from "@maply/model/types";
+	import { Editor, type ResizeHandle } from "editor";
 	import { onMount } from "svelte";
 
 	interface Props {
@@ -10,9 +10,9 @@
 	}
 
 	let { element, interactive = true }: Props = $props();
-	const canvas = App.state.canvas;
-	const project = App.state.project;
-	const tool = App.state.tool;
+	const canvas = Editor.state.canvas;
+	const project = Editor.state.project;
+	const tool = Editor.state.tool;
 	const hideOutline = $derived(element.type === "image" && $project.cropEditingElementId === element.id);
 	const isSingleSelection = $derived($project.selectedElementIds.length === 1);
 	const canResize = $derived(
@@ -73,7 +73,7 @@
 	$effect(() => {
 		if (element.type === "text" || element.type === "image") {
 			const padding = 0.5;
-			const textBounds = App.geometry.elementBounds(element);
+			const textBounds = Editor.geometry.elementBounds(element);
 			bbox = {
 				x: textBounds.x - padding,
 				y: textBounds.y - padding,
@@ -148,12 +148,12 @@
 		if (event.ctrlKey || event.metaKey) {
 			event.preventDefault();
 			if (!wasSelected) {
-				App.actions.project.selectElement(element.id, { additive: true });
+				Editor.selection.select(element.id, true);
 				dragState = null;
 				return;
 			}
 		} else if (!wasSelected) {
-			App.actions.project.selectElement(element.id);
+			Editor.selection.select(element.id);
 		}
 
 		const svg = getSvgRoot(event.target);
@@ -187,7 +187,7 @@
 
 		const svgPoint = clientToSvgPoint(svg, event.clientX, event.clientY);
 		if (!svgPoint) return;
-		const bounds = App.geometry.elementBounds(element);
+		const bounds = Editor.geometry.elementBounds(element);
 		const aspectRatio = bounds.height > 0 ? bounds.width / bounds.height : null;
 
 		dragState = {
@@ -216,9 +216,9 @@
 
 				dragState.didMove = true;
 				if (dragState.ids.length > 1) {
-					App.actions.project.translateElements(dragState.ids, dx, dy);
+					Editor.element.translateAll(dragState.ids, dx, dy);
 				} else {
-					App.actions.project.translateElement(dragState.ids[0], dx, dy);
+					Editor.element.translate(dragState.ids[0], dx, dy);
 				}
 				dragState.grabX = svgPoint.x;
 				dragState.grabY = svgPoint.y;
@@ -233,7 +233,7 @@
 			if (dx === 0 && dy === 0) return;
 
 			dragState.didMove = true;
-			App.actions.project.resizeElement(element.id, dragState.handle, dx, dy, {
+			Editor.element.resize(element.id, dragState.handle, dx, dy, {
 				lockAspectRatio: dragState.lockAspectRatio,
 				aspectRatio: dragState.aspectRatio ?? undefined
 			});
@@ -243,7 +243,7 @@
 
 		function stopDragging() {
 			if (dragState?.kind === "move" && dragState.toggleSelectionOnClick && !dragState.didMove) {
-				App.actions.project.selectElement(dragState.id, { additive: true });
+				Editor.selection.select(dragState.id, true);
 			}
 			dragState = null;
 		}

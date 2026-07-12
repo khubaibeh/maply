@@ -1,18 +1,6 @@
 module.exports = {
 	forbidden: [
 		{
-			name: "app-no-src-imports",
-			severity: "error",
-			from: { path: "^app/" },
-			to: { path: "^src/" }
-		},
-		{
-			name: "packages-no-root-app-imports",
-			severity: "error",
-			from: { path: "^packages/" },
-			to: { path: "^app/" }
-		},
-		{
 			name: "model-is-pure",
 			severity: "error",
 			from: { path: "^packages/model/" },
@@ -47,12 +35,6 @@ module.exports = {
 			severity: "error",
 			from: { path: "^editor/" },
 			to: { path: "^(src/|packages/web/)" }
-		},
-		{
-			name: "editor-no-legacy-app-imports",
-			severity: "error",
-			from: { path: "^editor/" },
-			to: { path: "^app/" }
 		}
 	],
 	options: {

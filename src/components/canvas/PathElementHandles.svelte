@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { App } from "@app";
-	import type { Element, PathElement, Point } from "@app/types";
 	import { canvasCursor } from "@components/core/cursors";
+	import type { PathElement, Point } from "@maply/model/types";
+	import { Editor } from "editor";
 	import { onMount } from "svelte";
 
 	interface Props {
@@ -9,7 +9,7 @@
 	}
 
 	let { element }: Props = $props();
-	const canvas = App.state.canvas;
+	const canvas = Editor.state.canvas;
 
 	const HANDLE_SIZE_SCREEN = 8;
 	const SELECTION_COLOR = "#2563eb";
@@ -21,8 +21,8 @@
 		svg: SVGSVGElement;
 	} | null>(null);
 
-	const points = $derived(App.geometry.pathPoints(element.d));
-	const transform = $derived(App.geometry.pathRenderTransform(element));
+	const points = $derived(Editor.geometry.pathPoints(element.d));
+	const transform = $derived(Editor.geometry.pathRenderTransform(element));
 	const handleSize = $derived(HANDLE_SIZE_SCREEN / $canvas.camera.zoom);
 	const halfHandleSize = $derived(handleSize / 2);
 
@@ -78,7 +78,7 @@
 			const svgPoint = clientToSvgPoint(dragState.svg, event.clientX, event.clientY);
 			if (!svgPoint) return;
 
-			const oldBounds = App.geometry.pathBounds(points);
+			const oldBounds = Editor.geometry.pathBounds(points);
 			const offsetX = element.x - oldBounds.x;
 			const offsetY = element.y - oldBounds.y;
 
@@ -91,13 +91,7 @@
 				offsetY
 			);
 
-			const { d, bounds } = App.geometry.updatePathVertex(element.d, dragState.index, nextPoint);
-
-			App.actions.project.updateElement(element.id, {
-				d,
-				x: Math.round(bounds.x + offsetX),
-				y: Math.round(bounds.y + offsetY)
-			} as Partial<Element>);
+			Editor.element.updatePathVertex(element.id, dragState.index, nextPoint);
 		}
 
 		function stopDragging() {

@@ -4,6 +4,7 @@ import { centerCamera, pan, resetCamera, resetZoom, setCamera, zoomIn, zoomOut }
 import { setColor, setFrame, setPosition, setSize } from "./canvas/commands";
 import { setSpacePressed, setTool } from "./canvas/tool";
 import { getImageRenderRect, getPathDataBounds, getPathRenderTransform } from "./compat/geometry";
+import { resizeImageCropFrame } from "./compat/image";
 import { validateElementNames } from "./compat/naming";
 import { snapPathSegment } from "./compat/path";
 import {
@@ -27,7 +28,7 @@ import {
 } from "./elements/mutate";
 import { autofixElementName } from "./elements/naming";
 import { toPathPoints } from "./elements/path";
-import { resetImageCrop, resizeImageCropFrame, setImageCropScale, translateImageCrop } from "./image/commands";
+import { resetImageCrop, setImageCropScale, translateImageCrop } from "./image/commands";
 import { imageFromFile, replaceImageAsset } from "./image/upload";
 import { create, rename } from "./project/commands";
 import { exportProject } from "./project/export";

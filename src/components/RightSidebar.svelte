@@ -2,38 +2,38 @@
 	import { Badge } from "$lib/components/ui/badge";
 	import { Input } from "$lib/components/ui/input";
 	import { ScrollArea } from "$lib/components/ui/scroll-area";
-	import { App } from "@app";
 	import ColorPicker from "@components/core/ColorPicker.svelte";
 	import ElementNameValidation from "@components/core/ElementNameValidation.svelte";
 	import ElementProperties from "@components/ElementProperties.svelte";
+	import { Editor } from "editor";
 
 	let { width = 288 }: { width?: number } = $props();
-	const canvas = App.state.canvas;
-	const project = App.state.project;
+	const canvas = Editor.state.canvas;
+	const project = Editor.state.project;
 
 	function updateWidth(event: Event) {
 		const value = parseInt((event.target as HTMLInputElement).value, 10);
 		if (!Number.isNaN(value)) {
-			App.actions.canvas.setSize(value, $canvas.height);
-			App.actions.project.clampElementsToCanvas();
+			Editor.actions.canvas.setSize(value, $canvas.height);
+			Editor.element.clampAll();
 		}
 	}
 
 	function updateHeight(event: Event) {
 		const value = parseInt((event.target as HTMLInputElement).value, 10);
 		if (!Number.isNaN(value)) {
-			App.actions.canvas.setSize($canvas.width, value);
-			App.actions.project.clampElementsToCanvas();
+			Editor.actions.canvas.setSize($canvas.width, value);
+			Editor.element.clampAll();
 		}
 	}
 
 	function updateElementName(event: Event, id: string) {
 		const value = (event.target as HTMLInputElement).value.trim();
-		App.actions.project.renameElement(id, value);
+		Editor.element.rename(id, value);
 	}
 
 	function autofixElementName(id: string, suggestion: string) {
-		App.actions.project.renameElement(id, suggestion);
+		Editor.element.rename(id, suggestion);
 	}
 
 	const selectedElement = $derived(
@@ -42,7 +42,7 @@
 			: null
 	);
 	const selectedElementCount = $derived($project.selectedElementIds.length);
-	const elementNameValidations = $derived(App.validate.elementNames($project.elements));
+	const elementNameValidations = $derived(Editor.naming.validate($project.elements));
 	const selectedElementNameValidation = $derived(
 		selectedElement ? (elementNameValidations.get(selectedElement.id) ?? null) : null
 	);
@@ -87,7 +87,7 @@
 					id="canvas-color"
 					label="Color"
 					value={$canvas.color}
-					onChange={App.actions.canvas.setColor}
+					onChange={Editor.actions.canvas.setColor}
 				/>
 			</div>
 

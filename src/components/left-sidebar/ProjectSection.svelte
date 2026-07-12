@@ -3,13 +3,13 @@
 	import { Button, buttonVariants } from "$lib/components/ui/button";
 	import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
 	import { Input } from "$lib/components/ui/input";
-	import { App } from "@app";
+	import { Editor } from "editor";
 	import CaretDown from "phosphor-svelte/lib/CaretDown";
 	import FloppyDisk from "phosphor-svelte/lib/FloppyDisk";
 	import Pencil from "phosphor-svelte/lib/Pencil";
 	import Plus from "phosphor-svelte/lib/Plus";
 
-	const project = App.state.project;
+	const project = Editor.state.project;
 
 	let editName = $state("");
 	let isEditing = $state(false);
@@ -17,12 +17,12 @@
 	let newProjectDialogOpen = $state(false);
 
 	async function handleCreateNewProject(elements: "sample" | "blank" = "blank") {
-		await App.project.create({ elements });
+		await Editor.project.create({ elements });
 		newProjectDialogOpen = false;
 	}
 
 	async function handleSave() {
-		await App.save.flush();
+		await Editor.save.flush();
 	}
 
 	$effect(() => {
@@ -44,7 +44,7 @@
 	}
 
 	function save() {
-		App.actions.project.setName(editName);
+		Editor.project.rename(editName);
 		isEditing = false;
 	}
 

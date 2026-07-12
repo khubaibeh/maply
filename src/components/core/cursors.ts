@@ -8,7 +8,7 @@ import cursorSvg from "$lib/assets/cursors/cursor.svg?raw";
 import handGrabbingSvg from "$lib/assets/cursors/hand-grabbing.svg?raw";
 import handSvg from "$lib/assets/cursors/hand.svg?raw";
 import penNibSvg from "$lib/assets/cursors/pen-nib.svg?raw";
-import type { ResizeHandle } from "@app/types";
+import type { ResizeHandle } from "editor";
 
 const CURSOR_SIZE = 20;
 

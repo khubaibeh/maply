@@ -1,6 +1,7 @@
-import { App } from "@app";
-import type { ImageElement, Point } from "@app/types";
 import { canvasCursor } from "@components/core/cursors";
+import { isPointInsideCanvas } from "@maply/model";
+import type { ImageElement, Point } from "@maply/model/types";
+import { Editor } from "editor";
 import { onMount } from "svelte";
 import { fromStore } from "svelte/store";
 
@@ -24,9 +25,9 @@ const VERTEX_DOT_SCREEN_PX = 3;
 const CLOSE_HANDLE_SCREEN_PX = 6;
 
 export function createCanvasAreaState() {
-	const canvas = fromStore(App.state.canvas);
-	const project = fromStore(App.state.project);
-	const tool = fromStore(App.state.tool);
+	const canvas = fromStore(Editor.state.canvas);
+	const project = fromStore(Editor.state.project);
+	const tool = fromStore(Editor.state.tool);
 
 	const state = $state({
 		container: null as HTMLDivElement | null,
@@ -45,7 +46,7 @@ export function createCanvasAreaState() {
 		pathSession: null as PathSession | null
 	});
 
-	const hasClipboardElement = $derived(App.actions.clipboard.get().length > 0);
+	const hasClipboardElement = $derived(Editor.clipboard.get().length > 0);
 	const contextMenuElementLayerIndex = $derived(
 		state.contextMenuElementId
 			? project.current.elements.findIndex((element) => element.id === state.contextMenuElementId)
@@ -95,9 +96,11 @@ export function createCanvasAreaState() {
 
 	const shapePreview = $derived.by(() => {
 		if (!state.drawingSession) return null;
-		const box = App.geometry.shapeDragBox(state.drawingSession.start, state.drawingSession.current, {
-			square: state.drawingSession.tool === "rect" && state.drawingSession.square
-		});
+		const box = Editor.geometry.shapeDragBox(
+			state.drawingSession.start,
+			state.drawingSession.current,
+			state.drawingSession.tool === "rect" && state.drawingSession.square
+		);
 		if (!box) return null;
 
 		if (
@@ -165,11 +168,8 @@ export function createCanvasAreaState() {
 			if (event.ctrlKey || event.metaKey) {
 				const zoomSensitivity = 0.0025;
 				const nextZoom = Math.min(
-					canvas.current.maxZoom,
-					Math.max(
-						canvas.current.minZoom,
-						canvas.current.camera.zoom * Math.exp(-event.deltaY * zoomSensitivity)
-					)
+					5,
+					Math.max(0.1, canvas.current.camera.zoom * Math.exp(-event.deltaY * zoomSensitivity))
 				);
 				if (nextZoom === canvas.current.camera.zoom) return;
 
@@ -180,13 +180,13 @@ export function createCanvasAreaState() {
 				const worldX = canvas.current.camera.x + mouseX / canvas.current.camera.zoom;
 				const worldY = canvas.current.camera.y + mouseY / canvas.current.camera.zoom;
 
-				App.actions.canvas.setCamera({
+				Editor.actions.canvas.setCamera({
 					zoom: nextZoom,
 					x: worldX - mouseX / nextZoom,
 					y: worldY - mouseY / nextZoom
 				});
 			} else {
-				App.actions.canvas.pan(
+				Editor.actions.canvas.pan(
 					event.deltaX / canvas.current.camera.zoom,
 					event.deltaY / canvas.current.camera.zoom
 				);
@@ -208,7 +208,7 @@ export function createCanvasAreaState() {
 			if (!state.isPanning) return;
 			const dx = (state.panStart.x - event.clientX) / canvas.current.camera.zoom;
 			const dy = (state.panStart.y - event.clientY) / canvas.current.camera.zoom;
-			App.actions.canvas.setCamera({
+			Editor.actions.canvas.setCamera({
 				x: state.cameraStart.x + dx,
 				y: state.cameraStart.y + dy
 			});
@@ -246,20 +246,18 @@ export function createCanvasAreaState() {
 
 			let element = null;
 			if (session.tool === "rect") {
-				element = App.create.rectFromDrag(session.start, end, project.current.elements, {
-					square: event.shiftKey
-				});
+				element = Editor.create.rectFromDrag(session.start, end, project.current.elements, event.shiftKey);
 			} else if (session.tool === "circle") {
-				element = App.create.circleFromDrag(session.start, end, project.current.elements);
+				element = Editor.create.circleFromDrag(session.start, end, project.current.elements);
 			} else if (session.tool === "text") {
-				element = App.create.textFromDrag(session.start, end, project.current.elements);
+				element = Editor.create.textFromDrag(session.start, end, project.current.elements);
 			} else if (session.tool === "image") {
-				element = App.create.imageFromDrag(session.start, end, project.current.elements);
+				element = Editor.create.imageFromDrag(session.start, end, project.current.elements);
 			}
 			if (!element) return;
 
-			App.actions.project.addElement(element);
-			App.actions.tool.set("select");
+			Editor.element.add(element);
+			Editor.actions.tool.set("select");
 		}
 
 		function cancelDrawing() {
@@ -288,13 +286,13 @@ export function createCanvasAreaState() {
 			if (event.key !== " ") return;
 			if (!state.isHovering) return;
 			event.preventDefault();
-			App.actions.tool.setSpacePressed(true);
+			Editor.actions.tool.setSpacePressed(true);
 		}
 
 		function handleKeyUp(event: KeyboardEvent) {
 			if (event.key !== " ") return;
 			event.preventDefault();
-			App.actions.tool.setSpacePressed(false);
+			Editor.actions.tool.setSpacePressed(false);
 		}
 
 		function handleMouseEnter() {
@@ -303,7 +301,7 @@ export function createCanvasAreaState() {
 
 		function handleMouseLeave() {
 			state.isHovering = false;
-			App.actions.tool.setSpacePressed(false);
+			Editor.actions.tool.setSpacePressed(false);
 		}
 
 		function dismissContextMenu(event: PointerEvent) {
@@ -373,7 +371,7 @@ export function createCanvasAreaState() {
 		if (!state.pathSession) return;
 		const clampedPoint = clampPointToCanvas(point);
 		const last = state.pathSession.points[state.pathSession.points.length - 1];
-		const snappedPoint = shiftKey && last ? App.geometry.snapPathSegment(last, clampedPoint) : clampedPoint;
+		const snappedPoint = shiftKey && last ? Editor.geometry.snapPathSegment(last, clampedPoint) : clampedPoint;
 		const current = last ? clampPointToCanvasAlongSegment(last, snappedPoint) : snappedPoint;
 		const first = state.pathSession.points[0];
 		const threshold = CLOSE_THRESHOLD_SCREEN_PX / canvas.current.camera.zoom;
@@ -420,11 +418,11 @@ export function createCanvasAreaState() {
 		const points = state.pathSession.points;
 		state.pathSession = null;
 
-		const element = App.create.pathFromPoints(points, true, project.current.elements);
+		const element = Editor.create.pathFromPoints(points, true, project.current.elements);
 		if (!element) return;
 
-		App.actions.project.addElement(element);
-		App.actions.tool.set("select");
+		Editor.element.add(element);
+		Editor.actions.tool.set("select");
 	}
 
 	function closePath() {
@@ -444,13 +442,13 @@ export function createCanvasAreaState() {
 		if (event.button !== 0) return;
 		if (isHandActive) return;
 		if (tool.current.activeTool === "select") {
-			App.actions.project.selectElement(null);
+			Editor.selection.select(null);
 			return;
 		}
 
 		const drawPoint = clientToSvgPoint(event.clientX, event.clientY);
 		if (!drawPoint) return;
-		const insideArtboard = App.geometry.isPointInsideCanvas(drawPoint, {
+		const insideArtboard = isPointInsideCanvas(drawPoint, {
 			x: canvas.current.x,
 			y: canvas.current.y,
 			width: canvas.current.width,
@@ -512,7 +510,7 @@ export function createCanvasAreaState() {
 			const id = elementNode.getAttribute("data-canvas-element");
 			if (id) {
 				if (!project.current.selectedElementIds.includes(id)) {
-					App.actions.project.selectElement(id);
+					Editor.selection.select(id);
 				}
 				state.contextMenuTarget = "element";
 				state.contextMenuElementId = id;
@@ -520,7 +518,7 @@ export function createCanvasAreaState() {
 			}
 		}
 		if (project.current.selectedElementIds.length > 0) {
-			App.actions.project.selectElement(null);
+			Editor.selection.select(null);
 		}
 		state.contextMenuTarget = "empty";
 		state.contextMenuElementId = null;
@@ -531,7 +529,7 @@ export function createCanvasAreaState() {
 		const elements = project.current.selectedElementIds.includes(state.contextMenuElementId)
 			? project.current.elements.filter((entry) => project.current.selectedElementIds.includes(entry.id))
 			: project.current.elements.filter((entry) => entry.id === state.contextMenuElementId);
-		if (elements.length > 0) App.actions.clipboard.copy(elements);
+		if (elements.length > 0) Editor.clipboard.copy(elements);
 		state.contextMenuOpen = false;
 	}
 
@@ -540,47 +538,47 @@ export function createCanvasAreaState() {
 		const ids = project.current.selectedElementIds.includes(state.contextMenuElementId)
 			? project.current.selectedElementIds
 			: [state.contextMenuElementId];
-		void App.element.delete(ids);
+		void Editor.element.delete(ids);
 		state.contextMenuOpen = false;
 	}
 
 	function handleBringToFront() {
 		if (!state.contextMenuElementId) return;
 		if (project.current.selectedElementIds.length > 1) return;
-		App.actions.project.moveElementToFront(state.contextMenuElementId);
+		Editor.element.moveToFront(state.contextMenuElementId);
 		state.contextMenuOpen = false;
 	}
 
 	function handleBringForward() {
 		if (!state.contextMenuElementId) return;
 		if (project.current.selectedElementIds.length > 1) return;
-		App.actions.project.moveElementForward(state.contextMenuElementId);
+		Editor.element.moveForward(state.contextMenuElementId);
 		state.contextMenuOpen = false;
 	}
 
 	function handleSendBackward() {
 		if (!state.contextMenuElementId) return;
 		if (project.current.selectedElementIds.length > 1) return;
-		App.actions.project.moveElementBackward(state.contextMenuElementId);
+		Editor.element.moveBackward(state.contextMenuElementId);
 		state.contextMenuOpen = false;
 	}
 
 	function handleSendToBack() {
 		if (!state.contextMenuElementId) return;
 		if (project.current.selectedElementIds.length > 1) return;
-		App.actions.project.moveElementToBack(state.contextMenuElementId);
+		Editor.element.moveToBack(state.contextMenuElementId);
 		state.contextMenuOpen = false;
 	}
 
 	function handlePaste() {
-		const copied = App.actions.clipboard.get();
+		const copied = Editor.clipboard.get();
 		if (copied.length === 0) return;
-		void App.element.paste(state.contextMenuPoint ?? undefined);
+		void Editor.clipboard.paste(state.contextMenuPoint ?? undefined);
 		state.contextMenuOpen = false;
 	}
 
 	function handleSelectAll() {
-		App.actions.project.selectAll();
+		Editor.selection.selectAll();
 		state.contextMenuOpen = false;
 	}
 

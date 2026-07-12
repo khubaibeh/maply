@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { App } from "@app";
+	import { Editor } from "editor";
 	import { onMount } from "svelte";
 
-	const imageAssets = App.state.imageAssets;
-	const project = App.state.project;
-	const tool = App.state.tool;
+	const imageAssets = Editor.state.imageAssets;
+	const project = Editor.state.project;
+	const tool = Editor.state.tool;
 
 	function hasSelectionModifier(event: PointerEvent) {
 		return event.ctrlKey || event.metaKey;
@@ -46,12 +46,12 @@
 		if (hasSelectionModifier(event)) {
 			event.preventDefault();
 			if (!wasSelected) {
-				App.actions.project.selectElement(id, { additive: true });
+				Editor.selection.select(id, true);
 				dragState = null;
 				return;
 			}
 		} else if (!wasSelected) {
-			App.actions.project.selectElement(id);
+			Editor.selection.select(id);
 		}
 
 		const svg = getSvgRoot(event.target);
@@ -75,12 +75,12 @@
 
 	function hoverElement(id: string) {
 		if ($tool.activeTool !== "select") return;
-		App.actions.project.setHoveredElement(id);
+		Editor.selection.setHover(id);
 	}
 
 	function clearHoveredElement(id: string) {
 		if ($project.hoveredElementId !== id) return;
-		App.actions.project.setHoveredElement(null);
+		Editor.selection.setHover(null);
 	}
 
 	onMount(() => {
@@ -96,9 +96,9 @@
 
 			dragState.didMove = true;
 			if (dragState.ids.length > 1) {
-				App.actions.project.translateElements(dragState.ids, dx, dy);
+				Editor.element.translateAll(dragState.ids, dx, dy);
 			} else {
-				App.actions.project.translateElement(dragState.ids[0], dx, dy);
+				Editor.element.translate(dragState.ids[0], dx, dy);
 			}
 			dragState.grabX = svgPoint.x;
 			dragState.grabY = svgPoint.y;
@@ -106,7 +106,7 @@
 
 		function stopDragging() {
 			if (dragState?.toggleSelectionOnClick && !dragState.didMove) {
-				App.actions.project.selectElement(dragState.id, { additive: true });
+				Editor.selection.select(dragState.id, true);
 			}
 			dragState = null;
 		}
@@ -163,7 +163,7 @@
 				onpointerleave={() => clearHoveredElement(element.id)}
 			/>
 		{:else if element.type === "path"}
-			{@const transform = App.geometry.pathRenderTransform(element)}
+			{@const transform = Editor.geometry.pathRenderTransform(element)}
 			<path
 				id="element-{element.id}"
 				data-canvas-element={element.id}
@@ -181,9 +181,9 @@
 				onpointerleave={() => clearHoveredElement(element.id)}
 			/>
 		{:else if element.type === "text"}
-			{@const wrappedLines = App.text.wrappedLines(element)}
-			{@const lineHeight = App.text.wrappedLineHeight(element)}
-			{@const textMetrics = App.text.wrappedMetrics(element)}
+			{@const wrappedLines = Editor.text.wrappedLines(element)}
+			{@const lineHeight = Editor.text.wrappedLineHeight(element)}
+			{@const textMetrics = Editor.text.wrappedMetrics(element)}
 			<defs>
 				<clipPath id="text-clip-{element.id}">
 					<rect
@@ -235,7 +235,8 @@
 				<rect x={element.x} y={element.y} width={element.width} height={element.height} fill="var(--muted)" />
 				{#if imageHref}
 					{@const renderRect = imageAsset
-						? App.geometry.imageRenderRect({
+						? Editor.geometry.imageRenderRect({
+								...element,
 								x: 0,
 								y: 0,
 								width: element.width,

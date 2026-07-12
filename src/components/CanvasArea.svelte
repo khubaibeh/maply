@@ -1,6 +1,5 @@
 <script lang="ts">
 	import * as ContextMenu from "$lib/components/ui/context-menu";
-	import { App } from "@app";
 	import Artboard from "@components/canvas/Artboard.svelte";
 	import Background from "@components/canvas/Background.svelte";
 	import ContextMenuContent from "@components/canvas/ContextMenuContent.svelte";
@@ -8,9 +7,10 @@
 	import ImageCropToolbar from "@components/canvas/ImageCropToolbar.svelte";
 	import { createCanvasAreaState } from "@components/core/area.state.svelte";
 	import { canvasCursor } from "@components/core/cursors";
+	import { Editor } from "editor";
 
 	const canvasArea = createCanvasAreaState();
-	const project = App.state.project;
+	const project = Editor.state.project;
 </script>
 
 <ContextMenu.Root bind:open={canvasArea.state.contextMenuOpen}>

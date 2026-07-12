@@ -4,15 +4,16 @@
 	import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
 	import { Input } from "$lib/components/ui/input";
 	import { cn } from "$lib/utils";
-	import { App } from "@app";
-	import type { ProjectFilePackage } from "@app/types";
 	import { canvasCursor } from "@components/core/cursors";
+	import { project as projectIo, svg as svgIo } from "@maply/io";
+	import type { ProjectFilePackage } from "@maply/io/types";
+	import { Editor } from "editor";
 	import CaretDown from "phosphor-svelte/lib/CaretDown";
 	import DotsThree from "phosphor-svelte/lib/DotsThree";
 
 	let { class: className = "" }: { class?: string } = $props();
 
-	const project = App.state.project;
+	const project = Editor.state.project;
 
 	let editName = $state("");
 	let isEditing = $state(false);
@@ -26,7 +27,7 @@
 	let busy = $state<"project-import" | "project-export" | "svg-export" | null>(null);
 
 	async function handleCreateNewProject(elements: "sample" | "blank" = "blank") {
-		await App.project.create({ elements });
+		await Editor.project.create({ elements });
 		newProjectDialogOpen = false;
 	}
 
@@ -49,15 +50,20 @@
 		URL.revokeObjectURL(url);
 	}
 
-	function handleProjectExport() {
+	async function handleProjectExport() {
 		if (busy) return;
 		busy = "project-export";
 
 		try {
-			const projectFile = App.project.export();
+			const projectFile = await Editor.project.export();
+			if (!projectFile.ok) return;
+
+			const serialized = await projectIo.file.serialize(projectFile.value);
+			if (!serialized.ok) return;
+
 			downloadTextFile(
-				sanitizeDownloadName(projectFile.project.name, "json"),
-				App.codec.project.stringify(projectFile),
+				sanitizeDownloadName(projectFile.value.project.name, "json"),
+				serialized.value,
 				"application/json"
 			);
 		} catch {
@@ -72,8 +78,10 @@
 		busy = "svg-export";
 
 		try {
-			const svg = await App.project.svg();
-			downloadTextFile(sanitizeDownloadName($project.name, "svg"), svg, "image/svg+xml");
+			const svg = await Editor.project.exportSvg();
+			if (!svg.ok) return;
+
+			downloadTextFile(sanitizeDownloadName($project.name, "svg"), svg.value, "image/svg+xml");
 		} catch {
 			void 0;
 		} finally {
@@ -96,7 +104,14 @@
 		busy = "project-import";
 
 		try {
-			pendingImportedProject = App.codec.project.parse(await file.text());
+			const parsed = await projectIo.file.parse(await file.text());
+			if (!parsed.ok) {
+				pendingImportedProject = null;
+				pendingImportedProjectName = "";
+				return;
+			}
+
+			pendingImportedProject = parsed.value;
 			pendingImportedProjectName = file.name;
 			importProjectDialogOpen = true;
 		} catch {
@@ -124,13 +139,23 @@
 		try {
 			const text = await file.text();
 			console.info("[svg-import] read file contents", { name: file.name, length: text.length });
-			pendingImportedProject = App.codec.svg.parse(text);
+			const imported = await svgIo.import(text);
+			if (!imported.ok) {
+				pendingImportedProject = null;
+				pendingImportedProjectName = "";
+				console.error("[svg-import] failed before replace dialog", { name: file.name, error: imported.error });
+				return;
+			}
+
+			pendingImportedProject = imported.value.file;
 			pendingImportedProjectName = file.name;
 			importProjectDialogOpen = true;
 			console.info("[svg-import] parsed successfully, opening replace dialog", {
 				name: file.name,
 				elements: pendingImportedProject.project.elements.length,
-				imageAssets: pendingImportedProject.imageAssets.length
+				imageAssets: pendingImportedProject.imageAssets.length,
+				source: imported.value.source,
+				warnings: imported.value.warnings
 			});
 		} catch (error) {
 			pendingImportedProject = null;
@@ -149,7 +174,9 @@
 		let imported = false;
 
 		try {
-			await App.project.import(pendingImportedProject);
+			const result = await Editor.project.import(pendingImportedProject);
+			if (!result.ok) return;
+
 			imported = true;
 			importProjectDialogOpen = false;
 			pendingImportedProject = null;
@@ -190,7 +217,7 @@
 	}
 
 	function save() {
-		App.actions.project.setName(editName);
+		Editor.project.rename(editName);
 		isEditing = false;
 	}
 

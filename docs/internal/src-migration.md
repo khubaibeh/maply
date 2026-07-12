@@ -267,7 +267,7 @@ Notes:
 
 ### Chunk 2: Theme Ownership Move
 
-Status: pending
+Status: done
 
 Scope:
 
@@ -284,10 +284,13 @@ Exit criteria:
 Notes:
 
 - Keep the module small and local to `src`; do not create a package for theme.
+- Completed 2026-07-13.
+- Moved theme preference to `src/lib/state/theme.svelte.ts` and updated layout/topbar callers.
+- Preserved `maply-theme`, `light | dark | system`, document `dark` class updates, and system preference listener behavior.
 
 ### Chunk 3: Layout And Top-Level State Migration
 
-Status: pending
+Status: done
 
 Scope:
 
@@ -304,10 +307,14 @@ Exit criteria:
 Notes:
 
 - If component-specific dependencies make this too large, split sidebar files into Chunk 6.
+- Completed 2026-07-13.
+- Migrated `+layout.svelte`, `EditorScreen.svelte`, `CanvasArea.svelte`, and `RightSidebar.svelte` from top-level `App` state/actions to `Editor` seams.
+- Left `LeftSidebar.svelte` unchanged because it has no direct `@app` dependency; lower-level sidebar sections remain in Chunk 6.
+- Preserved layout-owned autosave observation and browser lifecycle flush listeners.
 
 ### Chunk 4: Project Menu And File Workflows
 
-Status: pending
+Status: done
 
 Scope:
 
@@ -325,10 +332,14 @@ Exit criteria:
 Notes:
 
 - If `@maply/io` does not export the staged import payload type needed by the dialog, add that in Chunk 1 first.
+- Completed 2026-07-13.
+- Migrated active `ProjectMenuOverlay.svelte` to `Editor.project` and `@maply/io` for create, rename, project export, SVG export, staged project import, and staged SVG import.
+- Preserved hidden file inputs, confirmation dialog, busy state, download creation, sanitized filenames, reload-after-import policy, and SVG import logging.
+- `ProjectSection.svelte` has no current callers, so it remains a legacy dead-end for later cleanup instead of expanding this chunk.
 
 ### Chunk 5: Canvas Interaction Migration
 
-Status: pending
+Status: done
 
 Scope:
 
@@ -346,10 +357,12 @@ Exit criteria:
 Notes:
 
 - This is the riskiest UI behavior chunk. Prefer focused tests for crop resize and path geometry if behavior changes are needed.
+- Completed 2026-07-13. Canvas state, rendering, resize, selection, path editing, image crop, and context-menu commands now use `Editor` and `@maply/model`.
+- Crop frame dragging captures the original image frame/crop state at pointerdown and applies total drag deltas against that snapshot.
 
 ### Chunk 6: Element Rendering, Properties, And Sidebars
 
-Status: pending
+Status: done
 
 Scope:
 
@@ -368,10 +381,11 @@ Exit criteria:
 Notes:
 
 - Do not edit generated shadcn files under `src/lib/components/ui/*`.
+- Completed 2026-07-13. Rendering, properties, toolbar, validation, and sidebar callers now use `Editor`, `@maply/model`, and `@maply/model/types`.
 
 ### Chunk 7: Test Migration And Legacy Test Retirement
 
-Status: pending
+Status: done
 
 Scope:
 
@@ -387,10 +401,11 @@ Exit criteria:
 Notes:
 
 - Do not delete behavior coverage just because the legacy module is being deleted.
+- Completed 2026-07-13. Retired five `tests/app/internal/*` suites after confirming replacement coverage in `packages/io/tests` and `tests/editor`.
 
 ### Chunk 8: Legacy App Deletion
 
-Status: pending
+Status: done
 
 Scope:
 
@@ -408,10 +423,11 @@ Exit criteria:
 Notes:
 
 - Do not delete unrelated legacy code if a current caller still exists. Record blockers in this chunk.
+- Completed 2026-07-13. Deleted `app/`, removed the `@app` alias and TypeScript includes, and removed obsolete dependency-cruiser rules.
 
 ### Chunk 9: Follow-Up Findings Closure
 
-Status: pending
+Status: done
 
 Scope:
 
@@ -426,6 +442,7 @@ Exit criteria:
 Notes:
 
 - This chunk can happen in parallel with cleanup only when it does not keep legacy `app` modules alive.
+- Completed 2026-07-13. Closed legacy consumer replacement and crop resize drift. Hydration parity, IndexedDB v3 upgrade coverage, generic SVG diagnostics, and `importExportState` remain separately tracked follow-ups and do not retain legacy modules.
 
 ## File-Specific Notes
 
