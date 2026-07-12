@@ -27,7 +27,8 @@
 	let busy = $state<"project-import" | "project-export" | "svg-export" | null>(null);
 
 	async function handleCreateNewProject(elements: "sample" | "blank" = "blank") {
-		await Editor.project.create({ elements });
+		const result = await Editor.project.create({ elements });
+		if (!result.ok) return;
 		newProjectDialogOpen = false;
 	}
 
@@ -120,9 +121,8 @@
 			void 0;
 		} finally {
 			busy = null;
+			input.value = "";
 		}
-
-		input.value = "";
 	}
 
 	async function handleSvgImportFileChange(event: Event) {
@@ -163,9 +163,8 @@
 			console.error("[svg-import] failed before replace dialog", { name: file.name, error });
 		} finally {
 			busy = null;
+			input.value = "";
 		}
-
-		input.value = "";
 	}
 
 	async function confirmProjectImport() {

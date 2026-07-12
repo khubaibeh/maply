@@ -27,10 +27,22 @@ async function value<A, E>(result: Promise<StorageResult<A, E>>) {
 }
 
 beforeAll(async () => {
-	await value(storage.project.reset());
+	await createVersion3Fixture();
+	await value(storage.project.fetch("prod"));
 });
 
 describe("@maply/storage", () => {
+	it("upgrades version 3 records and creates the image project index", async () => {
+		const project = await value(storage.project.fetch("prod"));
+		expect(project.name).toBe("Version 3 project");
+		expect(await value(storage.imageAsset.fetch(["legacy-asset"]))).toEqual([asset("legacy-asset")]);
+
+		const db = await openDatabase();
+		const txn = db.transaction("image-assets", "readonly");
+		expect(txn.objectStore("image-assets").indexNames.contains("projectId")).toBe(true);
+		db.close();
+	});
+
 	it("exports public types", () => {
 		const options: ResetProjectOptions = { elements: "blank" };
 		expect(options.elements).toBe("blank");
@@ -64,3 +76,41 @@ describe("@maply/storage", () => {
 		await storageRuntime.runPromise(Effect.asVoid(projectEffect.reset({ elements: "sample" })));
 	});
 });
+
+async function createVersion3Fixture(): Promise<void> {
+	await new Promise<void>((resolve, reject) => {
+		const request = indexedDB.deleteDatabase("maply");
+		request.onsuccess = () => resolve();
+		request.onerror = () => reject(request.error);
+	});
+
+	await new Promise<void>((resolve, reject) => {
+		const request = indexedDB.open("maply", 3);
+		request.onupgradeneeded = () => {
+			const projectStore = request.result.createObjectStore("projects", { keyPath: "id" });
+			const imageStore = request.result.createObjectStore("image-assets", { keyPath: "id" });
+			projectStore.put({
+				id: "prod",
+				name: "Version 3 project",
+				canvas: { width: 800, height: 800, color: "#fff", x: 0, y: 0 },
+				camera: { x: 0, y: 0, zoom: 1 },
+				elements: [],
+				importExportState: { importsOpen: false, elementsOpen: false }
+			});
+			imageStore.put(asset("legacy-asset"));
+		};
+		request.onsuccess = () => {
+			request.result.close();
+			resolve();
+		};
+		request.onerror = () => reject(request.error);
+	});
+}
+
+function openDatabase(): Promise<IDBDatabase> {
+	return new Promise((resolve, reject) => {
+		const request = indexedDB.open("maply", 4);
+		request.onsuccess = () => resolve(request.result);
+		request.onerror = () => reject(request.error);
+	});
+}

@@ -1,6 +1,6 @@
 # Src Migration
 
-This document defines the remaining compatibility migration that moves active SvelteKit UI callers from legacy `@app` to the root `editor` module and the `@maply/*` packages.
+This document records the completed compatibility migration from legacy `@app` to the root `editor` module and the `@maply/*` packages.
 
 This is not a redesign. Preserve current UI behavior, component structure, pointer interactions, dialogs, file pickers, downloads, theme behavior, and shadcn usage. The goal is to hollow out `app/` by switching callers to the new seams, then deleting legacy code only after searches and checks prove it unused.
 
@@ -12,8 +12,8 @@ The package/editor extraction is far enough for the `src` compatibility chunk:
 - `@maply/io` owns `.maply` project file parsing/serialization, SVG import/export, and image/SVG input preparation.
 - `@maply/storage` owns IndexedDB persistence for projects and image assets.
 - `editor/` owns live editor state and commands through the `editor` alias.
-- `src/` still imports `@app` in active UI files, so legacy `app/` modules remain production dependencies.
-- `tests/app/internal/*` still cover legacy implementations that now overlap with package/editor tests.
+- Production and test imports from `@app` are gone, and the legacy `app/` tree is deleted.
+- Replacement editor and package suites cover compatibility, project-file, SVG, image-security, and persistence behavior.
 
 Active `src` files importing `@app`:
 

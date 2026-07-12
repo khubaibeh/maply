@@ -1,5 +1,7 @@
 # Src Migration Findings
 
+Historical note: this file records the pre-migration gap analysis. Current status and remaining work live in `migration-findings.md`; references below to `App` and deleted `app/` paths describe the former implementation.
+
 Findings, gaps, and issues discovered during the `src/` compatibility migration from `@app` to `editor` and `@maply/*` packages.
 
 ## Chunk 0: Public API Gap Audit

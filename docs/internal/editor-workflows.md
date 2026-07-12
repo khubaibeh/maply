@@ -6,7 +6,7 @@ This is the behavior inventory for the `app/` to `editor/` migration. It records
 
 ## Migration Status
 
-The editor module exists and implements the target ownership for most workflows below. The active Svelte UI still imports `@app`, so the `Current flow` entries describe the production caller path until the compatibility chunk switches `src/` to `editor`.
+The active Svelte UI uses the public `Editor` surface. Compatibility implementations preserve legacy behavior under `editor/compat` without modifying internal editor modules.
 
 Done in `editor/`:
 
@@ -16,18 +16,17 @@ Done in `editor/`:
 - Element creation, mutation, resize, text/path helpers, naming validation, ordering, selection, deletion, and clipboard.
 - Image upload/replacement and crop commands, including atomic project/asset replacement through storage.
 
-Left before `app/` deletion:
+Remaining follow-up work:
 
-- Switch `src/` callers from `@app` to `editor` and package types/helpers.
 - Keep UI-only workflows in `src`: pointer draft state, DOM events, dialogs, file picker/download mechanics, and theme preference.
-- Verify behavior parity for hydrated element normalization, text metrics, path bounds, crop-frame resize gesture inputs, and SVG generic import diagnostics.
+- Complete generic SVG import diagnostics.
 - Remove `importExportState` after persisted compatibility is handled.
 
 ## Session Lifecycle
 
 ### Load editor session
 
-Entry: `src/routes/+layout.svelte` calls `App.load()` when mounted.
+Entry: `src/routes/+layout.svelte` calls `Editor.load()` when mounted.
 
 Current flow: `app/internal/lifecycle.ts` delegates to `app/store/project.ts`. The store fetches the active project, applies canvas and camera state, normalizes and clamps elements, then loads assets referenced by image elements.
 
@@ -299,6 +298,6 @@ Target: remains in `src` because it owns document and browser preference effects
 
 ## Legacy And Unused Surfaces
 
-`App.start`, `App.element.replaceImage`, several camera convenience commands, clipboard clear, import/export panel state, and `app/internal/project.ts` have no production caller. Do not preserve these as editor APIs without a current workflow requiring them.
+Several former convenience commands, clipboard clear, and import/export panel UI state had no production caller. Do not add them to the public editor API without a current workflow requiring them.
 
-The legacy project-file, SVG, IndexedDB, store, and command implementations duplicate capabilities now available in `@maply/io`, `@maply/storage`, and `editor/`. They should be deleted only after all active `src` consumers move off `@app`.
+Project-file, SVG, IndexedDB, store, and command ownership now resides in `@maply/io`, `@maply/storage`, and `editor/`; the duplicate legacy implementations were deleted.

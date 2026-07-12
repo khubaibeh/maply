@@ -5,9 +5,27 @@ module.exports = {
 			severity: "error",
 			from: { path: "^packages/model/" },
 			to: {
-				path: "^(src/|editor/|packages/(web|storage|codec)/)",
+				path: "^(src/|editor/|packages/(web|storage|io)/)",
 				pathNot: "^packages/model/"
 			}
+		},
+		{
+			name: "no-private-model-entrypoints",
+			severity: "error",
+			from: { path: "^(src/|editor/|packages/(io|storage)/)" },
+			to: { path: "^packages/model/src/(?!index\\.ts$|types\\.ts$|effect\\.ts$)" }
+		},
+		{
+			name: "no-private-io-entrypoints",
+			severity: "error",
+			from: { path: "^(src/|editor/|packages/storage/)" },
+			to: { path: "^packages/io/src/(?!index\\.ts$|types\\.ts$|effect/(index|program)\\.ts$)" }
+		},
+		{
+			name: "no-private-storage-entrypoints",
+			severity: "error",
+			from: { path: "^(src/|editor/|packages/io/)" },
+			to: { path: "^packages/storage/src/(?!index\\.ts$|types\\.ts$|effect/index\\.ts$)" }
 		},
 		{
 			name: "model-no-framework-or-io-deps",

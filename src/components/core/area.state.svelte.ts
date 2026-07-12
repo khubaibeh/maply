@@ -168,8 +168,11 @@ export function createCanvasAreaState() {
 			if (event.ctrlKey || event.metaKey) {
 				const zoomSensitivity = 0.0025;
 				const nextZoom = Math.min(
-					5,
-					Math.max(0.1, canvas.current.camera.zoom * Math.exp(-event.deltaY * zoomSensitivity))
+					Editor.limits.zoom.max,
+					Math.max(
+						Editor.limits.zoom.min,
+						canvas.current.camera.zoom * Math.exp(-event.deltaY * zoomSensitivity)
+					)
 				);
 				if (nextZoom === canvas.current.camera.zoom) return;
 

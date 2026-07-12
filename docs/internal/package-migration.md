@@ -1,6 +1,6 @@
 # Package Migration
 
-Maply is extracting root-level `app/` code into named `@maply/*` capability packages and the application-specific `editor/` module first. The `src/` SvelteKit UI is phase 2. The package and editor seams now exist; the remaining phase-1 work is the compatibility chunk that switches `src/` from `@app` to `editor`/`@maply/*`, then deletes legacy `app/` code that no longer has callers.
+Maply extracted the former root-level `app/` code into named `@maply/*` capability packages and the application-specific `editor/` module. The SvelteKit UI now uses `Editor` and package APIs; compatibility-only behavior remains isolated under `editor/compat` until final ownership is decided.
 
 The first phase is focused on hollowing out `@app` by extracting cohesive capability packages and the editor composition module. Prefer copy, switch imports, then delete the old `app/` source in one focused chunk. Do not move the whole `app/` tree into a package or `editor/` as a holding pen unless there is a concrete compatibility blocker.
 
@@ -21,11 +21,9 @@ Done:
 
 Left:
 
-- Switch `src/` UI imports from `@app` to the `editor` alias and package types/helpers in one compatibility chunk.
 - Preserve browser event routing, pointer drafts, dialogs, file pickers, downloads, theme preference, and shadcn UI in `src/`.
-- Delete replaced legacy `app/` modules only after no active `src/` or test callers remain.
 - Remove obsolete `importExportState` after compatibility and persistence concerns are handled.
-- Finish the open findings in `migration-findings.md`, especially IndexedDB upgrade coverage, SVG generic diagnostics, and hydrated normalization parity.
+- Finish the remaining open findings in `migration-findings.md`, especially SVG generic diagnostics and final ownership of compatibility naming validation.
 
 Use pnpm catalogs for shared dependency versions across packages. New package manifests should reference catalog entries instead of repeating concrete versions when a dependency is shared by more than one package or is part of the app's standard toolchain. Root application modules do not need package manifests.
 
@@ -108,9 +106,7 @@ Package-specific README files should document exported subpaths and ownership bo
 - `@maply/storage/types` exposes its public TypeScript types.
 - Project and image-asset replacement is atomic across both IndexedDB stores.
 
-The legacy IO equivalents remain in `app/internal/project-file.ts`, `app/internal/svg-import.ts`, and `app/internal/svg-export.ts`. The legacy storage equivalents remain in `app/services/indexed-db.ts`, `app/services/project-repo.ts`, `app/runtime/browser-runtime.ts`, and `app/internal/db.ts`. Legacy editor-state and command equivalents also remain throughout `app/store/*`, `app/internal/*`, and `app/domain/*` because `src/` still imports `@app`.
-
-Do not remove `app/` modules opportunistically. First switch active UI callers to `editor` and package imports, then delete only the legacy files proven unused by search and checks.
+The legacy `app/` tree and `@app` alias are deleted. Production callers use `Editor`, `@maply/model`, `@maply/io`, and `@maply/storage`.
 
 ## Editor Module Shape
 
@@ -118,9 +114,9 @@ The root `editor/` module is the application composition boundary for live editi
 
 `docs/internal/editor-workflows.md` is the migration reference for current user-visible behavior. Update it when a migration chunk discovers or intentionally changes a workflow invariant.
 
-## Next Compatibility Chunk
+## Compatibility Surface
 
-The next implementation chunk should be treated as a compatibility migration, not a redesign:
+Further compatibility work should preserve behavior rather than redesign it:
 
 - Replace `App.state.*` reads with `Editor.state.*` where the state exists.
 - Replace `App.actions.*`, `App.element.*`, `App.project.*`, and `App.save.*` calls with the matching `Editor` groups.

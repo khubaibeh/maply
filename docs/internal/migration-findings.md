@@ -19,23 +19,14 @@ Describe the finding in one short paragraph. Include the behavior or module seam
 
 ## Open Findings
 
-### Complete hydrated element normalization
+### Move compatibility name validation to its final owner
 
-Type: behavior-risk
-Found in: `editor/session/load.ts`
-Migration chunk: editor session lifecycle
+Type: refactor
+Found in: `editor/compat/naming.ts`
+Migration chunk: `src` compatibility migration
 Status: planned
 
-`loadEditorSession` now clamps hydrated elements to the persisted canvas through editor-owned bounds helpers. Before `src` switches to `Editor`, complete the remaining legacy normalization behavior: path bounds must handle non-linear imported SVG commands, and pure text metrics must be verified as an acceptable replacement for browser canvas measurement. `editor/` must not import `app/` or browser DOM APIs.
-
-### Test IndexedDB version-3 upgrades
-
-Type: missing-test
-Found in: `packages/storage/src/indexed-db/service.ts`
-Migration chunk: `@maply/storage` extraction
-Status: planned
-
-The storage test suite covers fresh database creation and project/image-asset replacement, but not upgrading an existing version-3 `maply` database. Add a fixture database at version 3 without the `image-assets.projectId` index, open it through storage, and verify that version 4 preserves records while creating the index.
+Selector-safe element-name validation currently lives in `editor/compat`. Decide whether selector safety is model policy or editor policy, then move it to `@maply/model` or `editor/elements/naming.ts` and remove the compatibility copy.
 
 ### Complete generic SVG import diagnostics
 
@@ -49,13 +40,31 @@ Recovery SVG import is lossless and Synoptic/generic SVG import covers the curre
 ### Remove import/export panel state
 
 Type: cleanup
-Found in: `app/domain/project.ts`, `app/store/project.ts`, `src` UI consumers
+Found in: `packages/model/src/project/schema.ts`, `editor/compat/project-state.ts`
 Migration chunk: `@maply/model` setup
 Status: open
 
-`importExportState` is still part of the project model and app store, but it is not used by the UI anymore. Remove it from `app`, `src`, and the migrated model after package extraction is stable, including project defaults, project-file parsing, persistence merge logic, and any compatibility handling needed for persisted projects.
+`importExportState` remains part of the persisted project schema but is no longer used by the UI. Compat load/save/import/export preserves it until an explicit schema migration removes it from defaults, parsing, persistence, and compatibility state.
 
 ## Done Findings
+
+### Test IndexedDB version-3 upgrades
+
+Type: missing-test
+Found in: `packages/storage/tests/storage.test.ts`
+Migration chunk: `@maply/storage` extraction
+Status: done
+
+A version-3 fixture without the `image-assets.projectId` index is upgraded through the production storage layer. The test verifies project and image records survive and the version-4 index is created.
+
+### Complete hydrated element normalization
+
+Type: behavior-risk
+Found in: `editor/compat/session.ts`, `editor/compat/normalize.ts`, `editor/compat/path-geometry.ts`
+Migration chunk: editor session lifecycle
+Status: done
+
+Hydration again normalizes legacy names, path fields, text dimensions, image references, and crop values before clamping. Path bounds restore legacy curve and arc handling, while text bounds use the same browser metrics as rendering when available.
 
 ### Replace legacy app consumers
 
@@ -69,7 +78,7 @@ Production callers now use `Editor` and `@maply/*`, replacement package/editor t
 ### Fix incremental rounding drift in crop-scale during image frame resize
 
 Type: behavior-risk
-Found in: `editor/image/commands.ts`, `src/components/canvas/ImageCropOverlay.svelte`
+Found in: `editor/compat/image.ts`, `src/components/canvas/ImageCropOverlay.svelte`
 Migration chunk: editor element resize
 Status: done
 
@@ -82,31 +91,31 @@ Found in: `editor/`
 Migration chunk: editor extraction
 Status: done
 
-`editor/` now owns the application-specific live editing seam. It exposes `Editor` from `editor/index.ts`, composes `@maply/model`, `@maply/io`, and `@maply/storage`, and does not import `app/` or `src/`. It covers session lifecycle, autosave, canvas/tool state, element creation/mutation, selection, clipboard, image upload/crop, project import/export, and SVG import/export. Active Svelte UI callers still need to move from `@app` to `editor` in the dedicated compatibility chunk.
+`editor/` owns the application-specific live editing seam. It exposes `Editor` from `editor/index.ts`, composes `@maply/model`, `@maply/io`, and `@maply/storage`, and does not import `app/` or `src/`. Active Svelte callers use this surface, with migration-only behavior isolated under `editor/compat`.
 
 ### Make image replacement crash-atomic
 
 Type: behavior-risk
-Found in: `editor/image/upload.ts`
+Found in: `editor/compat/upload.ts`
 Migration chunk: editor image workflows
 Status: done
 
-`replaceImageAsset` now acquires the editor mutex, updates live project and asset state together, and persists the full project plus referenced asset set through `storage.project.replace`. The old separate save/delete sequence is no longer the editor path, reducing the crash window where persisted projects could reference deleted image assets. UI consumers still need to move from legacy `app` image replacement to `Editor.image.replace`/`Editor.image.fromFile`.
+`replaceImageAsset` acquires the editor mutex, rejects missing referenced assets, persists the full project and asset set atomically through `storage.project.replace`, and only then publishes the new live state. Persistence failure therefore leaves the prior live project and assets unchanged.
 
 ### Extract browser persistence
 
 Type: decision
-Found in: `packages/storage/src/indexed-db`, `packages/storage/src/project`, `app/services/indexed-db.ts`, `app/services/project-repo.ts`
+Found in: `packages/storage/src/indexed-db`, `packages/storage/src/project`
 Migration chunk: `@maply/storage` extraction
 Status: done
 
-`@maply/storage` now owns client-side IndexedDB persistence for projects and image assets. Its only public subpaths are `@maply/storage`, `@maply/storage/effect`, and `@maply/storage/types`; the root API handles tagged failures as values, while the Effect subpath exposes raw workflows and runtime wiring. The package preserves IndexedDB schema version 4, retries failed opens, and atomically replaces a project's asset set. Legacy app modules remain until the dedicated consumer-replacement chunk.
+`@maply/storage` owns client-side IndexedDB persistence for projects and image assets. Its public subpaths are `@maply/storage`, `@maply/storage/effect`, and `@maply/storage/types`; version-3 upgrade and atomic project/asset replacement behavior are covered by package tests.
 
 ### Extract external format boundaries
 
 Type: decision
-Found in: `packages/io/src/project`, `packages/io/src/svg`, `app/internal/project-file.ts`, `app/internal/svg-import.ts`, `app/internal/svg-export.ts`
+Found in: `packages/io/src/project`, `packages/io/src/svg`
 Migration chunk: `@maply/io` external format extraction
 Status: done
 
-`@maply/io` now owns `.maply` project-file decoding and serialization plus SVG recovery/Synoptic conversion, using `@maply/model/effect` schemas as the source of truth. The active package boundary is `@maply/io`, not separate project or SVG codec packages. Legacy `app/internal/*` implementations remain until the dedicated consumer migration chunk. The package is verified through type checks and SVG/project IO tests.
+`@maply/io` owns `.maply` project-file decoding and serialization plus SVG recovery/Synoptic conversion, using `@maply/model/effect` schemas as the source of truth. Project-file, SVG, and image-security behavior is covered by package tests.

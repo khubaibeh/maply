@@ -17,7 +17,8 @@
 	let newProjectDialogOpen = $state(false);
 
 	async function handleCreateNewProject(elements: "sample" | "blank" = "blank") {
-		await Editor.project.create({ elements });
+		const result = await Editor.project.create({ elements });
+		if (!result.ok) return;
 		newProjectDialogOpen = false;
 	}
 
