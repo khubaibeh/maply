@@ -1,4 +1,11 @@
 export {
+	ImageDimensionError,
+	ImageInvalidSvgError,
+	ImageReadError,
+	ImageUnsupportedFormatError
+} from "../image/errors";
+export { validateImageMimeType, validateSvgMarkup } from "../image/prepare";
+export {
 	ProjectFileAssetReferenceError,
 	ProjectFileJsonError,
 	type ProjectFileOperation,

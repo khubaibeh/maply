@@ -17,7 +17,7 @@ import {
 } from "./elements/mutate";
 import { autofixElementName, validateElementNames } from "./elements/naming";
 import { resetImageCrop, resizeImageCropFrame, setImageCropScale, translateImageCrop } from "./image/commands";
-import { replaceImageAsset } from "./image/upload";
+import { imageFromFile, replaceImageAsset } from "./image/upload";
 import { create, rename } from "./project/commands";
 import { exportProject } from "./project/export";
 import { importProject } from "./project/import";
@@ -96,7 +96,8 @@ export const Editor = {
 		setCropScale: setImageCropScale,
 		resetCrop: resetImageCrop,
 		resizeFrame: resizeImageCropFrame,
-		replace: replaceImageAsset
+		replace: replaceImageAsset,
+		fromFile: imageFromFile
 	},
 
 	project: { rename, create, export: exportProject, import: importProject, exportSvg, importSvg },
