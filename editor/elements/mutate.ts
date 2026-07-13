@@ -19,6 +19,10 @@ function translate(element: Element, dx: number, dy: number): Element {
 	}
 }
 
+function getElementPosition(element: Element) {
+	return element.type === "circle" ? { x: element.cx, y: element.cy } : { x: element.x, y: element.y };
+}
+
 /** Adds a canvas-clamped element and selects it. */
 export function addElement(element: Element): void {
 	const canvas = get(canvasState);
@@ -33,25 +37,34 @@ export function addElement(element: Element): void {
 }
 
 /** Moves one element while retaining it within the canvas. */
-export function translateElement(id: string, dx: number, dy: number): void {
-	if (dx === 0 && dy === 0) return;
+export function translateElement(id: string, dx: number, dy: number) {
+	if (dx === 0 && dy === 0) return { x: 0, y: 0 };
 
 	const canvas = get(canvasState);
+	let applied = { x: 0, y: 0 };
 
 	projectState.update((state) => ({
 		...state,
-		elements: state.elements.map((element) =>
-			element.id === id ? clampElementToCanvas(translate(element, dx, dy), canvas) : element
-		)
+		elements: state.elements.map((element) => {
+			if (element.id !== id) return element;
+			const next = clampElementToCanvas(translate(element, dx, dy), canvas);
+			const before = getElementPosition(element);
+			const after = getElementPosition(next);
+			applied = { x: after.x - before.x, y: after.y - before.y };
+			return next;
+		})
 	}));
+
+	return applied;
 }
 
 /** Moves a selection as one canvas-constrained group. */
-export function translateElements(ids: readonly string[], dx: number, dy: number): void {
-	if (ids.length === 0 || (dx === 0 && dy === 0)) return;
+export function translateElements(ids: readonly string[], dx: number, dy: number) {
+	if (ids.length === 0 || (dx === 0 && dy === 0)) return { x: 0, y: 0 };
 
 	const idSet = new Set(ids);
 	const canvas = get(canvasState);
+	let applied = { x: 0, y: 0 };
 
 	projectState.update((state) => {
 		const selected = state.elements.filter((element) => idSet.has(element.id));
@@ -73,6 +86,7 @@ export function translateElements(ids: readonly string[], dx: number, dy: number
 		const nextDy = Math.round(
 			groupHeight > canvas.height ? canvas.y - groupY : Math.min(maxDy, Math.max(minDy, dy))
 		);
+		applied = { x: nextDx, y: nextDy };
 
 		if (nextDx === 0 && nextDy === 0) return state;
 
@@ -83,6 +97,8 @@ export function translateElements(ids: readonly string[], dx: number, dy: number
 			)
 		};
 	});
+
+	return applied;
 }
 
 /** Positions one element using its circle center or top-left anchor. */

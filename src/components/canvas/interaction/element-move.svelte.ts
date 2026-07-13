@@ -36,8 +36,9 @@ export function createElementMove() {
 		drag.start(event, {
 			project: (pointerEvent) => clientToSvgPoint(svg, pointerEvent.clientX, pointerEvent.clientY),
 			onMove: ({ delta }) => {
-				if (ids.length > 1) Editor.element.translateAll(ids, delta.x, delta.y);
-				else Editor.element.translate(ids[0], delta.x, delta.y);
+				return ids.length > 1
+					? Editor.element.translateAll(ids, delta.x, delta.y)
+					: Editor.element.translate(ids[0], delta.x, delta.y);
 			},
 			onEnd: ({ cancelled, didMove }) => {
 				if (!cancelled && !didMove && toggleId) Editor.selection.select(toggleId, true);

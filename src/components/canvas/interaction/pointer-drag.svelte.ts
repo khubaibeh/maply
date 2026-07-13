@@ -11,7 +11,7 @@ type DragEnd = {
 
 type DragCallbacks = {
 	project(event: PointerEvent): Point | null;
-	onMove(move: DragMove): void;
+	onMove(move: DragMove): Point | void;
 	onEnd?(end: DragEnd): void;
 };
 
@@ -49,8 +49,10 @@ export function createPointerDrag() {
 		const measured = measureDrag(active.start, active.previous, current);
 		if (measured.delta.x === 0 && measured.delta.y === 0) return;
 		active.didMove = true;
-		active.callbacks.onMove({ current, ...measured, event });
-		active.previous = current;
+		const consumedDelta = active.callbacks.onMove({ current, ...measured, event });
+		active.previous = consumedDelta
+			? { x: active.previous.x + consumedDelta.x, y: active.previous.y + consumedDelta.y }
+			: current;
 	}
 
 	function end(event: PointerEvent) {
