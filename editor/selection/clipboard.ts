@@ -10,10 +10,11 @@ import { canvasState } from "../state/workspace";
 
 function pastedName(element: Element, elements: readonly Element[]): string {
 	const defaultName = defaultElementName(element.type);
+	const copiedName = element.name.match(/^(.*)-copy(?:-(\d+))?$/);
 
 	return new RegExp(`^${defaultName}\\d+$`).test(element.name)
 		? nextElementName(element.type, elements)
-		: autofixElementName(`${element.name}-copy`, elements);
+		: autofixElementName(`${copiedName?.[1] ?? element.name}-copy`, elements);
 }
 
 /** Copies immutable element snapshots into the editor clipboard. */

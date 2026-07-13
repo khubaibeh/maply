@@ -50,6 +50,18 @@ describe("paste", () => {
 		expect(get(projectState).elements.at(-1)?.name).toBe("rectangle2");
 	});
 
+	it("continues copy numbering instead of nesting copy suffixes", async () => {
+		const source = rect("rect", "vertical-copy-2");
+		updateProjectState(
+			(state) => ({ ...state, elements: [rect("a", "vertical-copy"), rect("b", "vertical-copy-2"), source] }),
+			"rescan"
+		);
+		copy([source]);
+
+		await paste();
+		expect(get(projectState).elements.at(-1)?.name).toBe("vertical-copy-3");
+	});
+
 	it("does not publish pasted images when asset persistence fails", async () => {
 		const image: ImageElement = {
 			id: "image",
