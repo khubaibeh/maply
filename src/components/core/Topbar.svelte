@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Logo from "$lib/assets/favicon.svg";
 	import * as ToggleGroup from "$lib/components/ui/toggle-group";
-	import { useTheme } from "$lib/state/theme.svelte";
+	import { useTheme } from "$lib/state.svelte";
 	import Monitor from "phosphor-svelte/lib/Monitor";
 	import Moon from "phosphor-svelte/lib/Moon";
 	import Sun from "phosphor-svelte/lib/Sun";

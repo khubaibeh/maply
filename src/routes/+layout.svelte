@@ -4,7 +4,7 @@
 	import "./layout.css";
 	import "./selections.css";
 	import * as Tooltip from "$lib/components/ui/tooltip";
-	import { useTheme } from "$lib/state/theme.svelte";
+	import { useTheme } from "$lib/state.svelte";
 	import { canvasCursor } from "@components/core/cursors";
 	import { Editor } from "editor";
 	import Monitor from "phosphor-svelte/lib/Monitor";
