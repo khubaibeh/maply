@@ -123,9 +123,11 @@
 
 		event.preventDefault();
 		event.stopPropagation();
+		Editor.selection.setHover(null);
 
 		const svg = getSvgRoot(event.target);
 		if (!svg) return;
+		Editor.actions.tool.setCanvasResizing(true);
 		drag.start(event, {
 			project: (pointerEvent) => clientToSvgPoint(svg, pointerEvent.clientX, pointerEvent.clientY),
 			onMove: ({ delta }) => {
@@ -166,6 +168,9 @@
 				Editor.element.clampAll();
 				const after = canvasHandlePoint($canvas, handle);
 				return { x: after.x - before.x, y: after.y - before.y };
+			},
+			onEnd: () => {
+				Editor.actions.tool.setCanvasResizing(false);
 			}
 		});
 	}

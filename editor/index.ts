@@ -2,7 +2,7 @@ import { readonly } from "svelte/store";
 
 import { centerCamera, pan, resetCamera, resetZoom, setCamera, zoomIn, zoomOut } from "./canvas/camera";
 import { setColor, setFrame, setPosition, setSize } from "./canvas/commands";
-import { setSpacePressed, setTool } from "./canvas/tool";
+import { setCanvasResizing, setSpacePressed, setTool } from "./canvas/tool";
 import { circleFromDrag, imageFromDrag, pathFromPoints, rectFromDrag, textFromDrag } from "./elements/create";
 import { getElementBounds, getPathRenderTransform, getPointBounds, getShapeDragBox } from "./elements/geometry";
 import {
@@ -79,7 +79,8 @@ export const Editor = {
 
 		tool: {
 			set: setTool,
-			setSpacePressed
+			setSpacePressed,
+			setCanvasResizing
 		}
 	},
 

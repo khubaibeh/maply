@@ -23,7 +23,8 @@ export const canvasState = writable<CanvasState>(createInitialCanvasState());
 const initialToolState: ToolState = {
 	activeTool: "select",
 	previousTool: null,
-	isSpacePressed: false
+	isSpacePressed: false,
+	isCanvasResizing: false
 };
 
 /** The editor's active tool and temporary Space-to-hand state. */

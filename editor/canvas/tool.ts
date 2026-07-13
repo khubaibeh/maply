@@ -12,6 +12,7 @@ export function setSpacePressed(isPressed: boolean): void {
 	toolState.update((state) => {
 		if (isPressed) {
 			return {
+				...state,
 				activeTool: state.activeTool === "hand" ? state.activeTool : "hand",
 				previousTool: state.activeTool === "hand" ? state.previousTool : state.activeTool,
 				isSpacePressed: true
@@ -19,9 +20,15 @@ export function setSpacePressed(isPressed: boolean): void {
 		}
 
 		return {
+			...state,
 			activeTool: state.previousTool ?? state.activeTool,
 			previousTool: null,
 			isSpacePressed: false
 		};
 	});
+}
+
+/** Tracks whether the canvas frame is actively being resized. */
+export function setCanvasResizing(isCanvasResizing: boolean): void {
+	toolState.update((state) => (state.isCanvasResizing === isCanvasResizing ? state : { ...state, isCanvasResizing }));
 }

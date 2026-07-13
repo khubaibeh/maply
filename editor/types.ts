@@ -30,6 +30,7 @@ export type ToolState = {
 	activeTool: Tool;
 	previousTool: Tool | null;
 	isSpacePressed: boolean;
+	isCanvasResizing: boolean;
 };
 
 /** Image assets currently available to the live editor session, keyed by asset ID. */

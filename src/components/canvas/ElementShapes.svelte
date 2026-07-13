@@ -13,7 +13,7 @@
 	const tool = Editor.state.tool;
 
 	function hover(id: string) {
-		if ($tool.activeTool === "select") Editor.selection.setHover(id);
+		if ($tool.activeTool === "select" && !$tool.isCanvasResizing) Editor.selection.setHover(id);
 	}
 
 	function clearHover(id: string) {
