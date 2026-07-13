@@ -123,13 +123,18 @@
 		const bounds = Editor.geometry.elementBounds(element);
 		const lockAspectRatio = event.shiftKey;
 		const aspectRatio = bounds.height > 0 ? bounds.width / bounds.height : undefined;
+		const source = { ...element };
 		resize.start(event, {
 			project: (pointerEvent) => clientToSvgPoint(svg, pointerEvent.clientX, pointerEvent.clientY),
-			onMove: ({ delta }) => {
-				return Editor.element.resize(element.id, handle, delta.x, delta.y, {
-					lockAspectRatio,
-					aspectRatio
-				});
+			onMove: ({ totalDelta }) => {
+				Editor.element.resize(
+					element.id,
+					handle,
+					totalDelta.x,
+					totalDelta.y,
+					{ lockAspectRatio, aspectRatio },
+					source
+				);
 			}
 		});
 	}

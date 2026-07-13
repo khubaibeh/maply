@@ -1,4 +1,4 @@
-import { createDefaultProject } from "@maply/model";
+import { createDefaultProject, hasValidImageRect } from "@maply/model";
 import type { Element, Project, StoredImageAsset } from "@maply/model/types";
 
 import { TEXT_CHARACTER_WIDTH_RATIO, TEXT_LINE_HEIGHT_RATIO } from "../common";
@@ -46,8 +46,25 @@ export function normalizeElement(element: Element): Element {
 	}
 
 	if (element.type === "image") {
+		const hasImageRect = hasValidImageRect(element);
+		const image = { ...element };
+		delete image.href;
+		delete image.imageX;
+		delete image.imageY;
+		delete image.imageWidth;
+		delete image.imageHeight;
+
 		return {
-			...element,
+			...image,
+			...(typeof element.href === "string" ? { href: element.href } : {}),
+			...(hasImageRect
+				? {
+						imageX: element.imageX,
+						imageY: element.imageY,
+						imageWidth: element.imageWidth,
+						imageHeight: element.imageHeight
+					}
+				: {}),
 			cropX: Math.min(100, Math.max(-100, element.cropX)),
 			cropY: Math.min(100, Math.max(-100, element.cropY)),
 			cropScale: Math.max(100, element.cropScale)

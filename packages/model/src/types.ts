@@ -13,3 +13,4 @@ export type {
 	TextElement,
 	Tool
 } from "./project/schema";
+export type { ImageRect } from "./project/geometry";

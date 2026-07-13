@@ -63,7 +63,11 @@ export const ImageElementSchema = Schema.Struct({
 	href: Schema.optionalKey(Schema.String),
 	cropX: Schema.Number,
 	cropY: Schema.Number,
-	cropScale: Schema.Number
+	cropScale: Schema.Number,
+	imageX: Schema.optionalKey(Schema.Number),
+	imageY: Schema.optionalKey(Schema.Number),
+	imageWidth: Schema.optionalKey(Schema.Number),
+	imageHeight: Schema.optionalKey(Schema.Number)
 });
 
 export const ElementSchema = Schema.Union([

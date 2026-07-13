@@ -51,20 +51,7 @@
 			{:else if element.type === "image"}
 				{@const asset = element.assetId ? $imageAssets[element.assetId] : null}
 				{@const href = asset?.dataUrl ?? element.href ?? ""}
-				{@const renderRect = asset
-					? Editor.geometry.imageRenderRect({
-							...element,
-							x: 0,
-							y: 0,
-							width: element.width,
-							height: element.height,
-							assetWidth: asset.width,
-							assetHeight: asset.height,
-							cropX: element.cropX,
-							cropY: element.cropY,
-							cropScale: element.cropScale
-						})
-					: null}
+				{@const renderRect = asset ? Editor.geometry.imageRenderRect(element, asset) : null}
 				<ImageShape {element} {href} {renderRect} />
 			{/if}
 		</g>

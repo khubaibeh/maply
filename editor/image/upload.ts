@@ -9,6 +9,7 @@ import { imageAssetState } from "../state/assets";
 import { projectState, setProjectState } from "../state/document";
 import { acquireMutex } from "../state/mutex";
 import { canvasState } from "../state/workspace";
+import { fitImageRect, withImageRect } from "./crop";
 
 export type ImageFromFileError =
 	| { type: "UnsupportedFormat"; mimeType: string }
@@ -97,11 +98,22 @@ export async function replaceImageAsset(
 		}
 
 		const nextAsset = { ...asset, id: createElementId(), projectId: project.id };
-		const elements = project.elements.map((element) =>
-			element.id === id && element.type === "image"
-				? { ...element, assetId: nextAsset.id, href: undefined, cropX: 0, cropY: 0, cropScale: 100 }
-				: element
-		);
+		const elements = project.elements.map((element) => {
+			if (element.id !== id || element.type !== "image") return element;
+			const frame = { ...element };
+			delete frame.href;
+
+			return withImageRect(
+				{
+					...frame,
+					assetId: nextAsset.id,
+					cropX: 0,
+					cropY: 0,
+					cropScale: 100
+				},
+				fitImageRect(element, nextAsset.width, nextAsset.height)
+			);
+		});
 		const nextAssets = { ...get(imageAssetState), [nextAsset.id]: nextAsset };
 		const referenced: StoredImageAsset[] = [];
 

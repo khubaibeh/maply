@@ -1,3 +1,4 @@
+import { getImageRenderRect } from "@maply/model";
 import { readonly } from "svelte/store";
 
 import { centerCamera, pan, resetCamera, resetZoom, setCamera, zoomIn, zoomOut } from "./canvas/camera";
@@ -25,7 +26,6 @@ import {
 	getWrappedTextMetrics
 } from "./elements/text";
 import { resetImageCrop, resizeImageCropFrame, setImageCropScale, translateImageCrop } from "./image/commands";
-import { getImageRenderRect } from "./image/crop";
 import { imageFromFile, replaceImageAsset } from "./image/upload";
 import { create, rename } from "./project/commands";
 import { exportProject } from "./project/export";

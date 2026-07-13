@@ -1,8 +1,12 @@
+import { getImageRenderRect, getLegacyImageRenderRect } from "@maply/model";
 import type { Element } from "@maply/model/types";
 import { get } from "svelte/store";
 
+import { clampCropScale, resizeImageRect, scaleImageRect, withImageRect } from "../image/crop";
+import { imageAssetState } from "../state/assets";
 import { projectState, setProjectState, updateProjectState } from "../state/document";
 import { canvasState } from "../state/workspace";
+import type { ImageAssetState } from "../types";
 import { clampElementToCanvas, getElementBounds, getPointBounds } from "./geometry";
 import { toPathPoints, toPath } from "./path";
 import { resizeElement as resizeElementPure, type ResizeHandle, type ResizeOptions } from "./resize";
@@ -142,18 +146,20 @@ export function setElementPosition(id: string, x: number, y: number): void {
 	);
 }
 
-/** Resizes an element by a handle delta within canvas bounds. */
+/** Resizes an element by a handle delta from its current or pointer-down source geometry. */
 export function resizeElementByHandle(
 	id: string,
 	handle: ResizeHandle,
 	dx: number,
 	dy: number,
-	options?: ResizeOptions
+	options?: ResizeOptions,
+	source?: Element
 ) {
 	if (dx === 0 && dy === 0) return { x: 0, y: 0 };
 
 	const state = get(projectState);
 	const canvas = get(canvasState);
+	const assets = get(imageAssetState);
 	let applied = { x: 0, y: 0 };
 	let beforeChange: Element | null = null;
 	let afterChange: Element | null = null;
@@ -162,9 +168,10 @@ export function resizeElementByHandle(
 		...state,
 		elements: state.elements.map((element) => {
 			if (element.id !== id) return element;
-			const resized = resizeElementPure(element, handle, dx, dy, canvas, options);
+			const original = source?.id === id ? source : element;
+			const resized = resizeElementPure(original, handle, dx, dy, canvas, options);
+			const next = resizeImageTransform(original, resized, assets);
 			const before = getHandlePosition(element, handle);
-			const next = resized;
 			const after = getHandlePosition(next, handle);
 			applied = { x: after.x - before.x, y: after.y - before.y };
 			beforeChange = element;
@@ -179,10 +186,64 @@ export function resizeElementByHandle(
 	return applied;
 }
 
+function resizeImageTransform(previous: Element, next: Element, assets: ImageAssetState): Element {
+	if (previous.type !== "image" || next.type !== "image") return next;
+	const asset = previous.assetId ? assets[previous.assetId] : null;
+	if (!asset) return next;
+	const rect = getImageRenderRect(previous, asset);
+
+	return withImageRect(
+		{ ...next, cropX: previous.cropX, cropY: previous.cropY, cropScale: previous.cropScale },
+		resizeImageRect(rect, previous, next)
+	);
+}
+
+function updateImageTransform(
+	previous: Element,
+	next: Element,
+	patch: Partial<Element>,
+	assets: ImageAssetState
+): Element {
+	if (previous.type !== "image" || next.type !== "image") return next;
+	const asset = previous.assetId ? assets[previous.assetId] : null;
+	if (!asset) return next;
+
+	if (hasImageRectPatch(patch)) {
+		const current = getImageRenderRect(previous, asset);
+		return withImageRect(next, {
+			x: typeof next.imageX === "number" ? next.imageX : current.x,
+			y: typeof next.imageY === "number" ? next.imageY : current.y,
+			width: typeof next.imageWidth === "number" ? next.imageWidth : current.width,
+			height: typeof next.imageHeight === "number" ? next.imageHeight : current.height
+		});
+	}
+
+	if ("cropX" in patch || "cropY" in patch) {
+		return withImageRect(next, getLegacyImageRenderRect(next, asset));
+	}
+
+	let rect = getImageRenderRect(previous, asset);
+	if (previous.width !== next.width || previous.height !== next.height) {
+		rect = resizeImageRect(rect, previous, next);
+	}
+
+	if ("cropScale" in patch) {
+		const cropScale = clampCropScale(next.cropScale);
+		return withImageRect({ ...next, cropScale }, scaleImageRect(rect, next, previous.cropScale, cropScale));
+	}
+
+	return previous.width !== next.width || previous.height !== next.height ? withImageRect(next, rect) : next;
+}
+
+function hasImageRectPatch(patch: Partial<Element>): boolean {
+	return "imageX" in patch || "imageY" in patch || "imageWidth" in patch || "imageHeight" in patch;
+}
+
 /** Applies an element property patch and clamps the resulting element. */
 export function updateElement(id: string, patch: Partial<Element>): void {
 	const state = get(projectState);
 	const canvas = get(canvasState);
+	const assets = get(imageAssetState);
 	let beforeChange: Element | null = null;
 	let afterChange: Element | null = null;
 
@@ -190,7 +251,8 @@ export function updateElement(id: string, patch: Partial<Element>): void {
 		...state,
 		elements: state.elements.map((element) => {
 			if (element.id !== id) return element;
-			const next = clampElementToCanvas({ ...element, ...patch } as Element, canvas);
+			const clamped = clampElementToCanvas({ ...element, ...patch } as Element, canvas);
+			const next = updateImageTransform(element, clamped, patch, assets);
 			beforeChange = element;
 			afterChange = next;
 			return next;

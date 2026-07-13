@@ -128,6 +128,42 @@ describe("svg recovery import", () => {
 		});
 	});
 
+	it("renders and round-trips an explicit image rectangle", () => {
+		const project: Project = {
+			...createDefaultProject("prod"),
+			elements: [
+				{
+					id: "image-1",
+					name: "Photo",
+					type: "image",
+					x: 10,
+					y: 20,
+					width: 100,
+					height: 80,
+					assetId: "asset-1",
+					cropX: 0,
+					cropY: 0,
+					cropScale: 200,
+					imageX: -30,
+					imageY: -10,
+					imageWidth: 180,
+					imageHeight: 100
+				}
+			]
+		};
+
+		const svg = Effect.runSync(svgEffect.export(project, [asset("asset-1")]));
+		const imported = Effect.runSync(svgEffect.import(svg));
+
+		expect(svg).toContain('<image data-maply-asset-id="asset-1" x="-30" y="-10" width="180" height="100"');
+		expect(imported.file.project.elements[0]).toMatchObject({
+			imageX: -30,
+			imageY: -10,
+			imageWidth: 180,
+			imageHeight: 100
+		});
+	});
+
 	it("round-trips multiple element types", () => {
 		const project: Project = {
 			...createDefaultProject("prod"),

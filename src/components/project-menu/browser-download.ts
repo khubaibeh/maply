@@ -14,7 +14,11 @@ export function downloadText(name: string, content: string, mimeType: string) {
 	const link = document.createElement("a");
 	link.href = url;
 	link.download = name;
-	link.click();
-	link.remove();
-	URL.revokeObjectURL(url);
+	document.body.appendChild(link);
+	try {
+		link.click();
+	} finally {
+		link.remove();
+		setTimeout(() => URL.revokeObjectURL(url), 0);
+	}
 }

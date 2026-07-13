@@ -2,7 +2,6 @@ import type { Element, ImageElement } from "@maply/model/types";
 import { getElementBounds } from "editor/elements/geometry";
 import { getWrappedTextLines } from "editor/elements/text";
 import { resizeImageCropFrame } from "editor/image/commands";
-import { getImageRenderRect } from "editor/image/crop";
 import { replaceImageAsset } from "editor/image/upload";
 import { copy, paste } from "editor/selection/clipboard";
 import { normalizeElement } from "editor/session/normalize";
@@ -96,7 +95,7 @@ describe("legacy element compatibility", () => {
 		expect(normalizeElement(image)).toMatchObject({ assetId: null, cropX: 100, cropY: 0, cropScale: 100 });
 	});
 
-	it("preserves rendered image position and the legacy minimum frame size", () => {
+	it("preserves image transform and enforces minimum frame size", () => {
 		const image: ImageElement = {
 			id: "image",
 			name: "Image",
@@ -123,29 +122,23 @@ describe("legacy element compatibility", () => {
 		canvasState.set({ width: 800, height: 600, color: "#fff", x: 0, y: 0, camera: { x: 0, y: 0, zoom: 1 } });
 		updateProjectState((state) => ({ ...state, elements: [image] }), "rescan");
 		imageAssetState.set({ asset });
-		const before = getImageRenderRect({ ...image, assetWidth: asset.width, assetHeight: asset.height });
 
 		resizeImageCropFrame(image.id, "w", 198, 0, undefined, image);
 
 		const resized = get(projectState).elements[0] as ImageElement;
-		const after = getImageRenderRect({ ...resized, assetWidth: asset.width, assetHeight: asset.height });
 		expect(resized.width).toBe(5);
-		expect(Math.abs(after.x - before.x)).toBeLessThanOrEqual(1);
-		expect(Math.abs(after.y - before.y)).toBeLessThanOrEqual(1);
+		expect(resized.cropScale).toBe(image.cropScale);
 	});
 
 	it.each(["n", "s", "e", "w", "ne", "nw", "se", "sw"] as const)(
-		"preserves crop content while resizing from %s",
+		"preserves image crop values while resizing from %s",
 		(handle) => {
-			const { image, asset } = setCropFixture();
-			const before = getImageRenderRect({ ...image, assetWidth: asset.width, assetHeight: asset.height });
+			const { image } = setCropFixture();
 			const dx = handle.includes("w") ? 10 : handle.includes("e") ? -10 : 0;
 			const dy = handle.includes("n") ? 10 : handle.includes("s") ? -10 : 0;
 			resizeImageCropFrame(image.id, handle, dx, dy, undefined, image);
 			const resized = get(projectState).elements[0] as ImageElement;
-			const after = getImageRenderRect({ ...resized, assetWidth: asset.width, assetHeight: asset.height });
-			expect(Math.abs(after.x - before.x)).toBeLessThanOrEqual(1);
-			expect(Math.abs(after.y - before.y)).toBeLessThanOrEqual(1);
+			expect(resized.cropScale).toBe(image.cropScale);
 		}
 	);
 

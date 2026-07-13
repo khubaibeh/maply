@@ -1,5 +1,5 @@
 import type { ImageElement, StoredImageAsset } from "@maply/model/types";
-import { resizeImageCropFrame } from "editor/image/commands";
+import { resizeImageCropFrame, setImageCropScale, translateImageCrop } from "editor/image/commands";
 import { imageAssetState } from "editor/state/assets";
 import { projectState, updateProjectState } from "editor/state/document";
 import { canvasState } from "editor/state/workspace";
@@ -41,7 +41,7 @@ function setFixture(): ImageElement {
 }
 
 describe("resizeImageCropFrame", () => {
-	it("preserves rendered crop content while enforcing the legacy minimum frame size", () => {
+	it("keeps the image fixed while enforcing the minimum frame size", () => {
 		const source = setFixture();
 
 		resizeImageCropFrame(source.id, "w", 198, 0, undefined, source);
@@ -49,6 +49,22 @@ describe("resizeImageCropFrame", () => {
 		const resized = get(projectState).elements[0] as ImageElement;
 		expect(resized.width).toBe(5);
 		expect(resized.x).toBe(295);
+		expect(resized.cropScale).toBe(200);
+		expect(resized.x + (resized.imageX ?? 0)).toBe(-20);
+		expect(resized.imageWidth).toBe(400);
+	});
+
+	it("stops an expanding crop frame at the finite image boundary", () => {
+		const source = setFixture();
+
+		resizeImageCropFrame(source.id, "e", 1000, 0, undefined, source);
+
+		const resized = get(projectState).elements[0] as ImageElement;
+		expect(resized.width).toBe(280);
+		expect(resized.x + resized.width).toBe(380);
+		expect(resized.imageX).toBe(-120);
+		expect(resized.imageWidth).toBe(400);
+		expect(resized.cropScale).toBe(source.cropScale);
 	});
 
 	it("uses the pointer-down image snapshot for repeated pointer movement", () => {
@@ -60,5 +76,25 @@ describe("resizeImageCropFrame", () => {
 		setFixture();
 		resizeImageCropFrame(source.id, "se", 30, 30, undefined, source);
 		expect(get(projectState).elements[0]).toEqual(repeated);
+	});
+});
+
+describe("image crop transform", () => {
+	it("pans to the image boundary without changing zoom", () => {
+		const source = setFixture();
+
+		translateImageCrop(source.id, 1000, 1000);
+
+		const moved = get(projectState).elements[0] as ImageElement;
+		expect(moved).toMatchObject({ imageX: 0, imageY: 0, imageWidth: 400, imageHeight: 200, cropScale: 200 });
+	});
+
+	it("changes image dimensions when the zoom control changes", () => {
+		const source = setFixture();
+
+		setImageCropScale(source.id, 400);
+
+		const zoomed = get(projectState).elements[0] as ImageElement;
+		expect(zoomed).toMatchObject({ imageX: -340, imageY: -140, imageWidth: 800, imageHeight: 400, cropScale: 400 });
 	});
 });

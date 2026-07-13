@@ -1,5 +1,10 @@
 export { createDefaultProject, createSampleProject, defaultProject } from "./project/default";
-export { isPointInsideCanvas } from "./project/geometry";
+export {
+	getImageRenderRect,
+	getLegacyImageRenderRect,
+	hasValidImageRect,
+	isPointInsideCanvas
+} from "./project/geometry";
 export { drawingTools, isDrawingTool } from "./project/tool";
 export {
 	hexColorPattern,

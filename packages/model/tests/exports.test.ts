@@ -3,6 +3,9 @@ import {
 	createSampleProject,
 	defaultProject,
 	drawingTools,
+	getImageRenderRect,
+	getLegacyImageRenderRect,
+	hasValidImageRect,
 	hexColorPattern,
 	isDrawingTool,
 	isPointInsideCanvas,
@@ -173,6 +176,35 @@ describe("@maply/model exports", () => {
 			StoredImageAssetSchema,
 			TextElementSchema
 		]).toHaveLength(10);
+	});
+
+	it("exposes shared image render geometry", () => {
+		const image: ImageElement = {
+			id: "image",
+			name: "image",
+			type: "image",
+			x: 0,
+			y: 0,
+			width: 200,
+			height: 100,
+			assetId: "asset",
+			cropX: 0,
+			cropY: 0,
+			cropScale: 200
+		};
+		const asset = { width: 400, height: 200 };
+
+		expect(getLegacyImageRenderRect(image, asset)).toEqual({ x: -100, y: -50, width: 400, height: 200 });
+		expect(
+			getImageRenderRect({ ...image, imageX: -20, imageY: -10, imageWidth: 240, imageHeight: 120 }, asset)
+		).toEqual({
+			x: -20,
+			y: -10,
+			width: 240,
+			height: 120
+		});
+		expect(hasValidImageRect({ ...image, imageX: -20, imageY: -10, imageWidth: 240, imageHeight: 120 })).toBe(true);
+		expect(hasValidImageRect({ ...image, imageX: -20, imageY: -10, imageWidth: 0, imageHeight: 120 })).toBe(false);
 	});
 
 	it("rejects invalid model payloads", () => {

@@ -1,3 +1,4 @@
+import { getImageRenderRect } from "@maply/model";
 import type { Element, ImageElement, Project, StoredImageAsset, TextElement } from "@maply/model/types";
 
 import { TEXT_CHARACTER_WIDTH_RATIO, TEXT_LINE_HEIGHT_RATIO } from "../../common";
@@ -91,31 +92,6 @@ function renderText(element: TextElement, dx: number, dy: number, defs: string[]
 	].join(" ");
 }
 
-function clamp(value: number, min: number, max: number) {
-	return Math.min(Math.max(value, min), max);
-}
-
-/**
- * Computes the position and size of the rendered image within its element frame.
- * The image is scaled to cover the element (object-fit: cover), then shifted by
- * cropX/cropY (-100..100 range, percentage of overflow) to pan within the frame.
- */
-function imageRect(element: ImageElement, asset: StoredImageAsset) {
-	const scale = Math.max(element.width / Math.max(1, asset.width), element.height / Math.max(1, asset.height));
-	const cropScale = Math.max(1, element.cropScale / 100);
-	const width = Math.round(asset.width * scale * cropScale);
-	const height = Math.round(asset.height * scale * cropScale);
-	const overflowX = Math.max(0, width - element.width);
-	const overflowY = Math.max(0, height - element.height);
-
-	return {
-		x: Math.round((element.width - width) / 2 - (clamp(element.cropX, -100, 100) / 100) * (overflowX / 2)),
-		y: Math.round((element.height - height) / 2 - (clamp(element.cropY, -100, 100) / 100) * (overflowY / 2)),
-		width,
-		height
-	};
-}
-
 /* Falls back to a placeholder rect when no image data is available. */
 function renderImage(element: ImageElement, asset: StoredImageAsset | undefined, dx: number, dy: number) {
 	const href = asset?.dataUrl ?? element.href ?? "";
@@ -127,7 +103,9 @@ function renderImage(element: ImageElement, asset: StoredImageAsset | undefined,
 		].join(" ");
 	}
 
-	const rect = asset ? imageRect(element, asset) : { x: 0, y: 0, width: element.width, height: element.height };
+	const rect = asset
+		? getImageRenderRect(element, asset)
+		: { x: 0, y: 0, width: element.width, height: element.height };
 	return [
 		`<g id="${escapeXml(element.name)}">`,
 		`<svg x="${element.x + dx}" y="${element.y + dy}" width="${element.width}" height="${element.height}"`,
