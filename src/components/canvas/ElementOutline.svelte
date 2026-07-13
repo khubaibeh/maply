@@ -131,7 +131,7 @@
 			width={handleSize}
 			height={handleSize}
 			rx={handleRadius}
-			fill="var(--canvas-handle-fill)"
+			fill="#eaeaea"
 			stroke="var(--canvas-selection)"
 			stroke-width={handleStrokeWidth}
 			style:cursor={resizeCursor(handle.key)}

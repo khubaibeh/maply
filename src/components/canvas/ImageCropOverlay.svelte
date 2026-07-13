@@ -135,7 +135,7 @@
 				width={handleSize}
 				height={handleSize}
 				rx={handleOffset}
-				fill="var(--canvas-handle-fill)"
+				fill="#eaeaea"
 				stroke="var(--canvas-selection)"
 				stroke-width={2 / $canvas.camera.zoom}
 				style:cursor={resizeCursor(handle.key)}

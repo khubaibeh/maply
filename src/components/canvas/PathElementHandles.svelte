@@ -56,7 +56,7 @@
 				y={point.y - halfHandleSize}
 				width={handleSize}
 				height={handleSize}
-				fill="var(--canvas-handle-fill)"
+				fill="#eaeaea"
 				stroke="var(--canvas-selection)"
 				stroke-width="2"
 				role="button"
