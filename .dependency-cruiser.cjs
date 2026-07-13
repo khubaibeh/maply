@@ -64,7 +64,7 @@ module.exports = {
 			name: "no-private-editor-entrypoints",
 			severity: "error",
 			from: { path: "^src/" },
-			to: { path: "^editor/(?!index\\.ts$)" }
+			to: { path: "^editor/(?!index(?:\\.ts)?$|types(?:\\.ts)?$)" }
 		},
 		{
 			name: "lib-no-app-imports",

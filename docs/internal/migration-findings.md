@@ -19,15 +19,6 @@ Describe the finding in one short paragraph. Include the behavior or module seam
 
 ## Open Findings
 
-### Move compatibility name validation to its final owner
-
-Type: refactor
-Found in: `editor/compat/naming.ts`
-Migration chunk: `src` compatibility migration
-Status: planned
-
-Selector-safe element-name validation currently lives in `editor/compat`. Decide whether selector safety is model policy or editor policy, then move it to `@maply/model` or `editor/elements/naming.ts` and remove the compatibility copy.
-
 ### Complete generic SVG import diagnostics
 
 Type: behavior-risk
@@ -36,15 +27,6 @@ Migration chunk: `@maply/io` SVG import fallback
 Status: planned
 
 Recovery SVG import is lossless and Synoptic/generic SVG import covers the currently supported primitives, but generic fidelity work remains. Emit the defined warning types with structured `source` data for incomplete and unsupported elements, transforms, groups, path commands, styles, viewBoxes, and positioned text; validate image data URL MIME/base64 payloads; and add focused coverage. The generic parser also needs independent ownership if its behavior diverges from Synoptic extraction. Keep this as a follow-up unless a caller requires one of these unsupported SVG features.
-
-### Remove import/export panel state
-
-Type: cleanup
-Found in: `packages/model/src/project/schema.ts`, `editor/compat/project-state.ts`
-Migration chunk: `@maply/model` setup
-Status: open
-
-`importExportState` remains part of the persisted project schema but is no longer used by the UI. Compat load/save/import/export preserves it until an explicit schema migration removes it from defaults, parsing, persistence, and compatibility state.
 
 ## Done Findings
 
@@ -60,7 +42,7 @@ A version-3 fixture without the `image-assets.projectId` index is upgraded throu
 ### Complete hydrated element normalization
 
 Type: behavior-risk
-Found in: `editor/compat/session.ts`, `editor/compat/normalize.ts`, `editor/compat/path-geometry.ts`
+Found in: `editor/session/load.ts`, `editor/session/normalize.ts`, `editor/elements/path.ts`
 Migration chunk: editor session lifecycle
 Status: done
 
@@ -78,7 +60,7 @@ Production callers now use `Editor` and `@maply/*`, replacement package/editor t
 ### Fix incremental rounding drift in crop-scale during image frame resize
 
 Type: behavior-risk
-Found in: `editor/compat/image.ts`, `src/components/canvas/ImageCropOverlay.svelte`
+Found in: `editor/image/commands.ts`, `src/components/canvas/ImageCropOverlay.svelte`
 Migration chunk: editor element resize
 Status: done
 
@@ -91,12 +73,12 @@ Found in: `editor/`
 Migration chunk: editor extraction
 Status: done
 
-`editor/` owns the application-specific live editing seam. It exposes `Editor` from `editor/index.ts`, composes `@maply/model`, `@maply/io`, and `@maply/storage`, and does not import `app/` or `src/`. Active Svelte callers use this surface, with migration-only behavior isolated under `editor/compat`.
+`editor/` owns the application-specific live editing seam. It exposes `Editor` from `editor/index.ts`, composes `@maply/model`, `@maply/io`, and `@maply/storage`, and does not import `app/` or `src/`. Active Svelte callers use this surface.
 
 ### Make image replacement crash-atomic
 
 Type: behavior-risk
-Found in: `editor/compat/upload.ts`
+Found in: `editor/image/upload.ts`
 Migration chunk: editor image workflows
 Status: done
 

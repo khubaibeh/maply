@@ -150,6 +150,50 @@ describe("getPointBounds", () => {
 });
 
 describe("getElementBounds", () => {
+	it("includes cubic curve extrema in path bounds", () => {
+		const bounds = getElementBounds(path({ d: "M0,0 C0,100 100,100 100,0", strokeWidth: 2 }));
+		expect(bounds).toMatchObject({ width: 102, height: 77 });
+	});
+
+	it.each([
+		["quadratic", "M0,0 Q50,100 100,0"],
+		["smooth quadratic", "M0,0 Q25,100 50,0 T100,0"],
+		["smooth cubic", "M0,0 C0,100 50,100 50,0 S100,-100 100,0"],
+		["arc", "M0,0 A40,20 0 0,1 100,0"]
+	])("includes %s commands in path bounds", (_name, d) => {
+		const bounds = getElementBounds(path({ d }));
+		expect(bounds.width).toBeGreaterThan(2);
+		expect(bounds.height).toBeGreaterThan(2);
+	});
+
+	it("uses rendered glyph bearings for text bounds and wrapping", () => {
+		const previousDocument = globalThis.document;
+		Object.defineProperty(globalThis, "document", {
+			configurable: true,
+			value: {
+				createElement: () => ({
+					getContext: () => ({
+						font: "",
+						measureText: () => ({
+							width: 20,
+							actualBoundingBoxLeft: 3,
+							actualBoundingBoxRight: 17,
+							actualBoundingBoxAscent: 18,
+							actualBoundingBoxDescent: 4
+						})
+					})
+				})
+			}
+		});
+
+		try {
+			const element = text({ text: "first\nsecond", fontSize: 16, width: 200, height: 60 });
+			expect(getElementBounds(element)).toMatchObject({ x: 97, y: 82 });
+		} finally {
+			Object.defineProperty(globalThis, "document", { configurable: true, value: previousDocument });
+		}
+	});
+
 	it("returns frame for rect", () => {
 		const bounds = getElementBounds(rect());
 		expect(bounds).toEqual({ x: 100, y: 100, width: 200, height: 150 });

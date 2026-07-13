@@ -1,3 +1,5 @@
+import type { ImageElement } from "@maply/model/types";
+
 type Crop = { cropX: number; cropY: number; cropScale: number };
 type Metrics = { width: number; height: number; assetWidth: number; assetHeight: number; cropScale: number };
 
@@ -70,6 +72,57 @@ export function cropForFrameResize(current: Crop, previous: Metrics, next: Metri
 	return {
 		cropX: Math.round(clamp(cropX, -100, 100)),
 		cropY: Math.round(clamp(cropY, -100, 100)),
+		cropScale
+	};
+}
+
+/** Returns the source image rectangle rendered inside an image crop frame. */
+export function getImageRenderRect(element: ImageElement & { assetWidth: number; assetHeight: number }) {
+	const frameWidth = Math.max(1, element.width);
+	const frameHeight = Math.max(1, element.height);
+	const assetWidth = Math.max(1, element.assetWidth);
+	const assetHeight = Math.max(1, element.assetHeight);
+
+	const baseScale = Math.max(frameWidth / assetWidth, frameHeight / assetHeight);
+	const cropScale = Math.max(1, element.cropScale / 100);
+
+	const width = assetWidth * baseScale * cropScale;
+	const height = assetHeight * baseScale * cropScale;
+	const overflowX = Math.max(0, width - frameWidth);
+	const overflowY = Math.max(0, height - frameHeight);
+
+	const x = element.x + (frameWidth - width) / 2 - (clamp(element.cropX, -100, 100) / 100) * (overflowX / 2);
+	const y = element.y + (frameHeight - height) / 2 - (clamp(element.cropY, -100, 100) / 100) * (overflowY / 2);
+
+	return { x: Math.round(x), y: Math.round(y), width: Math.round(width), height: Math.round(height) };
+}
+
+/** Recalculates crop state to preserve rendered image content across a frame resize. */
+export function cropForImageFrameResize(
+	previous: ImageElement,
+	next: ImageElement,
+	assetWidthValue: number,
+	assetHeightValue: number
+): Crop {
+	const assetWidth = Math.max(1, assetWidthValue);
+	const assetHeight = Math.max(1, assetHeightValue);
+
+	const rendered = getImageRenderRect({ ...previous, assetWidth, assetHeight });
+
+	const nextBaseScale = Math.max(next.width / assetWidth, next.height / assetHeight, 1e-6);
+	const cropScale = clampCropScale((rendered.width / assetWidth / nextBaseScale) * 100);
+	const scale = Math.max(next.width / assetWidth, next.height / assetHeight) * Math.max(1, cropScale / 100);
+
+	const width = assetWidth * scale;
+	const height = assetHeight * scale;
+	const overflowX = Math.max(0, width - next.width);
+	const overflowY = Math.max(0, height - next.height);
+	const baseX = next.x + (next.width - width) / 2;
+	const baseY = next.y + (next.height - height) / 2;
+
+	return {
+		cropX: Math.round(clamp(overflowX === 0 ? 0 : ((baseX - rendered.x) / (overflowX / 2)) * 100, -100, 100)),
+		cropY: Math.round(clamp(overflowY === 0 ? 0 : ((baseY - rendered.y) / (overflowY / 2)) * 100, -100, 100)),
 		cropScale
 	};
 }

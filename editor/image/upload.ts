@@ -77,8 +77,8 @@ export async function imageFromFile(id: string, file: File): Promise<ImageFromFi
  * Atomically replaces the image asset for an element and persists the full project state.
  *
  * Acquires the editor mutex to prevent concurrent asset swaps from interleaving.
- * Updates state optimistically (stores first, then persists to IndexedDB) so that
- * concurrent readers always see a consistent snapshot.
+ * Persists the replacement project and asset set before publishing either live store,
+ * so a persistence failure leaves the editor session unchanged.
  *
  * After persistence, prunes any orphaned assets no longer referenced by any element.
  */
@@ -97,60 +97,40 @@ export async function replaceImageAsset(
 		}
 
 		const nextAsset = { ...asset, id: createElementId(), projectId: project.id };
-
-		projectState.update((state) => ({
-			...state,
-			elements: state.elements.map((element) => {
-				if (element.id !== id || element.type !== "image") return element;
-				return { ...element, assetId: nextAsset.id, href: undefined, cropX: 0, cropY: 0, cropScale: 100 };
-			})
-		}));
-
-		imageAssetState.update((assets) => ({ ...assets, [nextAsset.id]: nextAsset }));
-
-		const live = get(projectState);
-		const liveAssets = get(imageAssetState);
-
-		const assetIdSet = new Set(
-			live.elements.flatMap((element) => (element.type === "image" && element.assetId ? [element.assetId] : []))
+		const elements = project.elements.map((element) =>
+			element.id === id && element.type === "image"
+				? { ...element, assetId: nextAsset.id, href: undefined, cropX: 0, cropY: 0, cropScale: 100 }
+				: element
 		);
+		const nextAssets = { ...get(imageAssetState), [nextAsset.id]: nextAsset };
+		const referenced: StoredImageAsset[] = [];
 
-		const referencedAssets = [...assetIdSet]
-			.map((assetId) => liveAssets[assetId])
-			.filter((entry): entry is StoredImageAsset => entry !== undefined);
+		for (const element of elements) {
+			if (element.type !== "image" || !element.assetId) continue;
 
+			const entry = nextAssets[element.assetId];
+			if (!entry) return { ok: false, error: new Error(`Missing image asset: ${element.assetId}`) };
+
+			if (!referenced.some((candidate) => candidate.id === entry.id)) referenced.push(entry);
+		}
 		const canvas = get(canvasState);
 		const replaced = await storage.project.replace(
 			{
-				id: live.id,
-				name: live.name,
+				id: project.id,
+				name: project.name,
 				canvas: { width: canvas.width, height: canvas.height, color: canvas.color, x: canvas.x, y: canvas.y },
 				camera: { ...canvas.camera },
-				elements: live.elements,
-				importExportState: { importsOpen: true, elementsOpen: true }
+				elements
 			},
-			referencedAssets
+			referenced
 		);
 
 		if (!replaced.ok) {
 			return { ok: false, error: replaced.error };
 		}
 
-		imageAssetState.update((assets) => {
-			const currentAssetIds = new Set(
-				get(projectState).elements.flatMap((el) => (el.type === "image" && el.assetId ? [el.assetId] : []))
-			);
-
-			const next = { ...assets };
-
-			for (const key of Object.keys(next)) {
-				if (!currentAssetIds.has(key) && next[key]?.projectId === project.id) {
-					delete next[key];
-				}
-			}
-
-			return next;
-		});
+		projectState.set({ ...project, elements });
+		imageAssetState.set(Object.fromEntries(referenced.map((entry) => [entry.id, entry])));
 
 		return { ok: true };
 	} finally {

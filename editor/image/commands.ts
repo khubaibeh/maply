@@ -1,10 +1,11 @@
+import type { ImageElement } from "@maply/model/types";
 import { get } from "svelte/store";
 
 import { resizeElement, type ResizeHandle, type ResizeOptions } from "../elements/resize";
 import { imageAssetState } from "../state/assets";
 import { projectState } from "../state/document";
 import { canvasState } from "../state/workspace";
-import { clampCropScale, cropForFrameResize, translateCrop } from "./crop";
+import { clampCropScale, cropForImageFrameResize, translateCrop } from "./crop";
 
 /** Pans an image inside its crop frame. */
 export function translateImageCrop(id: string, dx: number, dy: number): void {
@@ -68,7 +69,8 @@ export function resizeImageCropFrame(
 	handle: ResizeHandle,
 	dx: number,
 	dy: number,
-	options?: ResizeOptions
+	options?: ResizeOptions,
+	source?: ImageElement
 ): void {
 	const canvas = get(canvasState);
 	const assets = get(imageAssetState);
@@ -78,29 +80,25 @@ export function resizeImageCropFrame(
 		elements: state.elements.map((element) => {
 			if (element.id !== id || element.type !== "image") return element;
 
-			const nextFrame = resizeElement(element, handle, dx, dy, canvas, options) as typeof element;
-			if (!element.assetId) return nextFrame;
+			const original = source?.id === id ? source : element;
+			const resized = resizeElement(original, handle, dx, dy, canvas, options) as typeof element;
+			const width = Math.max(5, resized.width);
+			const height = Math.max(5, resized.height);
 
-			const asset = assets[element.assetId];
+			const nextFrame = {
+				...resized,
+				x: handle.includes("w") && resized.width < 5 ? original.x + original.width - width : resized.x,
+				y: handle.includes("n") && resized.height < 5 ? original.y + original.height - height : resized.y,
+				width,
+				height
+			};
+
+			if (!original.assetId) return nextFrame;
+
+			const asset = assets[original.assetId];
 			if (!asset) return nextFrame;
 
-			const nextCrop = cropForFrameResize(
-				{ cropX: element.cropX, cropY: element.cropY, cropScale: element.cropScale },
-				{
-					width: element.width,
-					height: element.height,
-					assetWidth: asset.width,
-					assetHeight: asset.height,
-					cropScale: element.cropScale
-				},
-				{
-					width: nextFrame.width,
-					height: nextFrame.height,
-					assetWidth: asset.width,
-					assetHeight: asset.height,
-					cropScale: element.cropScale
-				}
-			);
+			const nextCrop = cropForImageFrameResize(original, nextFrame, asset.width, asset.height);
 
 			return { ...nextFrame, ...nextCrop };
 		})

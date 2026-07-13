@@ -1,5 +1,8 @@
 import type { Camera, Element, StoredImageAsset, Tool } from "@maply/model/types";
 
+export type { ElementNameIssue, ElementNameValidation } from "./elements/naming";
+export type { ResizeHandle, ResizeOptions } from "./elements/resize";
+
 /** The live project data and editor-only selection state. */
 export type ProjectState = {
 	id: string;

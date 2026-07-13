@@ -16,8 +16,7 @@ export async function exportProject() {
 		name: state.name,
 		canvas: { width: canvas.width, height: canvas.height, color: canvas.color, x: canvas.x, y: canvas.y },
 		camera: { ...canvas.camera },
-		elements: state.elements.map((element) => ({ ...element })),
-		importExportState: { importsOpen: true, elementsOpen: true }
+		elements: state.elements.map((element) => ({ ...element }))
 	};
 
 	const referencedIds = project.elements.flatMap((element) =>

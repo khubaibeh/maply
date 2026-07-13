@@ -17,7 +17,6 @@ function clone(project: Project): Project {
 		...project,
 		canvas: { ...project.canvas },
 		elements: project.elements.map((element) => ({ ...element })),
-		importExportState: { ...project.importExportState },
 		camera: project.camera ? { ...project.camera } : undefined
 	};
 }

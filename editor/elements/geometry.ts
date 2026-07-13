@@ -1,6 +1,6 @@
-import type { Canvas, Element, Point } from "@maply/model/types";
+import type { Canvas, Element, PathElement, Point } from "@maply/model/types";
 
-import { toPathPoints } from "./path";
+import { getSvgPathBounds } from "./path";
 import { getTextBounds } from "./text";
 
 const minShapeSize = 5;
@@ -37,10 +37,6 @@ export function getPointBounds(points: readonly Point[]) {
 	return { x, y, width: Math.max(...xs) - x, height: Math.max(...ys) - y };
 }
 
-function getPathBounds(d: string) {
-	return getPointBounds(toPathPoints(d));
-}
-
 /** Returns the rendered axis-aligned bounds used for pure editor clamping. */
 export function getElementBounds(element: Element) {
 	switch (element.type) {
@@ -57,7 +53,7 @@ export function getElementBounds(element: Element) {
 		case "text":
 			return getTextBounds(element);
 		case "path": {
-			const bounds = getPathBounds(element.d);
+			const bounds = getSvgPathBounds(element.d);
 			const padding = Math.ceil(element.strokeWidth / 2);
 
 			return {
@@ -68,6 +64,17 @@ export function getElementBounds(element: Element) {
 			};
 		}
 	}
+}
+
+/** Translates a path's stored visual box to its rendered SVG data origin. */
+export function getPathRenderTransform(element: PathElement): Point {
+	const bounds = getSvgPathBounds(element.d);
+	const strokePadding = Math.ceil(element.strokeWidth / 2);
+
+	return {
+		x: Math.round(element.x - bounds.x + strokePadding),
+		y: Math.round(element.y - bounds.y + strokePadding)
+	};
 }
 
 function getClampDelta(position: number, size: number, canvasPosition: number, canvasSize: number) {

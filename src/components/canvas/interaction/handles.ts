@@ -1,4 +1,4 @@
-import type { ResizeHandle } from "editor";
+import type { ResizeHandle } from "editor/types";
 
 /** Axis-aligned rectangle used to position resize anchors. */
 export type HandleBounds = { x: number; y: number; width: number; height: number };

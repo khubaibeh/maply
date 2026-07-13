@@ -3,7 +3,8 @@
 	import { clientToSvgPoint, getSvgRoot } from "@components/canvas/interaction/svg";
 	import { resizeCursor } from "@components/core/cursors";
 	import type { Canvas } from "@maply/model/types";
-	import { Editor, type ResizeHandle } from "editor";
+	import { Editor } from "editor";
+	import type { ResizeHandle } from "editor/types";
 
 	const HANDLE_SIZE_SCREEN = 12;
 	const HANDLE_LENGTH_SCREEN = 26;

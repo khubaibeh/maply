@@ -10,8 +10,8 @@ beforeAll(async () => {
 	await putLegacyProject();
 });
 
-describe("legacy project hydration", () => {
-	it("normalizes representative persisted elements", async () => {
+describe("loadEditorSession", () => {
+	it("normalizes legacy persisted elements", async () => {
 		await loadEditorSession("prod");
 
 		const state = get(projectState);

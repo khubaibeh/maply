@@ -1,6 +1,6 @@
 # Package Migration
 
-Maply extracted the former root-level `app/` code into named `@maply/*` capability packages and the application-specific `editor/` module. The SvelteKit UI now uses `Editor` and package APIs; compatibility-only behavior remains isolated under `editor/compat` until final ownership is decided.
+Maply extracted the former root-level `app/` code into named `@maply/*` capability packages and the application-specific `editor/` module. The SvelteKit UI now uses `Editor` and package APIs.
 
 The first phase is focused on hollowing out `@app` by extracting cohesive capability packages and the editor composition module. Prefer copy, switch imports, then delete the old `app/` source in one focused chunk. Do not move the whole `app/` tree into a package or `editor/` as a holding pen unless there is a concrete compatibility blocker.
 
@@ -22,7 +22,6 @@ Done:
 Left:
 
 - Preserve browser event routing, pointer drafts, dialogs, file pickers, downloads, theme preference, and shadcn UI in `src/`.
-- Remove obsolete `importExportState` after compatibility and persistence concerns are handled.
 - Finish the remaining open findings in `migration-findings.md`, especially SVG generic diagnostics and final ownership of compatibility naming validation.
 
 Use pnpm catalogs for shared dependency versions across packages. New package manifests should reference catalog entries instead of repeating concrete versions when a dependency is shared by more than one package or is part of the app's standard toolchain. Root application modules do not need package manifests.

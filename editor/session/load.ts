@@ -6,6 +6,7 @@ import { clampElementToCanvas } from "../elements/geometry";
 import { imageAssetState } from "../state/assets";
 import { projectState } from "../state/document";
 import { canvasState, createInitialCanvasState } from "../state/workspace";
+import { normalizeElement } from "./normalize";
 
 const defaultProjectId = "prod";
 
@@ -30,7 +31,7 @@ function applyProject(project: Project) {
 		...state,
 		id: project.id,
 		name: project.name,
-		elements: project.elements.map((element) => clampElementToCanvas(element, project.canvas)),
+		elements: project.elements.map((element) => clampElementToCanvas(normalizeElement(element), project.canvas)),
 		// TODO: This single one needs to go away at a later time, this is code smell
 		selectedElementId: null,
 		selectedElementIds: [],

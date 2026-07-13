@@ -5,7 +5,6 @@ export {
 	ElementSchema,
 	ElementTypeSchema,
 	ImageElementSchema,
-	ImportExportStateSchema,
 	PathElementSchema,
 	PointSchema,
 	ProjectSchema,

@@ -3,7 +3,8 @@
 	import { Input } from "$lib/components/ui/input";
 	import ElementNameValidation from "@components/core/ElementNameValidation.svelte";
 	import type { Element } from "@maply/model/types";
-	import { Editor, type ElementNameValidation as NameValidation } from "editor";
+	import { Editor } from "editor";
+	import type { ElementNameValidation as NameValidation } from "editor/types";
 	import Circle from "phosphor-svelte/lib/Circle";
 	import Image from "phosphor-svelte/lib/Image";
 	import Pencil from "phosphor-svelte/lib/Pencil";

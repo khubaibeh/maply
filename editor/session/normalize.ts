@@ -10,7 +10,7 @@ function textHeight(text: string, fontSize: number): number {
 	return Math.max(1, Math.ceil(fontSize * (1.2 + Math.max(0, text.split("\n").length - 1) * 1.2)));
 }
 
-/** Restores fields that may be absent or invalid in projects persisted by older releases. */
+/** Restores fields absent or invalid in projects persisted by older releases. */
 export function normalizeElement(element: Element): Element {
 	const normalized = {
 		...element,
@@ -21,6 +21,7 @@ export function normalizeElement(element: Element): Element {
 		const x = typeof normalized.x === "number" ? normalized.x : 0;
 		const y = typeof normalized.y === "number" ? normalized.y : 0;
 		const closed = typeof normalized.closed === "boolean" ? normalized.closed : /\s*[Zz]\s*$/.test(normalized.d);
+
 		return {
 			...normalized,
 			x,

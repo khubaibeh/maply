@@ -18,7 +18,6 @@ import {
 	ElementSchema,
 	ElementTypeSchema,
 	ImageElementSchema,
-	ImportExportStateSchema,
 	PathElementSchema,
 	PointSchema,
 	ProjectSchema,
@@ -34,7 +33,6 @@ import type {
 	Element,
 	ElementType,
 	ImageElement,
-	ImportExportState,
 	PathElement,
 	Point,
 	Project,
@@ -77,7 +75,6 @@ describe("@maply/model exports", () => {
 	it("exposes model types", () => {
 		const canvas: Canvas = { width: 1, height: 1, color: "#ffffff", x: 0, y: 0 };
 		const camera: Camera = { x: 0, y: 0, zoom: 1 };
-		const importExportState: ImportExportState = { importsOpen: true, elementsOpen: true };
 		const point: Point = { x: 0, y: 0 };
 		const asset: StoredImageAsset = {
 			id: "asset",
@@ -149,7 +146,7 @@ describe("@maply/model exports", () => {
 			cropScale: 1
 		};
 		const elements: Element[] = [rect, circle, path, text, image];
-		const project: Project = { id: "project", name: "project", canvas, camera, elements, importExportState };
+		const project: Project = { id: "project", name: "project", canvas, camera, elements };
 		const tool: Tool = "select";
 		const elementType: ElementType = rect.type;
 
@@ -170,13 +167,12 @@ describe("@maply/model exports", () => {
 			CircleElementSchema,
 			ElementSchema,
 			ImageElementSchema,
-			ImportExportStateSchema,
 			PathElementSchema,
 			PointSchema,
 			RectElementSchema,
 			StoredImageAssetSchema,
 			TextElementSchema
-		]).toHaveLength(11);
+		]).toHaveLength(10);
 	});
 
 	it("rejects invalid model payloads", () => {

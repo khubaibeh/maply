@@ -6,7 +6,7 @@ This is the behavior inventory for the `app/` to `editor/` migration. It records
 
 ## Migration Status
 
-The active Svelte UI uses the public `Editor` surface. Compatibility implementations preserve legacy behavior under `editor/compat` without modifying internal editor modules.
+The active Svelte UI uses the public `Editor` surface. Editor modules preserve the required legacy behavior at their owning boundaries.
 
 Done in `editor/`:
 
@@ -20,7 +20,6 @@ Remaining follow-up work:
 
 - Keep UI-only workflows in `src`: pointer draft state, DOM events, dialogs, file picker/download mechanics, and theme preference.
 - Complete generic SVG import diagnostics.
-- Remove `importExportState` after persisted compatibility is handled.
 
 ## Session Lifecycle
 

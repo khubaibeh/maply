@@ -4,7 +4,8 @@
 	import { clientToSvgPoint, getSvgRoot } from "@components/canvas/interaction/svg";
 	import { canvasCursor, resizeCursor } from "@components/core/cursors";
 	import type { ImageElement } from "@maply/model/types";
-	import { Editor, type ResizeHandle } from "editor";
+	import { Editor } from "editor";
+	import type { ResizeHandle } from "editor/types";
 
 	interface Props {
 		element: ImageElement;

@@ -35,6 +35,7 @@ describe("@maply/storage", () => {
 	it("upgrades version 3 records and creates the image project index", async () => {
 		const project = await value(storage.project.fetch("prod"));
 		expect(project.name).toBe("Version 3 project");
+		expect(project).not.toHaveProperty("importExportState");
 		expect(await value(storage.imageAsset.fetch(["legacy-asset"]))).toEqual([asset("legacy-asset")]);
 
 		const db = await openDatabase();
@@ -95,6 +96,7 @@ async function createVersion3Fixture(): Promise<void> {
 				canvas: { width: 800, height: 800, color: "#fff", x: 0, y: 0 },
 				camera: { x: 0, y: 0, zoom: 1 },
 				elements: [],
+				// Legacy UI-only data is discarded on the first read/write cycle.
 				importExportState: { importsOpen: false, elementsOpen: false }
 			});
 			imageStore.put(asset("legacy-asset"));

@@ -7,10 +7,26 @@ const defaultNames: Record<ElementType, string> = {
 	text: "text",
 	image: "image"
 };
-const selectorName = /^[A-Za-z_][A-Za-z0-9_-]*$/;
-
 export type ElementNameIssue =
 	"empty" | "spaces" | "starts-with-number" | "starts-with-hyphen" | "invalid-symbols" | "duplicate";
+
+export type ElementNameValidation = {
+	id: string;
+	name: string;
+	valid: boolean;
+	issues: ElementNameIssue[];
+	messages: string[];
+	suggestion: string | null;
+};
+
+const messages: Record<ElementNameIssue, string> = {
+	empty: "empty name",
+	spaces: "spaces",
+	"starts-with-number": "starts with a number",
+	"starts-with-hyphen": "starts with a hyphen",
+	"invalid-symbols": "invalid symbols",
+	duplicate: "duplication"
+};
 
 /** Generates an element ID without requiring a browser-only dependency. */
 export function createElementId(): string {
@@ -37,7 +53,8 @@ export function nextElementName(type: ElementType, elements: readonly Element[])
 	return `${base}${n}`;
 }
 
-export function validateElementNames(elements: readonly Element[]): Map<string, readonly ElementNameIssue[]> {
+/** Reports selector-safety issues and an autofix for every element name. */
+export function validateElementNames(elements: readonly Element[]): Map<string, ElementNameValidation> {
 	const counts = new Map<string, number>();
 
 	for (const element of elements) {
@@ -46,7 +63,23 @@ export function validateElementNames(elements: readonly Element[]): Map<string, 
 		counts.set(name, (counts.get(name) ?? 0) + 1);
 	}
 
-	return new Map(elements.map((element) => [element.id, nameIssues(element.name, counts)]));
+	return new Map(
+		elements.map((element) => {
+			const issues = nameIssues(element.name, counts);
+
+			return [
+				element.id,
+				{
+					id: element.id,
+					name: element.name,
+					valid: issues.length === 0,
+					issues,
+					messages: issues.map((issue) => messages[issue]),
+					suggestion: issues.length === 0 ? null : autofixElementName(element.name, elements, element.id)
+				}
+			];
+		})
+	);
 }
 
 export function autofixElementName(name: string, elements: readonly Element[], currentId?: string): string {
@@ -77,7 +110,7 @@ function nameIssues(name: string, counts: ReadonlyMap<string, number>): ElementN
 	if (/\s/.test(trimmed)) issues.push("spaces");
 	if (/^[0-9]/.test(trimmed)) issues.push("starts-with-number");
 	if (trimmed.startsWith("-")) issues.push("starts-with-hyphen");
-	if (trimmed && !selectorName.test(trimmed)) issues.push("invalid-symbols");
+	if (/[^A-Za-z0-9_\-\s]/.test(trimmed)) issues.push("invalid-symbols");
 	if (trimmed && (counts.get(trimmed) ?? 0) > 1) issues.push("duplicate");
 
 	return issues;

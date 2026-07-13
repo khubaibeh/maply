@@ -264,7 +264,7 @@ Notes:
 - Completed 2026-07-13.
 - Added public `Editor.fill.set`, `Editor.geometry.*`, and `Editor.text.*` seams needed by `src` migration without exposing private editor folders.
 - Exported `ElementNameValidation` from `editor` and use existing `ProjectFilePackage` from `@maply/io/types`.
-- Isolated legacy-parity text metrics, path bounds/render transform, path snapping, and image render rect behavior under `editor/compat/*` bridges so final ownership can be patched back into packages/modules later.
+- Moved legacy-parity text metrics, path bounds/render transforms, path snapping, and image render rect behavior into their final editor modules.
 - Verified with `pnpm test:model`, `pnpm test:io`, focused editor tests, and `pnpm check`.
 
 ### Chunk 2: Theme Ownership Move
@@ -434,7 +434,7 @@ Status: done
 Scope:
 
 - Resolve or explicitly defer findings from `migration-findings.md` that are exposed by the `src` migration.
-- Prioritize hydrated normalization parity, IndexedDB v3 upgrade coverage, generic SVG import diagnostics, `importExportState` removal, and crop resize drift.
+- Prioritize hydrated normalization parity, IndexedDB v3 upgrade coverage, generic SVG import diagnostics, and crop resize drift.
 
 Exit criteria:
 
@@ -444,7 +444,7 @@ Exit criteria:
 Notes:
 
 - This chunk can happen in parallel with cleanup only when it does not keep legacy `app` modules alive.
-- Completed 2026-07-13. Closed legacy consumer replacement, crop resize drift, and UI presentation of SVG parser source/warnings. Hydration parity, IndexedDB v3 upgrade coverage, generic SVG parser fidelity, and `importExportState` remain separately tracked follow-ups and do not retain legacy modules.
+- Completed 2026-07-13. Closed legacy consumer replacement, crop resize drift, and UI presentation of SVG parser source/warnings. Hydration parity, IndexedDB v3 upgrade coverage, and generic SVG parser fidelity remain separately tracked follow-ups and do not retain legacy modules.
 
 ## File-Specific Notes
 
@@ -544,7 +544,7 @@ Delete only after clean searches and checks:
 - `app/domain/*` after model/package/editor replacements cover all remaining imports.
 - `app/types.ts`, `app/effect.ts`, and `app/index.ts` only after all `@app` imports are gone.
 
-Keep open findings in `docs/internal/migration-findings.md` unless the migration actually resolves them. Update that file when resolving hydrated normalization parity, IndexedDB upgrade coverage, generic SVG diagnostics, `importExportState` removal, or crop resize drift.
+Keep open findings in `docs/internal/migration-findings.md` unless the migration actually resolves them. Update that file when resolving hydrated normalization parity, IndexedDB upgrade coverage, generic SVG diagnostics, or crop resize drift.
 
 ## Verification
 

@@ -105,18 +105,12 @@ export const CameraSchema = Schema.Struct({
 	zoom: Schema.Number
 });
 
-export const ImportExportStateSchema = Schema.Struct({
-	importsOpen: Schema.Boolean,
-	elementsOpen: Schema.Boolean
-});
-
 export const ProjectSchema = Schema.Struct({
 	id: Schema.String,
 	name: Schema.String,
 	canvas: CanvasSchema,
 	camera: Schema.optionalKey(CameraSchema),
-	elements: Schema.Array(ElementSchema),
-	importExportState: ImportExportStateSchema
+	elements: Schema.Array(ElementSchema)
 });
 
 export const ToolSchema = Schema.Literals(["select", "hand", "rect", "circle", "path", "text", "image"]);
@@ -132,6 +126,5 @@ export type StoredImageAsset = typeof StoredImageAssetSchema.Type;
 export type Point = typeof PointSchema.Type;
 export type Canvas = typeof CanvasSchema.Type;
 export type Camera = typeof CameraSchema.Type;
-export type ImportExportState = typeof ImportExportStateSchema.Type;
 export type Project = typeof ProjectSchema.Type;
 export type Tool = typeof ToolSchema.Type;

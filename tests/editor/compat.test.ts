@@ -1,12 +1,11 @@
 import type { Element, ImageElement } from "@maply/model/types";
-import { copy, paste } from "editor/compat/clipboard";
-import { getElementBounds, getImageRenderRect } from "editor/compat/geometry";
-import { resizeImageCropFrame } from "editor/compat/image";
-import { normalizeElement } from "editor/compat/normalize";
-import { exportProject } from "editor/compat/project";
-import { importExportState } from "editor/compat/project-state";
-import { getWrappedTextLines } from "editor/compat/text";
-import { replaceImageAsset } from "editor/compat/upload";
+import { getElementBounds } from "editor/elements/geometry";
+import { getWrappedTextLines } from "editor/elements/text";
+import { resizeImageCropFrame } from "editor/image/commands";
+import { getImageRenderRect } from "editor/image/crop";
+import { replaceImageAsset } from "editor/image/upload";
+import { copy, paste } from "editor/selection/clipboard";
+import { normalizeElement } from "editor/session/normalize";
 import { imageAssetState } from "editor/state/assets";
 import { projectState } from "editor/state/document";
 import { canvasState } from "editor/state/workspace";
@@ -243,19 +242,6 @@ describe("legacy element compatibility", () => {
 		await paste();
 		restore();
 		expect(get(projectState).elements).toEqual([image]);
-	});
-
-	it("preserves legacy import/export panel state in project exports", async () => {
-		projectState.update((state) => ({ ...state, elements: [] }));
-		importExportState.set({ importsOpen: false, elementsOpen: false });
-		imageAssetState.set({});
-
-		const result = await exportProject();
-
-		expect(result.ok).toBe(true);
-		if (result.ok) {
-			expect(result.value.project.importExportState).toEqual({ importsOpen: false, elementsOpen: false });
-		}
 	});
 });
 

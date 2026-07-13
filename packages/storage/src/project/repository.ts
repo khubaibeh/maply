@@ -10,13 +10,15 @@ const ids = { default: "default", prod: "prod" } as const;
 export type ResetProjectOptions = { elements?: "sample" | "blank" };
 
 function mergeProject(defaultProject: Project, record: Project): Project {
+	const { importExportState: _ignored, ...persisted } = record as Project & { importExportState?: unknown };
+	void _ignored;
+
 	return {
 		...defaultProject,
-		...record,
-		canvas: { ...defaultProject.canvas, ...record.canvas },
-		camera: record.camera ? { ...defaultProject.camera, ...record.camera } : undefined,
-		elements: record.elements ?? defaultProject.elements,
-		importExportState: { ...defaultProject.importExportState, ...record.importExportState }
+		...persisted,
+		canvas: { ...defaultProject.canvas, ...persisted.canvas },
+		camera: persisted.camera ? { ...defaultProject.camera, ...persisted.camera } : undefined,
+		elements: persisted.elements ?? defaultProject.elements
 	};
 }
 

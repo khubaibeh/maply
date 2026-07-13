@@ -5,7 +5,6 @@ export type {
 	Element,
 	ElementType,
 	ImageElement,
-	ImportExportState,
 	PathElement,
 	Point,
 	Project,

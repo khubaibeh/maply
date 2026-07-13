@@ -28,9 +28,7 @@ function currentProject(): Project {
 			y: canvas.y
 		},
 		camera: { ...canvas.camera },
-		elements: project.elements.map((element) => ({ ...element })),
-		// Retained only for the legacy persisted-project schema; it is not editor state.
-		importExportState: { importsOpen: true, elementsOpen: true }
+		elements: project.elements.map((element) => ({ ...element }))
 	};
 }
 
