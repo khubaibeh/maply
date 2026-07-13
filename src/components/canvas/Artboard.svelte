@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { createElementMove } from "@components/canvas/interaction/element-move.svelte";
 	import { Editor } from "editor";
 
 	import CanvasResizeHandles from "./CanvasResizeHandles.svelte";
@@ -11,6 +12,7 @@
 	const canvas = Editor.state.canvas;
 	const project = Editor.state.project;
 	const tool = Editor.state.tool;
+	const elementMove = createElementMove();
 
 	const selectedElements = $derived(
 		$project.elements.filter((element) => $project.selectedElementIds.includes(element.id))
@@ -43,7 +45,7 @@
 
 <CanvasResizeHandles />
 
-<ElementShapes />
+<ElementShapes onElementPointerDown={elementMove.start} />
 
 {#if hoveredElement && hoveredElement.type !== "path"}
 	<ElementOutline element={hoveredElement} interactive={false} />
@@ -55,7 +57,7 @@
 
 {#each selectedElements as element (element.id)}
 	{#if element.type !== "path"}
-		<ElementOutline {element} />
+		<ElementOutline {element} onMoveStart={elementMove.start} />
 	{:else}
 		<PathElementOutline {element} />
 	{/if}

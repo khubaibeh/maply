@@ -1,6 +1,6 @@
 # Src Migration Findings
 
-Historical note: this file records the pre-migration gap analysis. Current status and remaining work live in `migration-findings.md`; references below to `App` and deleted `app/` paths describe the former implementation.
+Historical note: this file records the pre-migration gap analysis. Current status and remaining work live in `migration-findings.md`; references below to `App`, deleted `app/` paths, and former `src/components` paths describe the implementation at the time of the audit.
 
 Findings, gaps, and issues discovered during the `src/` compatibility migration from `@app` to `editor` and `@maply/*` packages.
 
@@ -18,12 +18,12 @@ Owner: `editor/index.ts`
 
 The following functions exist in `editor/elements/geometry.ts` and `editor/elements/path.ts` but are not exported through `Editor`:
 
-| Function | Internal location | Notes |
-| --- | --- | --- |
-| `shapeDragBox` | `editor/elements/geometry.ts` → `getShapeDragBox` | Used by `area.state.svelte.ts` for drawing previews |
+| Function        | Internal location                                  | Notes                                                       |
+| --------------- | -------------------------------------------------- | ----------------------------------------------------------- |
+| `shapeDragBox`  | `editor/elements/geometry.ts` → `getShapeDragBox`  | Used by `area.state.svelte.ts` for drawing previews         |
 | `elementBounds` | `editor/elements/geometry.ts` → `getElementBounds` | Used by selection outlines, resize aspect ratio, hit layout |
-| `pathPoints` | `editor/elements/path.ts` → `toPathPoints` | Used by path handles UI |
-| `pathBounds` | Composable from `getPointBounds(toPathPoints(d))` | Used by path outline rendering |
+| `pathPoints`    | `editor/elements/path.ts` → `toPathPoints`         | Used by path handles UI                                     |
+| `pathBounds`    | Composable from `getPointBounds(toPathPoints(d))`  | Used by path outline rendering                              |
 
 These are already implemented in the editor and just need re-export.
 
@@ -51,12 +51,12 @@ Owner: `editor/image/` → `editor/index.ts`
 
 Four text helpers live in `app/internal/element-actions/text.ts` and have no editor equivalent. The editor only has `getTextBounds` in `editor/elements/text.ts`.
 
-| Function | Purpose |
-| --- | --- |
-| `wrappedLines` | Returns array of wrapped text lines for SVG rendering |
-| `wrappedLineHeight` | Returns the computed line height for a text element |
-| `wrappedMetrics` | Returns combined wrapped text metrics (lines + dimensions) |
-| `layoutMetrics` | Returns layout metrics from raw text/fontSize/width params |
+| Function            | Purpose                                                    |
+| ------------------- | ---------------------------------------------------------- |
+| `wrappedLines`      | Returns array of wrapped text lines for SVG rendering      |
+| `wrappedLineHeight` | Returns the computed line height for a text element        |
+| `wrappedMetrics`    | Returns combined wrapped text metrics (lines + dimensions) |
+| `layoutMetrics`     | Returns layout metrics from raw text/fontSize/width params |
 
 These are needed by `ElementShapes.svelte` for text rendering and `ElementProperties.svelte` for text property display.
 

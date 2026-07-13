@@ -2,9 +2,10 @@
 	import { Badge } from "$lib/components/ui/badge";
 	import { Input } from "$lib/components/ui/input";
 	import { ScrollArea } from "$lib/components/ui/scroll-area";
+	import { Separator } from "$lib/components/ui/separator";
 	import ColorPicker from "@components/core/ColorPicker.svelte";
 	import ElementNameValidation from "@components/core/ElementNameValidation.svelte";
-	import ElementProperties from "@components/ElementProperties.svelte";
+	import ElementProperties from "@components/properties/ElementProperties.svelte";
 	import { Editor } from "editor";
 
 	let { width = 288 }: { width?: number } = $props();
@@ -52,7 +53,7 @@
 	<div class="px-4 pt-3 pb-2">
 		<span class="text-sidebar-foreground/80 text-sm font-bold">Properties</span>
 	</div>
-	<hr class="mx-4 opacity-50" />
+	<Separator class="mx-4 w-auto opacity-50" />
 	<ScrollArea class="min-h-0 flex-1 [mask-image:linear-gradient(to_bottom,black_calc(100%-2rem),transparent)]">
 		<div class="flex flex-col gap-4 p-3">
 			<div class="flex flex-col gap-x-2 gap-y-4">
@@ -102,7 +103,7 @@
 				</div>
 			{:else if selectedElement}
 				<div class="flex flex-col gap-x-2 gap-y-4">
-					<hr class="mx-4 my-2 opacity-50" />
+					<Separator class="mx-4 my-2 w-auto opacity-50" />
 					<span class="text-sidebar-foreground/30 text-sm font-semibold tracking-wide">Element</span>
 					<div class="flex flex-col gap-1">
 						<label for="{selectedElement.id}-name" class="text-sidebar-foreground/70 text-xs">Name</label>
@@ -132,16 +133,3 @@
 		</div>
 	</ScrollArea>
 </aside>
-
-<style>
-	:global(.no-spinner::-webkit-inner-spin-button),
-	:global(.no-spinner::-webkit-outer-spin-button) {
-		-webkit-appearance: none;
-		margin: 0;
-	}
-
-	:global(.no-spinner) {
-		-moz-appearance: textfield;
-		appearance: textfield;
-	}
-</style>

@@ -48,7 +48,7 @@ Editor status: implemented by `editor/session/save.ts`; the layout still owns br
 
 ### Rename project
 
-Entry: project-name controls in `src/components/core/ProjectMenuOverlay.svelte` and the legacy `left-sidebar/ProjectSection.svelte`.
+Entry: project-name controls in `src/components/project-menu/ProjectMenuOverlay.svelte`.
 
 Current flow: Enter or blur commits the name; Escape restores the displayed value. `app/store/project.ts` updates the live name and normal autosave persists it.
 
@@ -100,11 +100,11 @@ Editor status: `Editor.project.exportSvg` gathers current data and delegates con
 
 Entry: project menu Import > SVG, file picker, then replacement confirmation.
 
-Current flow: the UI parses SVG text before confirmation. The current legacy importer restores Maply recovery metadata first, then supports a constrained Synoptic fallback. `@maply/io` additionally has a generic fallback with warnings that the app has not adopted yet.
+Current flow: the UI delegates SVG parsing to `@maply/io` before confirmation. Import restores Maply recovery metadata first, supports the Synoptic format, and falls back to generic SVG conversion. The replacement dialog displays the selected parser source and generic-import warnings.
 
 Invariants: imported content replaces the active project only after confirmation. Fallback imports can fit an undeclared canvas, drop elements outside a declared canvas, and deduplicate element IDs.
 
-Editor status: `Editor.project.importSvg` delegates input and diagnostics to `@maply/io.svg.import`, then applies the returned project payload. The migration must still decide how generic-import warnings are surfaced in the UI.
+Editor status: `@maply/io.svg.import` parses and diagnoses staged input; `Editor.project.import` atomically applies the confirmed project payload. Parser source and warnings are surfaced by the project-menu UI.
 
 ## Canvas, Camera, And Tool Workflows
 
@@ -120,7 +120,7 @@ Editor status: canvas commands are implemented; pointer-handle arithmetic remain
 
 ### Pan and zoom camera
 
-Entry: wheel, Ctrl/Cmd+wheel, middle-mouse drag, Hand tool drag, and temporary Space-to-hand interaction in `src/components/core/area.state.svelte.ts`.
+Entry: wheel, Ctrl/Cmd+wheel, middle-mouse drag, Hand tool drag, and temporary Space-to-hand interaction in `src/components/core/canvas-area/area.state.svelte.ts`.
 
 Current flow: UI converts pointer input to camera changes; the canvas store applies zoom limits and stores camera state with the project.
 
@@ -144,7 +144,7 @@ Editor status: tool state and commands are implemented; shortcut routing remains
 
 Entry: drag on the artboard with the corresponding drawing tool.
 
-Current flow: `area.state.svelte.ts` owns the pointer draft and preview. Editor factories create a shape from canvas-relative points and add/select it.
+Current flow: `core/canvas-area/drawing-session.svelte.ts` owns pointer draft state and preview derivation. The canvas-area lifecycle shell routes browser events to it; Editor factories create and add the final shape.
 
 Invariants: points are constrained to the canvas. Shapes below the minimum size are discarded. Shift creates a square rectangle. Circle diameter uses the shorter drag-box axis. New elements have generated IDs, unique default names, default style values, and return the tool to Select.
 
@@ -194,7 +194,7 @@ Editor status: resize commands and geometry helpers are implemented.
 
 ### Edit element properties
 
-Entry: `src/components/ElementProperties.svelte` and the right properties sidebar.
+Entry: `src/components/properties/ElementProperties.svelte`, its type-specific property modules, and the right properties sidebar.
 
 Current flow: inputs validate numbers and colors, then patch individual elements. Rect, image, and text coordinates are relative to the canvas; circle coordinates are relative center coordinates.
 

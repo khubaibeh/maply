@@ -1,20 +1,16 @@
 <script lang="ts">
 	import CanvasArea from "@components/CanvasArea.svelte";
-	import ProjectMenuOverlay from "@components/core/ProjectMenuOverlay.svelte";
+	import { getArrowDelta, getShortcutTool, isEditingText } from "@components/core/shortcuts";
 	import Toolbar from "@components/core/Toolbar.svelte";
 	import Topbar from "@components/core/Topbar.svelte";
 	import LeftSidebar from "@components/LeftSidebar.svelte";
+	import ProjectMenuOverlay from "@components/project-menu/ProjectMenuOverlay.svelte";
 	import RightSidebar from "@components/RightSidebar.svelte";
 	import { Editor } from "editor";
 	import { onMount } from "svelte";
 
-	import {
-		getArrowDelta,
-		getShortcutTool,
-		isEditingText,
-		LEFT_SIDEBAR_MIN_WIDTH,
-		RIGHT_SIDEBAR_MIN_WIDTH
-	} from "./core.ts";
+	const LEFT_SIDEBAR_WIDTH = 240;
+	const RIGHT_SIDEBAR_WIDTH = 285;
 
 	const project = Editor.state.project;
 
@@ -104,7 +100,7 @@
 	</div>
 
 	<div class="flex min-h-0 flex-1 gap-4">
-		<LeftSidebar width={LEFT_SIDEBAR_MIN_WIDTH} />
+		<LeftSidebar width={LEFT_SIDEBAR_WIDTH} />
 
 		<div class="border-border bg-background min-w-0 flex-1 overflow-hidden rounded-[1.5rem] border">
 			<main class="relative flex h-full min-w-0 flex-1 flex-col overflow-hidden">
@@ -115,7 +111,7 @@
 		</div>
 
 		<div class="border-border/50 bg-sidebar/5 min-h-0 shrink-0 overflow-hidden rounded-2xl border">
-			<RightSidebar width={RIGHT_SIDEBAR_MIN_WIDTH} />
+			<RightSidebar width={RIGHT_SIDEBAR_WIDTH} />
 		</div>
 	</div>
 </div>

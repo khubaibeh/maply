@@ -5,7 +5,7 @@
 	import ContextMenuContent from "@components/canvas/ContextMenuContent.svelte";
 	import DraftOverlay from "@components/canvas/DraftOverlay.svelte";
 	import ImageCropToolbar from "@components/canvas/ImageCropToolbar.svelte";
-	import { createCanvasAreaState } from "@components/core/area.state.svelte";
+	import { createCanvasAreaState } from "@components/core/canvas-area/area.state.svelte";
 	import { canvasCursor } from "@components/core/cursors";
 	import { Editor } from "editor";
 
@@ -13,7 +13,7 @@
 	const project = Editor.state.project;
 </script>
 
-<ContextMenu.Root bind:open={canvasArea.state.contextMenuOpen}>
+<ContextMenu.Root bind:open={canvasArea.contextMenu.state.open}>
 	<ContextMenu.Trigger class="contents">
 		<div
 			bind:this={canvasArea.state.container}
@@ -42,7 +42,7 @@
 					<Artboard />
 					<DraftOverlay
 						shapePreview={canvasArea.shapePreview()}
-						pathSession={canvasArea.state.pathSession}
+						pathSession={canvasArea.path.state.session}
 						pathPreviewRadius={canvasArea.pathPreviewRadius()}
 						pathVertexRadius={canvasArea.pathVertexRadius()}
 						onClosePath={canvasArea.closePath}
@@ -64,19 +64,19 @@
 		style={`cursor: ${canvasCursor.default}`}
 	>
 		<ContextMenuContent
-			target={canvasArea.state.contextMenuTarget}
-			hasClipboardElement={canvasArea.hasClipboardElement()}
+			target={canvasArea.contextMenu.state.target}
+			hasClipboardElement={canvasArea.contextMenu.hasClipboardElement()}
 			hasElements={$project.elements.length > 0}
-			contextMenuElementIsFrontmost={canvasArea.contextMenuElementIsFrontmost()}
-			contextMenuElementIsBackmost={canvasArea.contextMenuElementIsBackmost()}
-			onCopy={canvasArea.handleCopy}
-			onBringToFront={canvasArea.handleBringToFront}
-			onBringForward={canvasArea.handleBringForward}
-			onSendBackward={canvasArea.handleSendBackward}
-			onSendToBack={canvasArea.handleSendToBack}
-			onDelete={canvasArea.handleDelete}
-			onPaste={canvasArea.handlePaste}
-			onSelectAll={canvasArea.handleSelectAll}
+			contextMenuElementIsFrontmost={canvasArea.contextMenu.isFrontmost()}
+			contextMenuElementIsBackmost={canvasArea.contextMenu.isBackmost()}
+			onCopy={canvasArea.contextMenu.copy}
+			onBringToFront={canvasArea.contextMenu.bringToFront}
+			onBringForward={canvasArea.contextMenu.bringForward}
+			onSendBackward={canvasArea.contextMenu.sendBackward}
+			onSendToBack={canvasArea.contextMenu.sendToBack}
+			onDelete={canvasArea.contextMenu.remove}
+			onPaste={canvasArea.contextMenu.paste}
+			onSelectAll={canvasArea.contextMenu.selectAll}
 		/>
 	</ContextMenu.Content>
 </ContextMenu.Root>

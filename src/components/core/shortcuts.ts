@@ -1,14 +1,13 @@
 import type { Tool } from "@maply/model/types";
 
-export const LEFT_SIDEBAR_MIN_WIDTH = 240;
-export const RIGHT_SIDEBAR_MIN_WIDTH = 285;
-
+/** Returns whether a keyboard event originated from an editable text control. */
 export function isEditingText(event: KeyboardEvent): boolean {
 	const target = event.target as HTMLElement | null;
 	if (!target) return false;
 	return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target.isContentEditable;
 }
 
+/** Maps an arrow key to a two-dimensional editor translation. */
 export function getArrowDelta(key: string, step: number) {
 	switch (key) {
 		case "ArrowLeft":
@@ -24,6 +23,7 @@ export function getArrowDelta(key: string, step: number) {
 	}
 }
 
+/** Maps a single-key editor shortcut to its tool. */
 export function getShortcutTool(key: string): Tool | null {
 	switch (key.toLowerCase()) {
 		case "v":

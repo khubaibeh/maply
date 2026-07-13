@@ -2,6 +2,8 @@
 
 This document records the completed compatibility migration from legacy `@app` to the root `editor` module and the `@maply/*` packages.
 
+Historical note: file inventories and file-specific instructions below preserve the migration baseline. The current frontend structure is documented in `frontend-refactor-plan.md`.
+
 This is not a redesign. Preserve current UI behavior, component structure, pointer interactions, dialogs, file pickers, downloads, theme behavior, and shadcn usage. The goal is to hollow out `app/` by switching callers to the new seams, then deleting legacy code only after searches and checks prove it unused.
 
 ## Current State
@@ -15,7 +17,7 @@ The package/editor extraction is far enough for the `src` compatibility chunk:
 - Production and test imports from `@app` are gone, and the legacy `app/` tree is deleted.
 - Replacement editor and package suites cover compatibility, project-file, SVG, image-security, and persistence behavior.
 
-Active `src` files importing `@app`:
+Historical baseline of `src` files that imported `@app` before completion:
 
 - `src/routes/+layout.svelte`
 - `src/components/EditorScreen.svelte`
@@ -105,114 +107,114 @@ Do not add pass-through APIs just to preserve the exact old `App` shape. Add gro
 
 Use this mapping during the compatibility chunk:
 
-| Legacy caller | Target caller |
-| --- | --- |
-| `App.load()` | `Editor.load()` |
-| `App.state.project` | `Editor.state.project` |
-| `App.state.canvas` | `Editor.state.canvas` |
-| `App.state.fill` | `Editor.state.fill` |
-| `App.state.tool` | `Editor.state.tool` |
-| `App.state.imageAssets` | `Editor.state.imageAssets` |
-| `App.save.queue()` | `Editor.save.queue()` |
-| `App.save.flush()` | `Editor.save.flush()` |
-| `App.project.create(...)` | `Editor.project.create(...)` |
-| `App.project.import(...)` | `Editor.project.import(...)` |
-| `App.project.export()` | `Editor.project.export()` |
-| `App.project.svg()` | `Editor.project.exportSvg()` |
-| `App.actions.project.setName(...)` | `Editor.project.rename(...)` |
-| `App.actions.project.selectElement(...)` | `Editor.selection.select(...)` |
-| `App.actions.project.selectAll()` | `Editor.selection.selectAll()` |
-| `App.actions.project.setHoveredElement(...)` | `Editor.selection.setHover(...)` |
-| `App.actions.project.setCropEditingElement(...)` | `Editor.selection.toggleCrop(...)` or a small explicit setter if needed |
-| `App.actions.project.addElement(...)` | `Editor.element.add(...)` |
-| `App.actions.project.updateElement(...)` | `Editor.element.update(...)` |
-| `App.actions.project.renameElement(...)` | `Editor.element.rename(...)` |
-| `App.actions.project.translateElement(...)` | `Editor.element.translate(...)` |
-| `App.actions.project.translateElements(...)` | `Editor.element.translateAll(...)` |
-| `App.actions.project.setElementPosition(...)` | `Editor.element.setPosition(...)` |
-| `App.actions.project.resizeElement(...)` | `Editor.element.resize(...)` |
-| `App.actions.project.clampElementsToCanvas()` | `Editor.element.clampAll()` |
-| `App.actions.project.reorderElements(...)` | `Editor.element.reorder(...)` |
-| `App.actions.project.moveElementToFront(...)` | `Editor.element.moveToFront(...)` |
-| `App.actions.project.moveElementForward(...)` | `Editor.element.moveForward(...)` |
-| `App.actions.project.moveElementBackward(...)` | `Editor.element.moveBackward(...)` |
-| `App.actions.project.moveElementToBack(...)` | `Editor.element.moveToBack(...)` |
-| `App.actions.project.translateImageCrop(...)` | `Editor.image.translateCrop(...)` |
-| `App.actions.project.resizeImageFrame(...)` | `Editor.image.resizeFrame(...)` |
-| `App.actions.project.resetImageCrop(...)` | `Editor.image.resetCrop(...)` |
-| `App.actions.project.setImageCropScale(...)` | `Editor.image.setCropScale(...)` |
-| `App.element.replaceImage(...)` | `Editor.image.replace(...)` or `Editor.image.fromFile(...)` depending on current caller need |
-| `App.element.delete(...)` | `Editor.element.delete(...)` |
-| `App.element.paste(...)` | `Editor.clipboard.paste(...)` |
-| `App.actions.clipboard.copy(...)` | `Editor.clipboard.copy(...)` |
-| `App.actions.clipboard.get()` | `Editor.clipboard.get()` |
-| `App.actions.canvas.setSize(...)` | `Editor.actions.canvas.setSize(...)` |
-| `App.actions.canvas.setFrame(...)` | `Editor.actions.canvas.setFrame(...)` |
-| `App.actions.canvas.setColor(...)` | `Editor.actions.canvas.setColor(...)` |
-| `App.actions.canvas.setPosition(...)` | `Editor.actions.canvas.setPosition(...)` |
-| `App.actions.canvas.setCamera(...)` | `Editor.actions.canvas.setCamera(...)` |
-| `App.actions.canvas.pan(...)` | `Editor.actions.canvas.pan(...)` |
-| `App.actions.canvas.zoomIn()` | `Editor.actions.canvas.zoomIn()` |
-| `App.actions.canvas.zoomOut()` | `Editor.actions.canvas.zoomOut()` |
-| `App.actions.canvas.resetZoom()` | `Editor.actions.canvas.resetZoom()` |
-| `App.actions.canvas.resetCamera()` | `Editor.actions.canvas.resetCamera()` |
-| `App.actions.canvas.centerCamera(...)` | `Editor.actions.canvas.centerCamera(...)` |
-| `App.actions.tool.set(...)` | `Editor.actions.tool.set(...)` |
-| `App.actions.tool.setSpacePressed(...)` | `Editor.actions.tool.setSpacePressed(...)` |
-| `App.actions.fill.set(...)` | `Editor.state.fill` write API or a small `Editor.fill.set(...)` export |
-| `App.validate.elementNames(...)` | `Editor.naming.validate(...)` |
-| `App.validate.*` numeric/color parsers | `@maply/model` parser exports |
-| `App.create.*` | `Editor.create.*` |
-| `App.geometry.isPointInsideCanvas(...)` | `@maply/model.isPointInsideCanvas(...)` |
-| `App.geometry.*` editor-specific helpers | `Editor.geometry.*` after public API gap is closed |
-| `App.text.*` | `Editor.text.*` after public API gap is closed |
-| `App.codec.project.parse(...)` | `@maply/io.project.file.parse(...)` |
-| `App.codec.project.stringify(...)` | `@maply/io.project.file.serialize(...)` |
-| `App.codec.svg.parse(...)` | `@maply/io.svg.import(...)` |
-| `App.theme.*` | `src`-owned theme module |
-| `@app/types` model types | `@maply/model/types` |
-| `@app/types` editor-only types | `editor` exports or local UI types |
-| `@app/internal/canvas.sanitizeCanvasSize` | `@maply/model` export if pure, otherwise `editor` canvas helper |
+| Legacy caller                                    | Target caller                                                                                |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| `App.load()`                                     | `Editor.load()`                                                                              |
+| `App.state.project`                              | `Editor.state.project`                                                                       |
+| `App.state.canvas`                               | `Editor.state.canvas`                                                                        |
+| `App.state.fill`                                 | `Editor.state.fill`                                                                          |
+| `App.state.tool`                                 | `Editor.state.tool`                                                                          |
+| `App.state.imageAssets`                          | `Editor.state.imageAssets`                                                                   |
+| `App.save.queue()`                               | `Editor.save.queue()`                                                                        |
+| `App.save.flush()`                               | `Editor.save.flush()`                                                                        |
+| `App.project.create(...)`                        | `Editor.project.create(...)`                                                                 |
+| `App.project.import(...)`                        | `Editor.project.import(...)`                                                                 |
+| `App.project.export()`                           | `Editor.project.export()`                                                                    |
+| `App.project.svg()`                              | `Editor.project.exportSvg()`                                                                 |
+| `App.actions.project.setName(...)`               | `Editor.project.rename(...)`                                                                 |
+| `App.actions.project.selectElement(...)`         | `Editor.selection.select(...)`                                                               |
+| `App.actions.project.selectAll()`                | `Editor.selection.selectAll()`                                                               |
+| `App.actions.project.setHoveredElement(...)`     | `Editor.selection.setHover(...)`                                                             |
+| `App.actions.project.setCropEditingElement(...)` | `Editor.selection.toggleCrop(...)` or a small explicit setter if needed                      |
+| `App.actions.project.addElement(...)`            | `Editor.element.add(...)`                                                                    |
+| `App.actions.project.updateElement(...)`         | `Editor.element.update(...)`                                                                 |
+| `App.actions.project.renameElement(...)`         | `Editor.element.rename(...)`                                                                 |
+| `App.actions.project.translateElement(...)`      | `Editor.element.translate(...)`                                                              |
+| `App.actions.project.translateElements(...)`     | `Editor.element.translateAll(...)`                                                           |
+| `App.actions.project.setElementPosition(...)`    | `Editor.element.setPosition(...)`                                                            |
+| `App.actions.project.resizeElement(...)`         | `Editor.element.resize(...)`                                                                 |
+| `App.actions.project.clampElementsToCanvas()`    | `Editor.element.clampAll()`                                                                  |
+| `App.actions.project.reorderElements(...)`       | `Editor.element.reorder(...)`                                                                |
+| `App.actions.project.moveElementToFront(...)`    | `Editor.element.moveToFront(...)`                                                            |
+| `App.actions.project.moveElementForward(...)`    | `Editor.element.moveForward(...)`                                                            |
+| `App.actions.project.moveElementBackward(...)`   | `Editor.element.moveBackward(...)`                                                           |
+| `App.actions.project.moveElementToBack(...)`     | `Editor.element.moveToBack(...)`                                                             |
+| `App.actions.project.translateImageCrop(...)`    | `Editor.image.translateCrop(...)`                                                            |
+| `App.actions.project.resizeImageFrame(...)`      | `Editor.image.resizeFrame(...)`                                                              |
+| `App.actions.project.resetImageCrop(...)`        | `Editor.image.resetCrop(...)`                                                                |
+| `App.actions.project.setImageCropScale(...)`     | `Editor.image.setCropScale(...)`                                                             |
+| `App.element.replaceImage(...)`                  | `Editor.image.replace(...)` or `Editor.image.fromFile(...)` depending on current caller need |
+| `App.element.delete(...)`                        | `Editor.element.delete(...)`                                                                 |
+| `App.element.paste(...)`                         | `Editor.clipboard.paste(...)`                                                                |
+| `App.actions.clipboard.copy(...)`                | `Editor.clipboard.copy(...)`                                                                 |
+| `App.actions.clipboard.get()`                    | `Editor.clipboard.get()`                                                                     |
+| `App.actions.canvas.setSize(...)`                | `Editor.actions.canvas.setSize(...)`                                                         |
+| `App.actions.canvas.setFrame(...)`               | `Editor.actions.canvas.setFrame(...)`                                                        |
+| `App.actions.canvas.setColor(...)`               | `Editor.actions.canvas.setColor(...)`                                                        |
+| `App.actions.canvas.setPosition(...)`            | `Editor.actions.canvas.setPosition(...)`                                                     |
+| `App.actions.canvas.setCamera(...)`              | `Editor.actions.canvas.setCamera(...)`                                                       |
+| `App.actions.canvas.pan(...)`                    | `Editor.actions.canvas.pan(...)`                                                             |
+| `App.actions.canvas.zoomIn()`                    | `Editor.actions.canvas.zoomIn()`                                                             |
+| `App.actions.canvas.zoomOut()`                   | `Editor.actions.canvas.zoomOut()`                                                            |
+| `App.actions.canvas.resetZoom()`                 | `Editor.actions.canvas.resetZoom()`                                                          |
+| `App.actions.canvas.resetCamera()`               | `Editor.actions.canvas.resetCamera()`                                                        |
+| `App.actions.canvas.centerCamera(...)`           | `Editor.actions.canvas.centerCamera(...)`                                                    |
+| `App.actions.tool.set(...)`                      | `Editor.actions.tool.set(...)`                                                               |
+| `App.actions.tool.setSpacePressed(...)`          | `Editor.actions.tool.setSpacePressed(...)`                                                   |
+| `App.actions.fill.set(...)`                      | `Editor.state.fill` write API or a small `Editor.fill.set(...)` export                       |
+| `App.validate.elementNames(...)`                 | `Editor.naming.validate(...)`                                                                |
+| `App.validate.*` numeric/color parsers           | `@maply/model` parser exports                                                                |
+| `App.create.*`                                   | `Editor.create.*`                                                                            |
+| `App.geometry.isPointInsideCanvas(...)`          | `@maply/model.isPointInsideCanvas(...)`                                                      |
+| `App.geometry.*` editor-specific helpers         | `Editor.geometry.*` after public API gap is closed                                           |
+| `App.text.*`                                     | `Editor.text.*` after public API gap is closed                                               |
+| `App.codec.project.parse(...)`                   | `@maply/io.project.file.parse(...)`                                                          |
+| `App.codec.project.stringify(...)`               | `@maply/io.project.file.serialize(...)`                                                      |
+| `App.codec.svg.parse(...)`                       | `@maply/io.svg.import(...)`                                                                  |
+| `App.theme.*`                                    | `src`-owned theme module                                                                     |
+| `@app/types` model types                         | `@maply/model/types`                                                                         |
+| `@app/types` editor-only types                   | `editor` exports or local UI types                                                           |
+| `@app/internal/canvas.sanitizeCanvasSize`        | `@maply/model` export if pure, otherwise `editor` canvas helper                              |
 
 ## Suggested Chunk Order
 
 1. Add missing public editor/package exports.
 
-   Keep this first commit narrow. Do not edit Svelte callers yet except for type checks if needed. Public exports should come from `editor/index.ts`, `@maply/model`, or `@maply/io` documented entrypoints. Avoid exposing private implementation folders as deep imports.
+    Keep this first commit narrow. Do not edit Svelte callers yet except for type checks if needed. Public exports should come from `editor/index.ts`, `@maply/model`, or `@maply/io` documented entrypoints. Avoid exposing private implementation folders as deep imports.
 
 2. Move theme ownership out of `app`.
 
-   Create a `src`-owned theme module that preserves the current `light | dark | system` behavior, localStorage key, document class updates, and system preference listener. Update `Topbar.svelte` and `+layout.svelte` to use it. This avoids keeping all of `app` alive for one browser-only store.
+    Create a `src`-owned theme module that preserves the current `light | dark | system` behavior, localStorage key, document class updates, and system preference listener. Update `Topbar.svelte` and `+layout.svelte` to use it. This avoids keeping all of `app` alive for one browser-only store.
 
 3. Migrate layout and top-level stores.
 
-   Update `+layout.svelte`, `EditorScreen.svelte`, `CanvasArea.svelte`, and top-level sidebar components to import `Editor` and model types. Preserve autosave ownership in layout: observe project and canvas stores, skip saves before initialization, queue saves after initialized changes, and flush on `pagehide`, `beforeunload`, and hidden-document visibility.
+    Update `+layout.svelte`, `EditorScreen.svelte`, `CanvasArea.svelte`, and top-level sidebar components to import `Editor` and model types. Preserve autosave ownership in layout: observe project and canvas stores, skip saves before initialization, queue saves after initialized changes, and flush on `pagehide`, `beforeunload`, and hidden-document visibility.
 
 4. Migrate project menu workflows.
 
-   Update `ProjectMenuOverlay.svelte` from `App.project` and `App.codec` to `Editor.project` and `@maply/io`. Keep file reading, confirmation dialogs, download creation, sanitized filenames, busy state, logging, and reload policy in `src`. Decide how generic SVG import warnings should be surfaced; if no UI is added in this chunk, preserve current silent/logging behavior and record the diagnostics follow-up.
+    Update `ProjectMenuOverlay.svelte` from `App.project` and `App.codec` to `Editor.project` and `@maply/io`. Keep file reading, confirmation dialogs, download creation, sanitized filenames, busy state, logging, and reload policy in `src`. Decide how generic SVG import warnings should be surfaced; if no UI is added in this chunk, preserve current silent/logging behavior and record the diagnostics follow-up.
 
 5. Migrate canvas and pointer interactions.
 
-   Update `area.state.svelte.ts`, `Artboard.svelte`, `CanvasResizeHandles.svelte`, `ElementOutline.svelte`, `PathElementHandles.svelte`, `ImageCropOverlay.svelte`, and context-menu components. Keep gesture/session state local. Route committed commands through `Editor`.
+    Update `area.state.svelte.ts`, `Artboard.svelte`, `CanvasResizeHandles.svelte`, `ElementOutline.svelte`, `PathElementHandles.svelte`, `ImageCropOverlay.svelte`, and context-menu components. Keep gesture/session state local. Route committed commands through `Editor`.
 
-   The image crop frame resize migration must fix the known caller-pattern bug: store the original pre-drag crop state and frame at `pointerdown`, then pass those originals for every move while only the next frame changes. Do not call crop frame resize with an incrementally rounded previous frame on every `pointermove`.
+    The image crop frame resize migration must fix the known caller-pattern bug: store the original pre-drag crop state and frame at `pointerdown`, then pass those originals for every move while only the next frame changes. Do not call crop frame resize with an incrementally rounded previous frame on every `pointermove`.
 
 6. Migrate element rendering and property editing.
 
-   Update `ElementShapes.svelte`, `PathElementOutline.svelte`, `ElementProperties.svelte`, `RightSidebar.svelte`, `ElementsSection.svelte`, `ElementNameValidation.svelte`, `ColorPicker.svelte`, `Toolbar.svelte`, `core.ts`, and `cursors.ts`. Prefer `@maply/model/types` for model types and `Editor.naming.validate` for name validation. Keep form parsing and UI draft state inside components.
+    Update `ElementShapes.svelte`, `PathElementOutline.svelte`, `ElementProperties.svelte`, `RightSidebar.svelte`, `ElementsSection.svelte`, `ElementNameValidation.svelte`, `ColorPicker.svelte`, `Toolbar.svelte`, `core.ts`, and `cursors.ts`. Prefer `@maply/model/types` for model types and `Editor.naming.validate` for name validation. Keep form parsing and UI draft state inside components.
 
 7. Run searches and delete dead legacy `app` modules.
 
-   After `src` no longer imports `@app`, search the repo for `@app`, `app/`, and direct legacy module imports. Delete replaced legacy modules only when no active production or test caller remains. Do not delete a module still covered by a test until its replacement package/editor test exists.
+    After `src` no longer imports `@app`, search the repo for `@app`, `app/`, and direct legacy module imports. Delete replaced legacy modules only when no active production or test caller remains. Do not delete a module still covered by a test until its replacement package/editor test exists.
 
 8. Retire or migrate legacy tests.
 
-   Replace `tests/app/internal/project-file.test.ts`, `svg-export.test.ts`, and `svg-import.test.ts` with existing or expanded `packages/io` tests. Replace `tests/app/internal/image-assets.test.ts` and `path-geometry.test.ts` with editor/package tests if the behavior still belongs to editor. Keep parity tests for tricky geometry, text metrics, path bounds, and crop resize interactions.
+    Replace `tests/app/internal/project-file.test.ts`, `svg-export.test.ts`, and `svg-import.test.ts` with existing or expanded `packages/io` tests. Replace `tests/app/internal/image-assets.test.ts` and `path-geometry.test.ts` with editor/package tests if the behavior still belongs to editor. Keep parity tests for tricky geometry, text metrics, path bounds, and crop resize interactions.
 
 9. Remove the `@app` alias only after no callers remain.
 
-   Once searches are clean and checks pass, remove `@app` from `svelte.config.ts`, remove `app/**/*.ts` from `tsconfig.json` if the folder is deleted, and update dependency-cruiser checks if legacy rules become obsolete.
+    Once searches are clean and checks pass, remove `@app` from `svelte.config.ts`, remove `app/**/*.ts` from `tsconfig.json` if the folder is deleted, and update dependency-cruiser checks if legacy rules become obsolete.
 
 ## Migration Chunks And Progress
 
@@ -442,7 +444,7 @@ Exit criteria:
 Notes:
 
 - This chunk can happen in parallel with cleanup only when it does not keep legacy `app` modules alive.
-- Completed 2026-07-13. Closed legacy consumer replacement and crop resize drift. Hydration parity, IndexedDB v3 upgrade coverage, generic SVG diagnostics, and `importExportState` remain separately tracked follow-ups and do not retain legacy modules.
+- Completed 2026-07-13. Closed legacy consumer replacement, crop resize drift, and UI presentation of SVG parser source/warnings. Hydration parity, IndexedDB v3 upgrade coverage, generic SVG parser fidelity, and `importExportState` remain separately tracked follow-ups and do not retain legacy modules.
 
 ## File-Specific Notes
 

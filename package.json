@@ -9,7 +9,7 @@
 		"preview": "vite preview",
 		"prepare": "husky",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json && pnpm check:deps",
-		"check:deps": "depcruise --validate .dependency-cruiser.cjs editor packages",
+		"check:deps": "depcruise --validate .dependency-cruiser.cjs src editor packages",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"test": "pnpm test:editor && pnpm test:model && pnpm test:io && pnpm test:storage",
 		"test:editor": "vitest run tests/",

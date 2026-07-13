@@ -1,6 +1,12 @@
 module.exports = {
 	forbidden: [
 		{
+			name: "no-circular-dependencies",
+			severity: "error",
+			from: {},
+			to: { circular: true }
+		},
+		{
 			name: "model-is-pure",
 			severity: "error",
 			from: { path: "^packages/model/" },
@@ -53,6 +59,18 @@ module.exports = {
 			severity: "error",
 			from: { path: "^editor/" },
 			to: { path: "^(src/|packages/web/)" }
+		},
+		{
+			name: "no-private-editor-entrypoints",
+			severity: "error",
+			from: { path: "^src/" },
+			to: { path: "^editor/(?!index\\.ts$)" }
+		},
+		{
+			name: "lib-no-app-imports",
+			severity: "error",
+			from: { path: "^src/lib/" },
+			to: { path: "^(src/components/|editor/|packages/)" }
 		}
 	],
 	options: {

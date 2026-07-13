@@ -1,8 +1,9 @@
 <script lang="ts">
+	import { createPointerDrag } from "@components/canvas/interaction/pointer-drag.svelte";
+	import { clientToSvgPoint, getSvgRoot } from "@components/canvas/interaction/svg";
 	import { resizeCursor } from "@components/core/cursors";
 	import type { Canvas } from "@maply/model/types";
 	import { Editor, type ResizeHandle } from "editor";
-	import { onMount } from "svelte";
 
 	const HANDLE_SIZE_SCREEN = 12;
 	const HANDLE_LENGTH_SCREEN = 26;
@@ -14,14 +15,6 @@
 	const canvas = Editor.state.canvas;
 	const project = Editor.state.project;
 	const tool = Editor.state.tool;
-
-	let dragState = $state<{
-		handle: ResizeHandle;
-		svg: SVGSVGElement;
-		grabX: number;
-		grabY: number;
-		didResize: boolean;
-	} | null>(null);
 
 	const canResize = $derived($tool.activeTool === "select" && $project.cropEditingElementId === null);
 	const handleSize = $derived(HANDLE_SIZE_SCREEN / $canvas.camera.zoom);
@@ -105,22 +98,7 @@
 			label: "Resize canvas width from left"
 		}
 	]);
-
-	function getSvgRoot(target: EventTarget | null): SVGSVGElement | null {
-		if (!(target instanceof Element)) return null;
-		const node = target.closest("svg");
-		return node instanceof SVGSVGElement ? node : null;
-	}
-
-	function clientToSvgPoint(svg: SVGSVGElement, clientX: number, clientY: number) {
-		const ctm = svg.getScreenCTM();
-		if (!ctm) return null;
-
-		const point = svg.createSVGPoint();
-		point.x = clientX;
-		point.y = clientY;
-		return point.matrixTransform(ctm.inverse());
-	}
+	const drag = createPointerDrag();
 
 	function startResize(event: PointerEvent, handle: ResizeHandle) {
 		if (event.button !== 0) return;
@@ -131,83 +109,46 @@
 
 		const svg = getSvgRoot(event.target);
 		if (!svg) return;
+		drag.start(event, {
+			project: (pointerEvent) => clientToSvgPoint(svg, pointerEvent.clientX, pointerEvent.clientY),
+			onMove: ({ delta }) => {
+				const left = $canvas.x;
+				const top = $canvas.y;
+				const right = $canvas.x + $canvas.width;
+				const bottom = $canvas.y + $canvas.height;
 
-		const svgPoint = clientToSvgPoint(svg, event.clientX, event.clientY);
-		if (!svgPoint) return;
+				let nextLeft = handle.includes("w") ? left + delta.x : left;
+				let nextTop = handle.includes("n") ? top + delta.y : top;
+				let nextRight = handle.includes("e") ? right + delta.x : right;
+				let nextBottom = handle.includes("s") ? bottom + delta.y : bottom;
 
-		dragState = {
-			handle,
-			svg,
-			grabX: svgPoint.x,
-			grabY: svgPoint.y,
-			didResize: false
-		};
+				const nextWidth = Math.max(1, Math.round(nextRight - nextLeft));
+				const nextHeight = Math.max(1, Math.round(nextBottom - nextTop));
+
+				if (handle.includes("w")) {
+					nextLeft = nextRight - nextWidth;
+				} else {
+					nextRight = nextLeft + nextWidth;
+				}
+
+				if (handle.includes("n")) {
+					nextTop = nextBottom - nextHeight;
+				} else {
+					nextBottom = nextTop + nextHeight;
+				}
+
+				const nextCanvas: Canvas = {
+					x: nextLeft,
+					y: nextTop,
+					width: nextRight - nextLeft,
+					height: nextBottom - nextTop,
+					color: $canvas.color
+				};
+				Editor.actions.canvas.setFrame(nextCanvas.x, nextCanvas.y, nextCanvas.width, nextCanvas.height);
+				Editor.element.clampAll();
+			}
+		});
 	}
-
-	onMount(() => {
-		function handlePointerMove(event: PointerEvent) {
-			if (!dragState) return;
-
-			const svgPoint = clientToSvgPoint(dragState.svg, event.clientX, event.clientY);
-			if (!svgPoint) return;
-
-			const dx = svgPoint.x - dragState.grabX;
-			const dy = svgPoint.y - dragState.grabY;
-			if (dx === 0 && dy === 0) return;
-
-			const left = $canvas.x;
-			const top = $canvas.y;
-			const right = $canvas.x + $canvas.width;
-			const bottom = $canvas.y + $canvas.height;
-
-			let nextLeft = dragState.handle.includes("w") ? left + dx : left;
-			let nextTop = dragState.handle.includes("n") ? top + dy : top;
-			let nextRight = dragState.handle.includes("e") ? right + dx : right;
-			let nextBottom = dragState.handle.includes("s") ? bottom + dy : bottom;
-
-			const nextWidth = Math.max(1, Math.round(nextRight - nextLeft));
-			const nextHeight = Math.max(1, Math.round(nextBottom - nextTop));
-
-			if (dragState.handle.includes("w")) {
-				nextLeft = nextRight - nextWidth;
-			} else {
-				nextRight = nextLeft + nextWidth;
-			}
-
-			if (dragState.handle.includes("n")) {
-				nextTop = nextBottom - nextHeight;
-			} else {
-				nextBottom = nextTop + nextHeight;
-			}
-
-			const nextCanvas: Canvas = {
-				x: nextLeft,
-				y: nextTop,
-				width: nextRight - nextLeft,
-				height: nextBottom - nextTop,
-				color: $canvas.color
-			};
-			Editor.actions.canvas.setFrame(nextCanvas.x, nextCanvas.y, nextCanvas.width, nextCanvas.height);
-			Editor.element.clampAll();
-			dragState.grabX = svgPoint.x;
-			dragState.grabY = svgPoint.y;
-			dragState.didResize = true;
-		}
-
-		function stopResize() {
-			dragState = null;
-		}
-
-		window.addEventListener("pointermove", handlePointerMove);
-		window.addEventListener("pointerup", stopResize);
-		window.addEventListener("pointercancel", stopResize);
-
-		return () => {
-			window.removeEventListener("pointermove", handlePointerMove);
-			window.removeEventListener("pointerup", stopResize);
-			window.removeEventListener("pointercancel", stopResize);
-		};
-	});
 </script>
 
 {#if canResize}

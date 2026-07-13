@@ -1,113 +1,51 @@
 <script lang="ts">
+	import { createPointerDrag } from "@components/canvas/interaction/pointer-drag.svelte";
+	import { clientToSvgPoint, getSvgRoot } from "@components/canvas/interaction/svg";
 	import { canvasCursor } from "@components/core/cursors";
 	import type { PathElement, Point } from "@maply/model/types";
 	import { Editor } from "editor";
-	import { onMount } from "svelte";
 
-	interface Props {
-		element: PathElement;
-	}
-
-	let { element }: Props = $props();
+	let { element }: { element: PathElement } = $props();
 	const canvas = Editor.state.canvas;
-
-	const HANDLE_SIZE_SCREEN = 8;
-	const SELECTION_COLOR = "#2563eb";
-
-	let dragState = $state<{
-		index: number;
-		startPoint: Point;
-		grabPoint: Point;
-		svg: SVGSVGElement;
-	} | null>(null);
 
 	const points = $derived(Editor.geometry.pathPoints(element.d));
 	const transform = $derived(Editor.geometry.pathRenderTransform(element));
-	const handleSize = $derived(HANDLE_SIZE_SCREEN / $canvas.camera.zoom);
+	const handleSize = $derived(8 / $canvas.camera.zoom);
 	const halfHandleSize = $derived(handleSize / 2);
-
-	function getSvgRoot(target: EventTarget | null): SVGSVGElement | null {
-		if (!(target instanceof Element)) return null;
-		const node = target.closest("svg");
-		return node instanceof SVGSVGElement ? node : null;
-	}
-
-	function clientToSvgPoint(svg: SVGSVGElement, clientX: number, clientY: number): Point | null {
-		const ctm = svg.getScreenCTM();
-		if (!ctm) return null;
-		const point = svg.createSVGPoint();
-		point.x = clientX;
-		point.y = clientY;
-		const svgPoint = point.matrixTransform(ctm.inverse());
-		return { x: svgPoint.x, y: svgPoint.y };
-	}
-
-	function startHandleDrag(event: PointerEvent, index: number) {
-		if (event.button !== 0) return;
-		event.preventDefault();
-		event.stopPropagation();
-
-		const svg = getSvgRoot(event.target);
-		if (!svg) return;
-		const svgPoint = clientToSvgPoint(svg, event.clientX, event.clientY);
-		if (!svgPoint) return;
-
-		dragState = {
-			index,
-			startPoint: points[index],
-			grabPoint: svgPoint,
-			svg
-		};
-	}
+	const drag = createPointerDrag();
 
 	function clampPathPoint(point: Point, offsetX: number, offsetY: number) {
 		const strokePadding = Math.ceil(element.strokeWidth / 2);
 		const canvasRight = $canvas.x + $canvas.width;
 		const canvasBottom = $canvas.y + $canvas.height;
-
 		return {
 			x: Math.max($canvas.x - offsetX, Math.min(canvasRight - offsetX - strokePadding * 2, point.x)),
 			y: Math.max($canvas.y - offsetY, Math.min(canvasBottom - offsetY - strokePadding * 2, point.y))
 		};
 	}
 
-	onMount(() => {
-		function handlePointerMove(event: PointerEvent) {
-			if (!dragState) return;
-
-			const svgPoint = clientToSvgPoint(dragState.svg, event.clientX, event.clientY);
-			if (!svgPoint) return;
-
-			const oldBounds = Editor.geometry.pathBounds(points);
-			const offsetX = element.x - oldBounds.x;
-			const offsetY = element.y - oldBounds.y;
-
-			const nextPoint = clampPathPoint(
-				{
-					x: dragState.startPoint.x + (svgPoint.x - dragState.grabPoint.x),
-					y: dragState.startPoint.y + (svgPoint.y - dragState.grabPoint.y)
-				},
-				offsetX,
-				offsetY
-			);
-
-			Editor.element.updatePathVertex(element.id, dragState.index, nextPoint);
-		}
-
-		function stopDragging() {
-			dragState = null;
-		}
-
-		window.addEventListener("pointermove", handlePointerMove);
-		window.addEventListener("pointerup", stopDragging);
-		window.addEventListener("pointercancel", stopDragging);
-
-		return () => {
-			window.removeEventListener("pointermove", handlePointerMove);
-			window.removeEventListener("pointerup", stopDragging);
-			window.removeEventListener("pointercancel", stopDragging);
-		};
-	});
+	function startHandleDrag(event: PointerEvent, index: number) {
+		if (event.button !== 0) return;
+		event.preventDefault();
+		event.stopPropagation();
+		const svg = getSvgRoot(event.target);
+		if (!svg) return;
+		const start = points[index];
+		drag.start(event, {
+			project: (pointerEvent) => clientToSvgPoint(svg, pointerEvent.clientX, pointerEvent.clientY),
+			onMove: ({ totalDelta }) => {
+				const oldBounds = Editor.geometry.pathBounds(points);
+				const offsetX = element.x - oldBounds.x;
+				const offsetY = element.y - oldBounds.y;
+				const nextPoint = clampPathPoint(
+					{ x: start.x + totalDelta.x, y: start.y + totalDelta.y },
+					offsetX,
+					offsetY
+				);
+				Editor.element.updatePathVertex(element.id, index, nextPoint);
+			}
+		});
+	}
 </script>
 
 {#if points.length > 0}
@@ -118,8 +56,8 @@
 				y={point.y - halfHandleSize}
 				width={handleSize}
 				height={handleSize}
-				fill="white"
-				stroke={SELECTION_COLOR}
+				fill="var(--canvas-handle-fill)"
+				stroke="var(--canvas-selection)"
 				stroke-width="2"
 				role="button"
 				tabindex="-1"
