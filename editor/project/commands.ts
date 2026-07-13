@@ -1,11 +1,11 @@
 import { storage } from "@maply/storage";
 
 import { loadEditorSession } from "../session/load";
-import { projectState } from "../state/document";
+import { updateProjectState } from "../state/document";
 
 /** Renames the active project in live editor state. */
 export function rename(name: string): void {
-	projectState.update((state) => ({ ...state, name }));
+	updateProjectState((state) => ({ ...state, name }), "preserve");
 }
 
 /** Resets the active persisted project to blank or sample content, then rehydrates editor state. */

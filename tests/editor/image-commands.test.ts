@@ -1,7 +1,7 @@
 import type { ImageElement, StoredImageAsset } from "@maply/model/types";
 import { resizeImageCropFrame } from "editor/image/commands";
 import { imageAssetState } from "editor/state/assets";
-import { projectState } from "editor/state/document";
+import { projectState, updateProjectState } from "editor/state/document";
 import { canvasState } from "editor/state/workspace";
 import { get } from "svelte/store";
 import { describe, expect, it } from "vitest";
@@ -35,7 +35,7 @@ const asset: StoredImageAsset = {
 function setFixture(): ImageElement {
 	const element = image();
 	canvasState.set({ width: 800, height: 600, color: "#fff", x: 0, y: 0, camera: { x: 0, y: 0, zoom: 1 } });
-	projectState.update((state) => ({ ...state, elements: [element] }));
+	updateProjectState((state) => ({ ...state, elements: [element] }), "rescan");
 	imageAssetState.set({ asset });
 	return element;
 }

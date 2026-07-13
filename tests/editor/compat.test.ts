@@ -7,7 +7,7 @@ import { replaceImageAsset } from "editor/image/upload";
 import { copy, paste } from "editor/selection/clipboard";
 import { normalizeElement } from "editor/session/normalize";
 import { imageAssetState } from "editor/state/assets";
-import { projectState } from "editor/state/document";
+import { projectState, updateProjectState } from "editor/state/document";
 import { canvasState } from "editor/state/workspace";
 import { get } from "svelte/store";
 import { describe, expect, it } from "vitest";
@@ -121,7 +121,7 @@ describe("legacy element compatibility", () => {
 		};
 
 		canvasState.set({ width: 800, height: 600, color: "#fff", x: 0, y: 0, camera: { x: 0, y: 0, zoom: 1 } });
-		projectState.update((state) => ({ ...state, elements: [image] }));
+		updateProjectState((state) => ({ ...state, elements: [image] }), "rescan");
 		imageAssetState.set({ asset });
 		const before = getImageRenderRect({ ...image, assetWidth: asset.width, assetHeight: asset.height });
 
@@ -182,7 +182,7 @@ describe("legacy element compatibility", () => {
 			stroke: "#000",
 			strokeWidth: 0
 		};
-		projectState.update((state) => ({ ...state, elements: [rect] }));
+		updateProjectState((state) => ({ ...state, elements: [rect] }), "rescan");
 		copy([rect]);
 
 		await paste();
@@ -192,7 +192,7 @@ describe("legacy element compatibility", () => {
 
 	it("uniquely names multi-element paste from source names", async () => {
 		const rect = rectElement("rect", "logo", 10, 10);
-		projectState.update((state) => ({ ...state, elements: [rect] }));
+		updateProjectState((state) => ({ ...state, elements: [rect] }), "rescan");
 		copy([rect, { ...rect, id: "rect-2" }]);
 		await paste();
 		expect(
@@ -204,7 +204,7 @@ describe("legacy element compatibility", () => {
 
 	it("drops missing image references during paste", async () => {
 		const image = cropImage({ assetId: "missing" });
-		projectState.update((state) => ({ ...state, elements: [image] }));
+		updateProjectState((state) => ({ ...state, elements: [image] }), "rescan");
 		imageAssetState.set({});
 		copy([image]);
 		await paste();
@@ -213,7 +213,7 @@ describe("legacy element compatibility", () => {
 
 	it("positions context-menu paste at the requested point", async () => {
 		const rect = rectElement("rect", "rect", 10, 10);
-		projectState.update((state) => ({ ...state, elements: [rect] }));
+		updateProjectState((state) => ({ ...state, elements: [rect] }), "rescan");
 		copy([rect]);
 		await paste({ x: 300, y: 250 });
 		expect(getElementBounds(get(projectState).elements.at(-1)!)).toMatchObject({ x: 300, y: 250 });
@@ -222,7 +222,7 @@ describe("legacy element compatibility", () => {
 	it("does not publish replacement state when IndexedDB fails", async () => {
 		const image = cropImage({ assetId: null });
 		const replacement = imageAsset("replacement");
-		projectState.update((state) => ({ ...state, elements: [image] }));
+		updateProjectState((state) => ({ ...state, elements: [image] }), "rescan");
 		imageAssetState.set({});
 		const before = structuredClone(get(projectState));
 		const restore = failIndexedDbOpen();
@@ -235,7 +235,7 @@ describe("legacy element compatibility", () => {
 
 	it("does not insert pasted images when cloned asset persistence fails", async () => {
 		const image = cropImage({ assetId: "source" });
-		projectState.update((state) => ({ ...state, elements: [image] }));
+		updateProjectState((state) => ({ ...state, elements: [image] }), "rescan");
 		imageAssetState.set({ source: imageAsset("source") });
 		copy([image]);
 		const restore = failIndexedDbOpen();
@@ -297,7 +297,7 @@ function setCropFixture() {
 	const image = cropImage();
 	const asset = imageAsset("asset");
 	canvasState.set({ width: 800, height: 600, color: "#fff", x: 0, y: 0, camera: { x: 0, y: 0, zoom: 1 } });
-	projectState.update((state) => ({ ...state, elements: [image] }));
+	updateProjectState((state) => ({ ...state, elements: [image] }), "rescan");
 	imageAssetState.set({ asset });
 	return { image, asset };
 }

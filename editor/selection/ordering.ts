@@ -1,4 +1,4 @@
-import { projectState } from "../state/document";
+import { updateProjectState } from "../state/document";
 import type { ProjectState } from "../types";
 
 function reorderInState(state: ProjectState, from: number, to: number): ProjectState {
@@ -13,41 +13,41 @@ function reorderInState(state: ProjectState, from: number, to: number): ProjectS
 
 /** Moves an element between two valid paint-order indices. */
 export function reorder(from: number, to: number): void {
-	projectState.update((state) => reorderInState(state, from, to));
+	updateProjectState((state) => reorderInState(state, from, to), "preserve");
 }
 
 /** Moves an element to the front of paint order. */
 export function moveToFront(id: string): void {
-	projectState.update((state) => {
+	updateProjectState((state) => {
 		const from = state.elements.findIndex((element) => element.id === id);
 		if (from === -1) return state;
 		return reorderInState(state, from, state.elements.length - 1);
-	});
+	}, "preserve");
 }
 
 /** Moves an element one step toward the front of paint order. */
 export function moveForward(id: string): void {
-	projectState.update((state) => {
+	updateProjectState((state) => {
 		const from = state.elements.findIndex((element) => element.id === id);
 		if (from === -1) return state;
 		return reorderInState(state, from, from + 1);
-	});
+	}, "preserve");
 }
 
 /** Moves an element one step toward the back of paint order. */
 export function moveBackward(id: string): void {
-	projectState.update((state) => {
+	updateProjectState((state) => {
 		const from = state.elements.findIndex((element) => element.id === id);
 		if (from === -1) return state;
 		return reorderInState(state, from, from - 1);
-	});
+	}, "preserve");
 }
 
 /** Moves an element to the back of paint order. */
 export function moveToBack(id: string): void {
-	projectState.update((state) => {
+	updateProjectState((state) => {
 		const from = state.elements.findIndex((element) => element.id === id);
 		if (from === -1) return state;
 		return reorderInState(state, from, 0);
-	});
+	}, "preserve");
 }

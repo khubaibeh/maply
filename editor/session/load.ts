@@ -4,7 +4,7 @@ import { storage } from "@maply/storage";
 import { clampZoom } from "../canvas/camera";
 import { clampElementToCanvas } from "../elements/geometry";
 import { imageAssetState } from "../state/assets";
-import { projectState } from "../state/document";
+import { updateProjectState } from "../state/document";
 import { canvasState, createInitialCanvasState } from "../state/workspace";
 import { normalizeElement } from "./normalize";
 
@@ -27,35 +27,43 @@ function applyProject(project: Project) {
 		camera: project.camera ? { ...project.camera, zoom: clampZoom(project.camera.zoom) } : { x: 0, y: 0, zoom: 1 }
 	});
 
-	projectState.update((state) => ({
-		...state,
-		id: project.id,
-		name: project.name,
-		elements: project.elements.map((element) => clampElementToCanvas(normalizeElement(element), project.canvas)),
-		// TODO: This single one needs to go away at a later time, this is code smell
-		selectedElementId: null,
-		selectedElementIds: [],
-		hoveredElementId: null,
-		cropEditingElementId: null
-	}));
+	updateProjectState(
+		(state) => ({
+			...state,
+			id: project.id,
+			name: project.name,
+			elements: project.elements.map((element) =>
+				clampElementToCanvas(normalizeElement(element), project.canvas)
+			),
+			// TODO: This single one needs to go away at a later time, this is code smell
+			selectedElementId: null,
+			selectedElementIds: [],
+			hoveredElementId: null,
+			cropEditingElementId: null
+		}),
+		"rescan"
+	);
 }
 
 /** Hydrates editor state and its referenced image assets from persistent storage. */
 export async function loadEditorSession(projectId = defaultProjectId): Promise<void> {
-	projectState.update((state) => ({ ...state, id: projectId, initialized: false }));
+	updateProjectState((state) => ({ ...state, id: projectId, initialized: false }), "preserve");
 
 	const projectResult = await storage.project.fetch(projectId);
 	if (!projectResult.ok) {
 		console.warn("Failed to load project, using defaults:", projectResult.error);
 		imageAssetState.set({});
-		projectState.update((state) => ({
-			...state,
-			selectedElementId: null,
-			selectedElementIds: [],
-			hoveredElementId: null,
-			cropEditingElementId: null,
-			initialized: true
-		}));
+		updateProjectState(
+			(state) => ({
+				...state,
+				selectedElementId: null,
+				selectedElementIds: [],
+				hoveredElementId: null,
+				cropEditingElementId: null,
+				initialized: true
+			}),
+			"preserve"
+		);
 		return;
 	}
 
@@ -69,5 +77,5 @@ export async function loadEditorSession(projectId = defaultProjectId): Promise<v
 		imageAssetState.set(Object.fromEntries(assetsResult.value.map((asset) => [asset.id, asset])));
 	}
 
-	projectState.update((state) => ({ ...state, initialized: true }));
+	updateProjectState((state) => ({ ...state, initialized: true }), "preserve");
 }

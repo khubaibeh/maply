@@ -1,7 +1,7 @@
 import type { ImageElement, StoredImageAsset } from "@maply/model/types";
 import { replaceImageAsset } from "editor/image/upload";
 import { imageAssetState } from "editor/state/assets";
-import { projectState } from "editor/state/document";
+import { projectState, updateProjectState } from "editor/state/document";
 import { get } from "svelte/store";
 import { describe, expect, it } from "vitest";
 
@@ -31,7 +31,7 @@ const replacement: StoredImageAsset = {
 
 describe("replaceImageAsset", () => {
 	it("does not publish replacement state when persistence fails", async () => {
-		projectState.update((state) => ({ ...state, elements: [image] }));
+		updateProjectState((state) => ({ ...state, elements: [image] }), "rescan");
 		imageAssetState.set({});
 		const before = structuredClone(get(projectState));
 		const restore = failIndexedDbOpen();

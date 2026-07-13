@@ -1,7 +1,7 @@
 import type { ImageElement, RectElement, StoredImageAsset } from "@maply/model/types";
 import { copy, paste } from "editor/selection/clipboard";
 import { imageAssetState } from "editor/state/assets";
-import { projectState } from "editor/state/document";
+import { projectState, updateProjectState } from "editor/state/document";
 import { canvasState } from "editor/state/workspace";
 import { get } from "svelte/store";
 import { describe, expect, it } from "vitest";
@@ -34,7 +34,7 @@ const asset: StoredImageAsset = {
 describe("paste", () => {
 	it("derives copied names from source names", async () => {
 		const source = rect("rect", "company-logo");
-		projectState.update((state) => ({ ...state, elements: [source] }));
+		updateProjectState((state) => ({ ...state, elements: [source] }), "rescan");
 		copy([source]);
 
 		await paste();
@@ -43,7 +43,7 @@ describe("paste", () => {
 
 	it("advances generated default names", async () => {
 		const source = rect("rect", "rectangle1");
-		projectState.update((state) => ({ ...state, elements: [source] }));
+		updateProjectState((state) => ({ ...state, elements: [source] }), "rescan");
 		copy([source]);
 
 		await paste();
@@ -65,7 +65,7 @@ describe("paste", () => {
 			cropScale: 100
 		};
 		canvasState.set({ width: 800, height: 600, color: "#fff", x: 0, y: 0, camera: { x: 0, y: 0, zoom: 1 } });
-		projectState.update((state) => ({ ...state, elements: [image] }));
+		updateProjectState((state) => ({ ...state, elements: [image] }), "rescan");
 		imageAssetState.set({ [asset.id]: asset });
 		copy([image]);
 		const restore = failIndexedDbOpen();

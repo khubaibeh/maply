@@ -1,6 +1,6 @@
 import type { RectElement } from "@maply/model/types";
 import { translateElement, translateElements } from "editor/elements/mutate";
-import { projectState } from "editor/state/document";
+import { projectState, updateProjectState } from "editor/state/document";
 import { canvasState } from "editor/state/workspace";
 import { get } from "svelte/store";
 import { describe, expect, it } from "vitest";
@@ -22,7 +22,7 @@ function rect(id: string, x: number, y: number): RectElement {
 
 function setFixture(elements: RectElement[]) {
 	canvasState.set({ width: 300, height: 300, color: "#fff", x: 0, y: 0, camera: { x: 0, y: 0, zoom: 1 } });
-	projectState.update((state) => ({ ...state, elements }));
+	updateProjectState((state) => ({ ...state, elements }), "rescan");
 }
 
 describe("translateElement", () => {

@@ -5,7 +5,7 @@ import { get } from "svelte/store";
 import { clampElementToCanvas, getElementBounds } from "../elements/geometry";
 import { autofixElementName, createElementId, defaultElementName, nextElementName } from "../elements/naming";
 import { imageAssetState } from "../state/assets";
-import { clipboardState, projectState } from "../state/document";
+import { clipboardState, projectState, updateProjectState } from "../state/document";
 import { canvasState } from "../state/workspace";
 
 function pastedName(element: Element, elements: readonly Element[]): string {
@@ -90,10 +90,13 @@ export async function paste(point?: Point): Promise<void> {
 		...Object.fromEntries(clonedAssets.map((asset) => [asset.id, asset]))
 	}));
 
-	projectState.update((state) => ({
-		...state,
-		elements: [...state.elements, ...positioned],
-		selectedElementIds: positioned.map((element) => element.id),
-		selectedElementId: positioned.at(-1)?.id ?? null
-	}));
+	updateProjectState(
+		(state) => ({
+			...state,
+			elements: [...state.elements, ...positioned],
+			selectedElementIds: positioned.map((element) => element.id),
+			selectedElementId: positioned.at(-1)?.id ?? null
+		}),
+		{ added: positioned }
+	);
 }

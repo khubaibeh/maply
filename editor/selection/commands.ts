@@ -1,4 +1,4 @@
-import { projectState } from "../state/document";
+import { updateProjectState } from "../state/document";
 
 function selection(ids: readonly string[]) {
 	const selectedElementIds = [...new Set(ids)];
@@ -7,7 +7,7 @@ function selection(ids: readonly string[]) {
 
 /** Selects an element, optionally toggling it into the current selection. */
 export function select(id: string | null, additive = false): void {
-	projectState.update((state) => {
+	updateProjectState((state) => {
 		if (id === null) {
 			return { ...state, ...selection([]), hoveredElementId: null, cropEditingElementId: null };
 		}
@@ -39,30 +39,33 @@ export function select(id: string | null, additive = false): void {
 			hoveredElementId: null,
 			cropEditingElementId
 		};
-	});
+	}, "preserve");
 }
 
 /** Selects every current element. */
 export function selectAll(): void {
-	projectState.update((state) => ({
-		...state,
-		...selection(state.elements.map((element) => element.id)),
-		hoveredElementId: null
-	}));
+	updateProjectState(
+		(state) => ({
+			...state,
+			...selection(state.elements.map((element) => element.id)),
+			hoveredElementId: null
+		}),
+		"preserve"
+	);
 }
 
 /** Updates the currently hovered element. */
 export function setHover(id: string | null): void {
-	projectState.update((state) => {
+	updateProjectState((state) => {
 		return state.hoveredElementId === id ? state : { ...state, hoveredElementId: id };
-	});
+	}, "preserve");
 }
 
 /** Toggles crop editing for a selected image element. */
 export function toggleCrop(id: string): void {
-	projectState.update((state) => {
+	updateProjectState((state) => {
 		const cropEditingElementId = state.cropEditingElementId === id ? null : id;
 
 		return { ...state, ...selection([id]), cropEditingElementId };
-	});
+	}, "preserve");
 }

@@ -3,7 +3,7 @@ import { get } from "svelte/store";
 
 import { resizeElement, type ResizeHandle, type ResizeOptions } from "../elements/resize";
 import { imageAssetState } from "../state/assets";
-import { projectState } from "../state/document";
+import { projectState, setProjectState, updateProjectState } from "../state/document";
 import { canvasState } from "../state/workspace";
 import { clampCropScale, cropForImageFrameResize, translateCrop } from "./crop";
 
@@ -13,7 +13,7 @@ export function translateImageCrop(id: string, dx: number, dy: number): void {
 
 	const assets = get(imageAssetState);
 
-	projectState.update((state) => {
+	updateProjectState((state) => {
 		const image = state.elements.find((element) => element.id === id);
 
 		if (!image || image.type !== "image" || !image.assetId) return state;
@@ -36,7 +36,7 @@ export function translateImageCrop(id: string, dx: number, dy: number): void {
 				element.id === id && element.type === "image" ? { ...element, ...crop } : element
 			)
 		};
-	});
+	}, "preserve");
 }
 
 /** Sets a bounded image crop scale. */
@@ -45,22 +45,30 @@ export function setImageCropScale(id: string, scale: number): void {
 
 	const cropScale = clampCropScale(scale);
 
-	projectState.update((state) => ({
-		...state,
-		elements: state.elements.map((element) =>
-			element.id === id && element.type === "image" ? { ...element, cropScale } : element
-		)
-	}));
+	updateProjectState(
+		(state) => ({
+			...state,
+			elements: state.elements.map((element) =>
+				element.id === id && element.type === "image" ? { ...element, cropScale } : element
+			)
+		}),
+		"preserve"
+	);
 }
 
 /** Restores the default crop offsets and scale for an image. */
 export function resetImageCrop(id: string): void {
-	projectState.update((state) => ({
-		...state,
-		elements: state.elements.map((element) =>
-			element.id === id && element.type === "image" ? { ...element, cropX: 0, cropY: 0, cropScale: 100 } : element
-		)
-	}));
+	updateProjectState(
+		(state) => ({
+			...state,
+			elements: state.elements.map((element) =>
+				element.id === id && element.type === "image"
+					? { ...element, cropX: 0, cropY: 0, cropScale: 100 }
+					: element
+			)
+		}),
+		"preserve"
+	);
 }
 
 /** Resizes an image frame and recalculates crop to preserve visible content. */
@@ -74,8 +82,11 @@ export function resizeImageCropFrame(
 ): void {
 	const canvas = get(canvasState);
 	const assets = get(imageAssetState);
+	const state = get(projectState);
+	let beforeChange: ImageElement | null = null;
+	let afterChange: ImageElement | null = null;
 
-	projectState.update((state) => ({
+	const nextState = {
 		...state,
 		elements: state.elements.map((element) => {
 			if (element.id !== id || element.type !== "image") return element;
@@ -92,6 +103,7 @@ export function resizeImageCropFrame(
 				width,
 				height
 			};
+			beforeChange = element;
 
 			if (!original.assetId) return nextFrame;
 
@@ -99,8 +111,13 @@ export function resizeImageCropFrame(
 			if (!asset) return nextFrame;
 
 			const nextCrop = cropForImageFrameResize(original, nextFrame, asset.width, asset.height);
-
-			return { ...nextFrame, ...nextCrop };
+			const next = { ...nextFrame, ...nextCrop };
+			beforeChange = element;
+			afterChange = next;
+			return next;
 		})
-	}));
+	};
+	const hint = beforeChange && afterChange ? { changed: { before: beforeChange, after: afterChange } } : "preserve";
+
+	setProjectState(nextState, hint);
 }

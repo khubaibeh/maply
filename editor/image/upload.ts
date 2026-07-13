@@ -6,7 +6,7 @@ import { get } from "svelte/store";
 
 import { createElementId } from "../elements/naming";
 import { imageAssetState } from "../state/assets";
-import { projectState } from "../state/document";
+import { projectState, setProjectState } from "../state/document";
 import { acquireMutex } from "../state/mutex";
 import { canvasState } from "../state/workspace";
 
@@ -129,7 +129,7 @@ export async function replaceImageAsset(
 			return { ok: false, error: replaced.error };
 		}
 
-		projectState.set({ ...project, elements });
+		setProjectState({ ...project, elements }, "preserve");
 		imageAssetState.set(Object.fromEntries(referenced.map((entry) => [entry.id, entry])));
 
 		return { ok: true };

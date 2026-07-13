@@ -1,7 +1,7 @@
 import type { Element } from "@maply/model/types";
 import { get } from "svelte/store";
 
-import { projectState } from "../state/document";
+import { projectState, setProjectState, updateProjectState } from "../state/document";
 import { canvasState } from "../state/workspace";
 import { clampElementToCanvas, getElementBounds, getPointBounds } from "./geometry";
 import { toPathPoints, toPath } from "./path";
@@ -50,12 +50,15 @@ export function addElement(element: Element): void {
 	const canvas = get(canvasState);
 	const next = clampElementToCanvas(element, canvas);
 
-	projectState.update((state) => ({
-		...state,
-		elements: [...state.elements, next],
-		selectedElementId: next.id,
-		selectedElementIds: [next.id]
-	}));
+	updateProjectState(
+		(state) => ({
+			...state,
+			elements: [...state.elements, next],
+			selectedElementId: next.id,
+			selectedElementIds: [next.id]
+		}),
+		{ added: [next] }
+	);
 }
 
 /** Moves one element while retaining it within the canvas. */
@@ -65,17 +68,20 @@ export function translateElement(id: string, dx: number, dy: number) {
 	const canvas = get(canvasState);
 	let applied = { x: 0, y: 0 };
 
-	projectState.update((state) => ({
-		...state,
-		elements: state.elements.map((element) => {
-			if (element.id !== id) return element;
-			const next = clampElementToCanvas(translate(element, dx, dy), canvas);
-			const before = getElementPosition(element);
-			const after = getElementPosition(next);
-			applied = { x: after.x - before.x, y: after.y - before.y };
-			return next;
-		})
-	}));
+	updateProjectState(
+		(state) => ({
+			...state,
+			elements: state.elements.map((element) => {
+				if (element.id !== id) return element;
+				const next = clampElementToCanvas(translate(element, dx, dy), canvas);
+				const before = getElementPosition(element);
+				const after = getElementPosition(next);
+				applied = { x: after.x - before.x, y: after.y - before.y };
+				return next;
+			})
+		}),
+		"preserve"
+	);
 
 	return applied;
 }
@@ -88,7 +94,7 @@ export function translateElements(ids: readonly string[], dx: number, dy: number
 	const canvas = get(canvasState);
 	let applied = { x: 0, y: 0 };
 
-	projectState.update((state) => {
+	updateProjectState((state) => {
 		const selected = state.elements.filter((element) => idSet.has(element.id));
 		if (selected.length === 0) return state;
 
@@ -118,7 +124,7 @@ export function translateElements(ids: readonly string[], dx: number, dy: number
 				idSet.has(element.id) ? translate(element, nextDx, nextDy) : element
 			)
 		};
-	});
+	}, "preserve");
 
 	return applied;
 }
@@ -146,59 +152,87 @@ export function resizeElementByHandle(
 ) {
 	if (dx === 0 && dy === 0) return { x: 0, y: 0 };
 
+	const state = get(projectState);
 	const canvas = get(canvasState);
 	let applied = { x: 0, y: 0 };
+	let beforeChange: Element | null = null;
+	let afterChange: Element | null = null;
 
-	projectState.update((state) => ({
+	const nextState = {
 		...state,
 		elements: state.elements.map((element) => {
 			if (element.id !== id) return element;
+			const resized = resizeElementPure(element, handle, dx, dy, canvas, options);
 			const before = getHandlePosition(element, handle);
-			const next = resizeElementPure(element, handle, dx, dy, canvas, options);
+			const next = resized;
 			const after = getHandlePosition(next, handle);
 			applied = { x: after.x - before.x, y: after.y - before.y };
+			beforeChange = element;
+			afterChange = next;
 			return next;
 		})
-	}));
+	};
+	const hint = beforeChange && afterChange ? { changed: { before: beforeChange, after: afterChange } } : "preserve";
+
+	setProjectState(nextState, hint);
 
 	return applied;
 }
 
 /** Applies an element property patch and clamps the resulting element. */
 export function updateElement(id: string, patch: Partial<Element>): void {
+	const state = get(projectState);
 	const canvas = get(canvasState);
+	let beforeChange: Element | null = null;
+	let afterChange: Element | null = null;
 
-	projectState.update((state) => ({
+	const nextState = {
 		...state,
-		elements: state.elements.map((element) =>
-			element.id === id ? clampElementToCanvas({ ...element, ...patch } as Element, canvas) : element
-		)
-	}));
+		elements: state.elements.map((element) => {
+			if (element.id !== id) return element;
+			const next = clampElementToCanvas({ ...element, ...patch } as Element, canvas);
+			beforeChange = element;
+			afterChange = next;
+			return next;
+		})
+	};
+	const hint = beforeChange && afterChange ? { changed: { before: beforeChange, after: afterChange } } : "preserve";
+
+	setProjectState(nextState, hint);
 }
 
 /** Raw name commit — callers may write invalid or duplicate names; validation is advisory. */
 export function renameElement(id: string, name: string): void {
-	projectState.update((state) => ({
-		...state,
-		elements: state.elements.map((element) => (element.id === id ? { ...element, name } : element))
-	}));
+	updateProjectState(
+		(state) => ({
+			...state,
+			elements: state.elements.map((element) => (element.id === id ? { ...element, name } : element))
+		}),
+		"preserve"
+	);
 }
 
 /** Clamps every element after a canvas frame change. */
 export function clampElementsToCanvas(): void {
 	const canvas = get(canvasState);
 
-	projectState.update((state) => ({
-		...state,
-		elements: state.elements.map((element) => clampElementToCanvas(element, canvas))
-	}));
+	updateProjectState(
+		(state) => ({
+			...state,
+			elements: state.elements.map((element) => clampElementToCanvas(element, canvas))
+		}),
+		"rescan"
+	);
 }
 
 /** Rewrites one linear-path vertex and clamps the resulting path frame. */
 export function updatePathVertex(id: string, index: number, point: { x: number; y: number }): void {
+	const state = get(projectState);
 	const canvas = get(canvasState);
+	let beforeChange: Element | null = null;
+	let afterChange: Element | null = null;
 
-	projectState.update((state) => ({
+	const nextState = {
 		...state,
 		elements: state.elements.map((element) => {
 			if (element.id !== id || element.type !== "path") return element;
@@ -210,7 +244,7 @@ export function updatePathVertex(id: string, index: number, point: { x: number; 
 			points[index] = point;
 			const newBounds = getPointBounds(points);
 
-			return clampElementToCanvas(
+			const next = clampElementToCanvas(
 				{
 					...element,
 					d: toPath(points, element.closed),
@@ -219,6 +253,12 @@ export function updatePathVertex(id: string, index: number, point: { x: number; 
 				},
 				canvas
 			);
+			beforeChange = element;
+			afterChange = next;
+			return next;
 		})
-	}));
+	};
+	const hint = beforeChange && afterChange ? { changed: { before: beforeChange, after: afterChange } } : "preserve";
+
+	setProjectState(nextState, hint);
 }
