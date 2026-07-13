@@ -7,7 +7,6 @@
 	import type { ResizeHandle } from "editor/types";
 
 	const HANDLE_SIZE_SCREEN = 12;
-	const HANDLE_LENGTH_SCREEN = 26;
 	const HANDLE_THICKNESS_SCREEN = 6;
 	const HIT_SIZE_SCREEN = 24;
 	const HANDLE_OFFSET_SCREEN = 8;
@@ -17,13 +16,50 @@
 	const project = Editor.state.project;
 	const tool = Editor.state.tool;
 
-	const canResize = $derived($tool.activeTool === "select" && $project.cropEditingElementId === null);
+	const canResize = $derived(
+		$tool.activeTool === "select" &&
+			$project.cropEditingElementId === null &&
+			$project.selectedElementIds.length === 0
+	);
 	const handleSize = $derived(HANDLE_SIZE_SCREEN / $canvas.camera.zoom);
-	const handleLength = $derived(HANDLE_LENGTH_SCREEN / $canvas.camera.zoom);
 	const handleThickness = $derived(HANDLE_THICKNESS_SCREEN / $canvas.camera.zoom);
 	const hitSize = $derived(HIT_SIZE_SCREEN / $canvas.camera.zoom);
 	const offset = $derived(HANDLE_OFFSET_SCREEN / $canvas.camera.zoom);
 	const strokeWidth = $derived(STROKE_WIDTH_SCREEN / $canvas.camera.zoom);
+	const edgeHandles = $derived([
+		{
+			key: "n" as const,
+			x: $canvas.x + handleSize / 2,
+			y: $canvas.y - hitSize / 2,
+			width: Math.max(0, $canvas.width - handleSize),
+			height: hitSize,
+			label: "Resize canvas height from top"
+		},
+		{
+			key: "s" as const,
+			x: $canvas.x + handleSize / 2,
+			y: $canvas.y + $canvas.height - hitSize / 2,
+			width: Math.max(0, $canvas.width - handleSize),
+			height: hitSize,
+			label: "Resize canvas height"
+		},
+		{
+			key: "e" as const,
+			x: $canvas.x + $canvas.width - hitSize / 2,
+			y: $canvas.y + handleSize / 2,
+			width: hitSize,
+			height: Math.max(0, $canvas.height - handleSize),
+			label: "Resize canvas width"
+		},
+		{
+			key: "w" as const,
+			x: $canvas.x - hitSize / 2,
+			y: $canvas.y + handleSize / 2,
+			width: hitSize,
+			height: Math.max(0, $canvas.height - handleSize),
+			label: "Resize canvas width from left"
+		}
+	]);
 
 	const handles = $derived([
 		{
@@ -36,15 +72,6 @@
 			label: "Resize canvas from top left"
 		},
 		{
-			key: "n" as const,
-			x: $canvas.x + $canvas.width / 2,
-			y: $canvas.y - offset,
-			width: handleLength,
-			height: handleThickness,
-			radius: handleThickness / 2,
-			label: "Resize canvas height from top"
-		},
-		{
 			key: "ne" as const,
 			x: $canvas.x + $canvas.width + offset,
 			y: $canvas.y - offset,
@@ -52,15 +79,6 @@
 			height: handleSize,
 			radius: handleThickness / 2,
 			label: "Resize canvas from top right"
-		},
-		{
-			key: "e" as const,
-			x: $canvas.x + $canvas.width + offset,
-			y: $canvas.y + $canvas.height / 2,
-			width: handleThickness,
-			height: handleLength,
-			radius: handleThickness / 2,
-			label: "Resize canvas width"
 		},
 		{
 			key: "se" as const,
@@ -72,15 +90,6 @@
 			label: "Resize canvas"
 		},
 		{
-			key: "s" as const,
-			x: $canvas.x + $canvas.width / 2,
-			y: $canvas.y + $canvas.height + offset,
-			width: handleLength,
-			height: handleThickness,
-			radius: handleThickness / 2,
-			label: "Resize canvas height"
-		},
-		{
 			key: "sw" as const,
 			x: $canvas.x - offset,
 			y: $canvas.y + $canvas.height + offset,
@@ -88,15 +97,6 @@
 			height: handleSize,
 			radius: handleThickness / 2,
 			label: "Resize canvas from bottom left"
-		},
-		{
-			key: "w" as const,
-			x: $canvas.x - offset,
-			y: $canvas.y + $canvas.height / 2,
-			width: handleThickness,
-			height: handleLength,
-			radius: handleThickness / 2,
-			label: "Resize canvas width from left"
 		}
 	]);
 	const drag = createPointerDrag();
@@ -154,6 +154,21 @@
 
 {#if canResize}
 	<g aria-label="Resize canvas">
+		{#each edgeHandles as handle (handle.key)}
+			<rect
+				x={handle.x}
+				y={handle.y}
+				role="button"
+				tabindex="-1"
+				aria-label={handle.label}
+				width={handle.width}
+				height={handle.height}
+				fill="transparent"
+				style:cursor={resizeCursor(handle.key)}
+				onpointerdown={(event) => startResize(event, handle.key)}
+			/>
+		{/each}
+
 		{#each handles as handle (handle.key)}
 			<rect
 				x={handle.x - Math.max(hitSize, handle.width) / 2}

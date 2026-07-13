@@ -23,6 +23,28 @@ function getElementPosition(element: Element) {
 	return element.type === "circle" ? { x: element.cx, y: element.cy } : { x: element.x, y: element.y };
 }
 
+function getHandlePosition(
+	element: Element,
+	handle: ResizeHandle
+): {
+	x: number;
+	y: number;
+} {
+	const bounds = getElementBounds(element);
+	return {
+		x: handle.includes("w")
+			? bounds.x
+			: handle.includes("e")
+				? bounds.x + bounds.width
+				: bounds.x + bounds.width / 2,
+		y: handle.includes("n")
+			? bounds.y
+			: handle.includes("s")
+				? bounds.y + bounds.height
+				: bounds.y + bounds.height / 2
+	};
+}
+
 /** Adds a canvas-clamped element and selects it. */
 export function addElement(element: Element): void {
 	const canvas = get(canvasState);
@@ -121,15 +143,25 @@ export function resizeElementByHandle(
 	dx: number,
 	dy: number,
 	options?: ResizeOptions
-): void {
+) {
+	if (dx === 0 && dy === 0) return { x: 0, y: 0 };
+
 	const canvas = get(canvasState);
+	let applied = { x: 0, y: 0 };
 
 	projectState.update((state) => ({
 		...state,
-		elements: state.elements.map((element) =>
-			element.id === id ? resizeElementPure(element, handle, dx, dy, canvas, options) : element
-		)
+		elements: state.elements.map((element) => {
+			if (element.id !== id) return element;
+			const before = getHandlePosition(element, handle);
+			const next = resizeElementPure(element, handle, dx, dy, canvas, options);
+			const after = getHandlePosition(next, handle);
+			applied = { x: after.x - before.x, y: after.y - before.y };
+			return next;
+		})
 	}));
+
+	return applied;
 }
 
 /** Applies an element property patch and clamps the resulting element. */

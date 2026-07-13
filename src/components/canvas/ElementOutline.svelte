@@ -37,6 +37,38 @@
 	const handleSize = $derived(10 / $canvas.camera.zoom);
 	const handleRadius = $derived(1 / $canvas.camera.zoom);
 	const handles = $derived(resizeAnchors(bbox));
+	const cornerHandles = $derived(handles.filter((handle) => handle.key.length === 2));
+	const edgeHitSize = $derived(14 / $canvas.camera.zoom);
+	const edgeHandles = $derived([
+		{
+			key: "n" as const,
+			x: bbox.x + handleSize / 2,
+			y: bbox.y - edgeHitSize / 2,
+			width: Math.max(0, bbox.width - handleSize),
+			height: edgeHitSize
+		},
+		{
+			key: "s" as const,
+			x: bbox.x + handleSize / 2,
+			y: bbox.y + bbox.height - edgeHitSize / 2,
+			width: Math.max(0, bbox.width - handleSize),
+			height: edgeHitSize
+		},
+		{
+			key: "e" as const,
+			x: bbox.x + bbox.width - edgeHitSize / 2,
+			y: bbox.y + handleSize / 2,
+			width: edgeHitSize,
+			height: Math.max(0, bbox.height - handleSize)
+		},
+		{
+			key: "w" as const,
+			x: bbox.x - edgeHitSize / 2,
+			y: bbox.y + handleSize / 2,
+			width: edgeHitSize,
+			height: Math.max(0, bbox.height - handleSize)
+		}
+	]);
 	const resize = createPointerDrag();
 
 	$effect(() => {
@@ -94,7 +126,7 @@
 		resize.start(event, {
 			project: (pointerEvent) => clientToSvgPoint(svg, pointerEvent.clientX, pointerEvent.clientY),
 			onMove: ({ delta }) => {
-				Editor.element.resize(element.id, handle, delta.x, delta.y, {
+				return Editor.element.resize(element.id, handle, delta.x, delta.y, {
 					lockAspectRatio,
 					aspectRatio
 				});
@@ -121,7 +153,22 @@
 />
 
 {#if canResize}
-	{#each handles as handle (handle.key)}
+	{#each edgeHandles as handle (handle.key)}
+		<rect
+			x={handle.x}
+			y={handle.y}
+			role="button"
+			tabindex="-1"
+			aria-label="Resize {element.name}"
+			width={handle.width}
+			height={handle.height}
+			fill="transparent"
+			style:cursor={resizeCursor(handle.key)}
+			onpointerdown={(event) => startResize(event, handle.key)}
+		/>
+	{/each}
+
+	{#each cornerHandles as handle (handle.key)}
 		<rect
 			x={handle.x - handleSize / 2}
 			y={handle.y - handleSize / 2}
