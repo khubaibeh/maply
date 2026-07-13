@@ -38,7 +38,7 @@ import { moveBackward, moveForward, moveToBack, moveToFront, reorder } from "./s
 import { loadEditorSession } from "./session/load";
 import { flushEditorSave, queueEditorSave } from "./session/save";
 import { imageAssetState } from "./state/assets";
-import { fillState, projectState } from "./state/document";
+import { fillState, minimumCanvasSizeState, projectState } from "./state/document";
 import { toolState, canvasState, zoomLimits } from "./state/workspace";
 
 function setFill(fill: string): void {
@@ -54,6 +54,7 @@ export const Editor = {
 	state: {
 		project: readonly(projectState),
 		canvas: readonly(canvasState),
+		minimumCanvasSize: readonly(minimumCanvasSizeState),
 		fill: readonly(fillState),
 		tool: readonly(toolState),
 		imageAssets: readonly(imageAssetState)

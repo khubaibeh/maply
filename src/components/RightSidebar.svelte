@@ -10,6 +10,7 @@
 
 	let { width = 288 }: { width?: number } = $props();
 	const canvas = Editor.state.canvas;
+	const minCanvasSize = Editor.state.minimumCanvasSize;
 	const project = Editor.state.project;
 
 	function updateWidth(event: Event) {
@@ -64,7 +65,7 @@
 						<Input
 							id="canvas-width"
 							type="number"
-							min={1}
+							min={$minCanvasSize.width}
 							step={1}
 							value={$canvas.width}
 							onchange={updateWidth}
@@ -76,7 +77,7 @@
 						<Input
 							id="canvas-height"
 							type="number"
-							min={1}
+							min={$minCanvasSize.height}
 							step={1}
 							value={$canvas.height}
 							onchange={updateHeight}

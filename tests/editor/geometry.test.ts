@@ -1,5 +1,11 @@
 import type { Canvas, CircleElement, ImageElement, PathElement, RectElement, TextElement } from "@maply/model/types";
-import { clampElementToCanvas, getElementBounds, getPointBounds, getShapeDragBox } from "editor/elements/geometry";
+import {
+	clampElementToCanvas,
+	getElementBounds,
+	getMinimumCanvasSize,
+	getPointBounds,
+	getShapeDragBox
+} from "editor/elements/geometry";
 import { describe, expect, it } from "vitest";
 
 const canvas: Canvas = { x: 0, y: 0, width: 800, height: 600, color: "#ffffff" };
@@ -127,6 +133,22 @@ describe("getShapeDragBox", () => {
 		expect(box!.y).toBe(100 - 50);
 		expect(box!.width).toBe(50);
 		expect(box!.height).toBe(50);
+	});
+});
+
+describe("getMinimumCanvasSize", () => {
+	it("returns 1x1 with no elements", () => {
+		expect(getMinimumCanvasSize([])).toEqual({ width: 1, height: 1 });
+	});
+
+	it("uses the largest element width and height independently", () => {
+		expect(
+			getMinimumCanvasSize([
+				rect({ width: 320, height: 40 }),
+				circle({ r: 90 }),
+				text({ width: 140, height: 260 })
+			])
+		).toEqual({ width: 320, height: 260 });
 	});
 });
 

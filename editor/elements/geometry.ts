@@ -66,6 +66,22 @@ export function getElementBounds(element: Element) {
 	}
 }
 
+/** Returns the smallest canvas size that can contain the largest current element without shrinking it. */
+export function getMinimumCanvasSize(elements: readonly Element[]) {
+	if (elements.length === 0) return { width: 1, height: 1 };
+
+	let width = 1;
+	let height = 1;
+
+	for (const element of elements) {
+		const bounds = getElementBounds(element);
+		width = Math.max(width, Math.ceil(bounds.width));
+		height = Math.max(height, Math.ceil(bounds.height));
+	}
+
+	return { width, height };
+}
+
 /** Translates a path's stored visual box to its rendered SVG data origin. */
 export function getPathRenderTransform(element: PathElement): Point {
 	const bounds = getSvgPathBounds(element.d);
