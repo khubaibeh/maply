@@ -9,6 +9,7 @@ export function createElementMove() {
 	const project = fromStore(Editor.state.project);
 	const tool = fromStore(Editor.state.tool);
 	const drag = createPointerDrag();
+	const state = $state({ isDragging: false });
 
 	function start(event: PointerEvent, id: string) {
 		if (event.button !== 0 || tool.current.activeTool !== "select") return;
@@ -36,15 +37,17 @@ export function createElementMove() {
 		drag.start(event, {
 			project: (pointerEvent) => clientToSvgPoint(svg, pointerEvent.clientX, pointerEvent.clientY),
 			onMove: ({ delta }) => {
+				state.isDragging = true;
 				return ids.length > 1
 					? Editor.element.translateAll(ids, delta.x, delta.y)
 					: Editor.element.translate(ids[0], delta.x, delta.y);
 			},
 			onEnd: ({ cancelled, didMove }) => {
+				state.isDragging = false;
 				if (!cancelled && !didMove && toggleId) Editor.selection.select(toggleId, true);
 			}
 		});
 	}
 
-	return { start };
+	return { start, state };
 }

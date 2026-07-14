@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { createElementMove } from "@components/canvas/interaction/element-move.svelte";
+	import { canvasCursor } from "@components/core/cursors";
 	import { Editor } from "editor";
 
 	import CanvasResizeHandles from "./CanvasResizeHandles.svelte";
@@ -45,23 +46,25 @@
 
 <CanvasResizeHandles />
 
-<ElementShapes onElementPointerDown={elementMove.start} />
+<g style:cursor={elementMove.state.isDragging ? canvasCursor.allScroll : undefined}>
+	<ElementShapes onElementPointerDown={elementMove.start} />
 
-{#if hoveredElement && hoveredElement.type !== "path"}
-	<ElementOutline element={hoveredElement} interactive={false} />
-{/if}
-
-{#if hoveredElement?.type === "path"}
-	<PathElementOutline element={hoveredElement} />
-{/if}
-
-{#each selectedElements as element (element.id)}
-	{#if element.type !== "path"}
-		<ElementOutline {element} onMoveStart={elementMove.start} />
-	{:else}
-		<PathElementOutline {element} />
+	{#if hoveredElement && hoveredElement.type !== "path"}
+		<ElementOutline element={hoveredElement} interactive={false} />
 	{/if}
-{/each}
+
+	{#if hoveredElement?.type === "path"}
+		<PathElementOutline element={hoveredElement} />
+	{/if}
+
+	{#each selectedElements as element (element.id)}
+		{#if element.type !== "path"}
+			<ElementOutline {element} onMoveStart={elementMove.start} />
+		{:else}
+			<PathElementOutline {element} />
+		{/if}
+	{/each}
+</g>
 
 {#if selectedElement?.type === "image"}
 	<ImageCropOverlay element={selectedElement} cropEditing={$project.cropEditingElementId === selectedElement.id} />

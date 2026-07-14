@@ -54,7 +54,7 @@ export function createCanvasAreaState() {
 		tool.current.activeTool === "hand" || (state.isHovering && tool.current.isSpacePressed)
 	);
 	const cursorClass = $derived.by(() => {
-		if (state.isPanning) return canvasCursor.grabbing;
+		if (state.isPanning) return canvasCursor.allScroll;
 		if (isHandActive) return canvasCursor.hand;
 		return canvasCursor.default;
 	});

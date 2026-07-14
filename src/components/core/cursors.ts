@@ -1,3 +1,4 @@
+import allScrollSvg from "$lib/assets/cursors/all-scroll.svg?raw";
 import arrowHorSvg from "$lib/assets/cursors/arrow-hor.svg?raw";
 import arrowOut1Svg from "$lib/assets/cursors/arrow-out-1.svg?raw";
 import arrowOut2Svg from "$lib/assets/cursors/arrow-out-2.svg?raw";
@@ -42,6 +43,7 @@ export const canvasCursor = {
 	text: url(cursorTextSvg, 10, 10),
 	hand: url(handSvg, 10, 8, "grab"),
 	grabbing: url(handGrabbingSvg, 10, 10, "grabbing"),
+	allScroll: url(allScrollSvg, 10, 10, "all-scroll"),
 	resizeHorizontal: url(arrowHorSvg, 10, 10, "ew-resize"),
 	resizeVertical: url(arrowVertSvg, 10, 10, "ns-resize"),
 	resizeDiagonalDown: url(arrowOut1Svg, 10, 10, "nwse-resize"),
