@@ -1,5 +1,6 @@
 <script lang="ts">
 	import * as AlertDialog from "$lib/components/ui/alert-dialog";
+	import { canvasCursor } from "@components/core/cursors";
 
 	type Props = {
 		open?: boolean;
@@ -12,6 +13,26 @@
 	};
 
 	let { open = $bindable(false), name, busy, source, warnings, onCancel, onConfirm }: Props = $props();
+	let actionButton: HTMLButtonElement | null = $state(null);
+	let wasBusy = false;
+
+	$effect(() => {
+		if (busy) {
+			wasBusy = true;
+			return;
+		}
+		if (!wasBusy || !actionButton) return;
+
+		wasBusy = false;
+		const button = actionButton;
+		button.style.cursor = "auto";
+		void button.offsetWidth;
+		const frame = requestAnimationFrame(() => {
+			if (button.isConnected) button.style.cursor = canvasCursor.default;
+		});
+
+		return () => cancelAnimationFrame(frame);
+	});
 </script>
 
 <AlertDialog.Root bind:open>
@@ -34,8 +55,10 @@
 		</AlertDialog.Header>
 		<AlertDialog.Footer>
 			<AlertDialog.Cancel onclick={onCancel} disabled={busy}>Cancel</AlertDialog.Cancel>
-			<AlertDialog.Action onclick={onConfirm} disabled={busy}
-				>{busy ? "Importing..." : "Replace project"}</AlertDialog.Action
+			<AlertDialog.Action
+				bind:ref={() => actionButton, (value) => (actionButton = value)}
+				onclick={onConfirm}
+				disabled={busy}>{busy ? "Importing..." : "Replace project"}</AlertDialog.Action
 			>
 		</AlertDialog.Footer>
 	</AlertDialog.Content>

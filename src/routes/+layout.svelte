@@ -6,6 +6,7 @@
 	import * as Tooltip from "$lib/components/ui/tooltip";
 	import { useTheme } from "$lib/state.svelte";
 	import { canvasCursor } from "@components/core/cursors";
+	import { Toaster } from "@components/core/toast";
 	import { Editor } from "editor";
 	import Monitor from "phosphor-svelte/lib/Monitor";
 	import { onMount } from "svelte";
@@ -78,6 +79,7 @@
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
 {#if !isTooSmall}
+	<Toaster />
 	<Tooltip.Provider delayDuration={150}>
 		{@render children()}
 	</Tooltip.Provider>

@@ -128,9 +128,12 @@
 	* {
 		@apply border-border outline-ring/50;
 	}
+	html {
+		@apply font-sans;
+		cursor: var(--app-cursor-default, auto);
+	}
 	body {
 		@apply bg-background text-foreground;
-		cursor: var(--app-cursor-default, auto);
 	}
 	/* The UA stylesheet sets its own cursor on buttons, links, etc., which breaks
 	   inheritance and shows native cursors. Force everything to inherit so the
@@ -149,9 +152,6 @@
 	[data-canvas-element]:focus,
 	[data-canvas-element]:focus-visible {
 		outline: none;
-	}
-	html {
-		@apply font-sans;
 	}
 	.canvas-default-cursor,
 	.canvas-default-cursor * {
