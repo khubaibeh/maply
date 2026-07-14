@@ -105,7 +105,8 @@
 				</DropdownMenu.Group>
 				<DropdownMenu.Separator />
 				<DropdownMenu.Group>
-					<DropdownMenu.Label class="text-muted-foreground text-[10px] font-semibold tracking-wide uppercase"
+					<DropdownMenu.Label
+						class="text-muted-foreground px-2 py-1 text-[10px] font-semibold tracking-wide uppercase"
 						>Import</DropdownMenu.Label
 					>
 					<DropdownMenu.Item class="rounded-lg px-2 py-1.5 text-xs" onclick={() => svgPicker?.click()}
@@ -117,7 +118,8 @@
 				</DropdownMenu.Group>
 				<DropdownMenu.Separator />
 				<DropdownMenu.Group>
-					<DropdownMenu.Label class="text-muted-foreground text-[10px] font-semibold tracking-wide uppercase"
+					<DropdownMenu.Label
+						class="text-muted-foreground px-2 py-1 text-[10px] font-semibold tracking-wide uppercase"
 						>Export</DropdownMenu.Label
 					>
 					<DropdownMenu.Item class="rounded-lg px-2 py-1.5 text-xs" onclick={() => void transfer.exportSvg()}
@@ -131,12 +133,12 @@
 			</DropdownMenu.Content>
 		</DropdownMenu.Root>
 	</div>
-	{#if transfer.state.error}<p
-			role="alert"
-			class="bg-destructive max-w-72 rounded-xl px-3 py-2 text-xs text-white shadow-lg"
-		>
-			{transfer.state.error}
-		</p>{/if}
+	<!-- {#if transfer.state.error}<p
+		role="alert"
+		class="bg-destructive max-w-72 rounded-xl px-3 py-2 text-xs text-white shadow-lg"
+	>
+		{transfer.state.error}
+	</p>{/if} -->
 </div>
 
 <NewProjectDialog bind:open={newProjectOpen} onError={(message) => (transfer.state.error = message)} />
