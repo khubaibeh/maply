@@ -8,6 +8,7 @@ import { describe, expect, it } from "vitest";
 import { SvgImportWarningType } from "../src/svg/types";
 
 const SYNOPTIC = "gen-by-synoptic-designer";
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function synoptic(body: string, attrs = 'viewBox="0 0 200 200"') {
 	return `<svg class="${SYNOPTIC}" xmlns="http://www.w3.org/2000/svg" ${attrs}>${body}</svg>`;
@@ -240,6 +241,8 @@ describe("synoptic import - shape types", () => {
 			width: 60,
 			height: 40
 		});
+		expect(imported.file.project.elements[0].id).toMatch(UUID);
+		expect(imported.file.project.elements[0].id).not.toBe("room");
 	});
 
 	it("skips rects missing width or height", () => {
@@ -440,8 +443,8 @@ describe("synoptic import - fitCanvas", () => {
 	});
 });
 
-describe("synoptic import - duplicate IDs", () => {
-	it("renames elements with duplicate IDs", () => {
+describe("synoptic import - element identity", () => {
+	it("uses duplicate SVG ids as names while assigning unique UUIDs", () => {
 		const imported = importSynoptic(
 			synoptic(
 				'<rect id="dup" x="0" y="0" width="20" height="20" />' +
@@ -450,15 +453,38 @@ describe("synoptic import - duplicate IDs", () => {
 		);
 
 		const ids = imported.file.project.elements.map((e) => e.id);
+		const names = imported.file.project.elements.map((e) => e.name);
 		expect(ids).toHaveLength(2);
+		expect(ids.every((id) => UUID.test(id))).toBe(true);
 		expect(new Set(ids).size).toBe(2);
-		expect(imported.warnings).toContainEqual(
+		expect(names).toEqual(["dup", "dup"]);
+		expect(imported.warnings).not.toContainEqual(
 			expect.objectContaining({ type: SvgImportWarningType.DuplicateElementId })
 		);
+	});
+
+	it("ignores SVG titles when naming elements", () => {
+		const imported = importSynoptic(
+			synoptic(
+				'<title>Document title</title><rect x="0" y="0" width="20" height="20"><title>Room title</title></rect>'
+			)
+		);
+
+		expect(imported.file.project.elements[0]).toMatchObject({ name: "rect" });
+		expect(imported.file.project.elements[0].id).toMatch(UUID);
 	});
 });
 
 describe("synoptic import - background image", () => {
+	it("uses image as the fallback name", () => {
+		const imported = importSynoptic(
+			synoptic('<image href="data:image/png;base64,abc" width="200" height="100" />', 'viewBox="0 0 200 100"')
+		);
+
+		expect(imported.file.project.elements[0]).toMatchObject({ type: "image", name: "image" });
+		expect(imported.file.project.elements[0].id).toMatch(UUID);
+	});
+
 	it("imports an embedded background image as an asset", () => {
 		const imported = importSynoptic(
 			synoptic(
@@ -470,19 +496,19 @@ describe("synoptic import - background image", () => {
 		expect(imported.file.project.elements).toHaveLength(1);
 		expect(imported.file.project.elements[0]).toMatchObject({
 			type: "image",
-			name: "floorplan",
+			name: "bg",
 			width: 200,
-			height: 100,
-			assetId: "asset-bg"
+			height: 100
 		});
+		expect(imported.file.project.elements[0].id).toMatch(UUID);
 
 		expect(imported.file.imageAssets).toHaveLength(1);
 		expect(imported.file.imageAssets[0]).toMatchObject({
-			id: "asset-bg",
 			mimeType: "image/png",
 			width: 200,
 			height: 100
 		});
+		expect(imported.file.imageAssets[0].id).toBe(`asset-${imported.file.project.elements[0].id}`);
 	});
 
 	it("reads xlink:href when href is absent", () => {

@@ -1,7 +1,6 @@
 import type { Element, Point, Project } from "@maply/model/types";
 
 import { isRecord } from "../../common";
-import { SvgImportWarningType, type SvgImportWarning } from "../types";
 
 type DraftProject = { -readonly [Key in keyof Project]: Project[Key] };
 
@@ -40,7 +39,7 @@ export function viewBox(attrs: Map<string, string>) {
 }
 
 export function id() {
-	return `svg-${crypto.randomUUID()}`;
+	return crypto.randomUUID();
 }
 
 export function name(attrs: Map<string, string>, fallback: string) {
@@ -155,25 +154,4 @@ export function fitCanvas(project: DraftProject, fallback: { width: number; heig
 		x: 0,
 		y: 0
 	};
-}
-
-/** Renames elements with duplicate IDs by assigning fresh UUIDs, emitting warnings for each rename. */
-export function dedupe(elements: readonly Element[], warnings: SvgImportWarning[]) {
-	const used = new Set<string>();
-
-	return elements.map((element) => {
-		if (!used.has(element.id)) {
-			used.add(element.id);
-			return element;
-		}
-
-		const next = id();
-		used.add(next);
-		warnings.push({
-			type: SvgImportWarningType.DuplicateElementId,
-			message: `Renamed repeated SVG element id ${element.id}.`,
-			source: { elementId: element.id }
-		});
-		return { ...element, id: next };
-	});
 }

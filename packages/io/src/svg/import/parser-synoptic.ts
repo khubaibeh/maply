@@ -4,7 +4,7 @@ import { Effect } from "effect";
 
 import { SvgEmptyDocumentError, SvgImageDecodeError, SvgParseError } from "../errors";
 import { SvgImportWarningType, type SvgImportWarning } from "../types";
-import { attributes, bounds, dedupe, fitCanvas, id, name, number, pathData, pathPoints, viewBox } from "./common";
+import { attributes, bounds, fitCanvas, id, name, number, pathData, pathPoints, viewBox } from "./common";
 
 const SYNOPTIC_CLASS = "gen-by-synoptic-designer";
 const SHAPE_FILL = "#000000";
@@ -70,12 +70,12 @@ function parseShapes(svg: string, requireSynopticMarker: boolean) {
 					new SvgImageDecodeError({ message: "SVG background image must declare numeric width and height." })
 				);
 
-			const elementId = attrs.get("id") ?? id();
+			const elementId = id();
 			const assetId = `asset-${elementId}`;
 
 			elements.push({
 				id: elementId,
-				name: "floorplan",
+				name: name(attrs, "image"),
 				type: "image",
 				x: Math.round((number(attrs, "x") ?? 0) - offset.x),
 				y: Math.round((number(attrs, "y") ?? 0) - offset.y),
@@ -111,7 +111,7 @@ function parseShapes(svg: string, requireSynopticMarker: boolean) {
 
 			if (width !== null && height !== null)
 				elements.push({
-					id: attrs.get("id") ?? id(),
+					id: id(),
 					name: name(attrs, "rect"),
 					type: "rect",
 					x: Math.round((number(attrs, "x") ?? 0) - offset.x),
@@ -132,7 +132,7 @@ function parseShapes(svg: string, requireSynopticMarker: boolean) {
 
 			if (cx !== null && cy !== null && r !== null)
 				elements.push({
-					id: attrs.get("id") ?? id(),
+					id: id(),
 					name: name(attrs, "circle"),
 					type: "circle",
 					cx: Math.round(cx - offset.x),
@@ -169,7 +169,7 @@ function parseShapes(svg: string, requireSynopticMarker: boolean) {
 			const ys = points.map((point) => point.y);
 
 			elements.push({
-				id: attrs.get("id") ?? id(),
+				id: id(),
 				name: name(attrs, "path"),
 				type: "path",
 				x: Math.round((points.length ? Math.min(...xs) : 0) - offset.x),
@@ -209,7 +209,7 @@ function parseShapes(svg: string, requireSynopticMarker: boolean) {
 			}));
 
 			elements.push({
-				id: attrs.get("id") ?? id(),
+				id: id(),
 				name: name(attrs, "polygon"),
 				type: "path",
 				x: Math.round(Math.min(...points.map((point) => point.x))),
@@ -236,7 +236,7 @@ function parseShapes(svg: string, requireSynopticMarker: boolean) {
 
 			if (text)
 				elements.push({
-					id: attrs.get("id") ?? id(),
+					id: id(),
 					name: name(attrs, "text"),
 					type: "text",
 					x: Math.round((number(attrs, "x") ?? 0) - offset.x),
@@ -272,7 +272,7 @@ function parseShapes(svg: string, requireSynopticMarker: boolean) {
 				message: "Dropped SVG elements outside the declared canvas."
 			});
 
-		project.elements = dedupe(kept, warnings);
+		project.elements = kept;
 
 		if (!project.elements.length)
 			return yield* Effect.fail(new SvgEmptyDocumentError({ message: "SVG contains no importable elements." }));
