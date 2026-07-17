@@ -103,7 +103,7 @@
 						>New Project</DropdownMenu.Item
 					>
 				</DropdownMenu.Group>
-				<DropdownMenu.Separator />
+				<DropdownMenu.Separator class="my-0.5" />
 				<DropdownMenu.Group>
 					<DropdownMenu.Label
 						class="text-muted-foreground px-2 py-1 text-[10px] font-semibold tracking-wide uppercase"
@@ -116,7 +116,7 @@
 						>Project</DropdownMenu.Item
 					>
 				</DropdownMenu.Group>
-				<DropdownMenu.Separator />
+				<DropdownMenu.Separator class="my-0.5" />
 				<DropdownMenu.Group>
 					<DropdownMenu.Label
 						class="text-muted-foreground px-2 py-1 text-[10px] font-semibold tracking-wide uppercase"
