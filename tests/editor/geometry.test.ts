@@ -2,6 +2,7 @@ import type { Canvas, CircleElement, ImageElement, PathElement, RectElement, Tex
 import {
 	clampElementToCanvas,
 	getElementBounds,
+	getElementsBounds,
 	getMinimumCanvasSize,
 	getPointBounds,
 	getShapeDragBox
@@ -265,6 +266,21 @@ describe("getElementBounds", () => {
 		const bounds = getElementBounds(rect({ width: -10, height: -20 }));
 		expect(bounds.width).toBe(-10);
 		expect(bounds.height).toBe(-20);
+	});
+});
+
+describe("getElementsBounds", () => {
+	it("returns null for no elements", () => {
+		expect(getElementsBounds([])).toBeNull();
+	});
+
+	it("encloses every selected element", () => {
+		const bounds = getElementsBounds([
+			rect({ x: 10, y: 20, width: 20, height: 30 }),
+			circle({ cx: 100, cy: 100, r: 10 })
+		]);
+
+		expect(bounds).toEqual({ x: 10, y: 20, width: 100, height: 90 });
 	});
 });
 

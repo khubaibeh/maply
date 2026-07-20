@@ -5,7 +5,13 @@ import { centerCamera, pan, resetCamera, resetZoom, setCamera, zoomIn, zoomOut }
 import { setColor, setFrame, setPosition, setSize } from "./canvas/commands";
 import { setCanvasResizing, setSpacePressed, setTool } from "./canvas/tool";
 import { circleFromDrag, imageFromDrag, pathFromPoints, rectFromDrag, textFromDrag } from "./elements/create";
-import { getElementBounds, getPathRenderTransform, getPointBounds, getShapeDragBox } from "./elements/geometry";
+import {
+	getElementBounds,
+	getElementsBounds,
+	getPathRenderTransform,
+	getPointBounds,
+	getShapeDragBox
+} from "./elements/geometry";
 import {
 	addElement,
 	clampElementsToCanvas,
@@ -113,6 +119,7 @@ export const Editor = {
 	geometry: {
 		shapeDragBox: getShapeDragBox,
 		elementBounds: getElementBounds,
+		elementsBounds: getElementsBounds,
 		pathPoints: toPathPoints,
 		pathBounds: getPointBounds,
 		pathRenderTransform: getPathRenderTransform,

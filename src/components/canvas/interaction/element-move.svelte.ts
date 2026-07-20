@@ -32,6 +32,7 @@ export function createElementMove() {
 		const svg = getSvgRoot(event.target);
 		if (!svg) return;
 		const toggleId = additive && wasSelected ? id : null;
+		const collapseId = !additive && wasSelected && selectedIds.length > 1 ? id : null;
 		const ids = wasSelected && selectedIds.length > 1 ? selectedIds : [id];
 
 		drag.start(event, {
@@ -44,7 +45,9 @@ export function createElementMove() {
 			},
 			onEnd: ({ cancelled, didMove }) => {
 				state.isDragging = false;
-				if (!cancelled && !didMove && toggleId) Editor.selection.select(toggleId, true);
+				if (cancelled || didMove) return;
+				if (toggleId) Editor.selection.select(toggleId, true);
+				else if (collapseId) Editor.selection.select(collapseId);
 			}
 		});
 	}

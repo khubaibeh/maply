@@ -7,6 +7,7 @@
 	import ElementOutline from "./ElementOutline.svelte";
 	import ElementShapes from "./ElementShapes.svelte";
 	import ImageCropOverlay from "./ImageCropOverlay.svelte";
+	import MultiSelectionOutline from "./MultiSelectionOutline.svelte";
 	import PathElementHandles from "./PathElementHandles.svelte";
 	import PathElementOutline from "./PathElementOutline.svelte";
 
@@ -43,6 +44,10 @@
 	stroke="var(--border)"
 	filter="url(#canvas-shadow)"
 />
+
+{#if selectedElements.length > 1}
+	<MultiSelectionOutline elements={selectedElements} />
+{/if}
 
 <CanvasResizeHandles />
 
