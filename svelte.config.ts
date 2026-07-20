@@ -3,8 +3,8 @@ import { fileURLToPath } from "node:url";
 import adapter from "@sveltejs/adapter-static";
 import type { Config } from "@sveltejs/kit";
 
-const appPath = fileURLToPath(new URL("./app", import.meta.url));
 const componentsPath = fileURLToPath(new URL("./src/components", import.meta.url));
+const editorPath = fileURLToPath(new URL("./editor", import.meta.url));
 
 const config: Config = {
 	compilerOptions: {
@@ -14,8 +14,8 @@ const config: Config = {
 	kit: {
 		adapter: adapter(),
 		alias: {
-			"@app": appPath,
-			"@components": componentsPath
+			"@components": componentsPath,
+			editor: editorPath
 		}
 	}
 };

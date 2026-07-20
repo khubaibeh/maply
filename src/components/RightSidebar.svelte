@@ -2,38 +2,40 @@
 	import { Badge } from "$lib/components/ui/badge";
 	import { Input } from "$lib/components/ui/input";
 	import { ScrollArea } from "$lib/components/ui/scroll-area";
-	import { App } from "@app";
+	import { Separator } from "$lib/components/ui/separator";
 	import ColorPicker from "@components/core/ColorPicker.svelte";
 	import ElementNameValidation from "@components/core/ElementNameValidation.svelte";
-	import ElementProperties from "@components/ElementProperties.svelte";
+	import ElementProperties from "@components/properties/ElementProperties.svelte";
+	import { Editor } from "editor";
 
 	let { width = 288 }: { width?: number } = $props();
-	const canvas = App.state.canvas;
-	const project = App.state.project;
+	const canvas = Editor.state.canvas;
+	const minCanvasSize = Editor.state.minimumCanvasSize;
+	const project = Editor.state.project;
 
 	function updateWidth(event: Event) {
 		const value = parseInt((event.target as HTMLInputElement).value, 10);
 		if (!Number.isNaN(value)) {
-			App.actions.canvas.setSize(value, $canvas.height);
-			App.actions.project.clampElementsToCanvas();
+			Editor.actions.canvas.setSize(value, $canvas.height);
+			Editor.element.clampAll();
 		}
 	}
 
 	function updateHeight(event: Event) {
 		const value = parseInt((event.target as HTMLInputElement).value, 10);
 		if (!Number.isNaN(value)) {
-			App.actions.canvas.setSize($canvas.width, value);
-			App.actions.project.clampElementsToCanvas();
+			Editor.actions.canvas.setSize($canvas.width, value);
+			Editor.element.clampAll();
 		}
 	}
 
 	function updateElementName(event: Event, id: string) {
 		const value = (event.target as HTMLInputElement).value.trim();
-		App.actions.project.renameElement(id, value);
+		Editor.element.rename(id, value);
 	}
 
 	function autofixElementName(id: string, suggestion: string) {
-		App.actions.project.renameElement(id, suggestion);
+		Editor.element.rename(id, suggestion);
 	}
 
 	const selectedElement = $derived(
@@ -42,7 +44,7 @@
 			: null
 	);
 	const selectedElementCount = $derived($project.selectedElementIds.length);
-	const elementNameValidations = $derived(App.validate.elementNames($project.elements));
+	const elementNameValidations = $derived(Editor.naming.validate($project.elements));
 	const selectedElementNameValidation = $derived(
 		selectedElement ? (elementNameValidations.get(selectedElement.id) ?? null) : null
 	);
@@ -52,7 +54,7 @@
 	<div class="px-4 pt-3 pb-2">
 		<span class="text-sidebar-foreground/80 text-sm font-bold">Properties</span>
 	</div>
-	<hr class="mx-4 opacity-50" />
+	<Separator class="mx-4 w-auto opacity-50" />
 	<ScrollArea class="min-h-0 flex-1 [mask-image:linear-gradient(to_bottom,black_calc(100%-2rem),transparent)]">
 		<div class="flex flex-col gap-4 p-3">
 			<div class="flex flex-col gap-x-2 gap-y-4">
@@ -63,7 +65,7 @@
 						<Input
 							id="canvas-width"
 							type="number"
-							min={1}
+							min={$minCanvasSize.width}
 							step={1}
 							value={$canvas.width}
 							onchange={updateWidth}
@@ -75,7 +77,7 @@
 						<Input
 							id="canvas-height"
 							type="number"
-							min={1}
+							min={$minCanvasSize.height}
 							step={1}
 							value={$canvas.height}
 							onchange={updateHeight}
@@ -87,7 +89,7 @@
 					id="canvas-color"
 					label="Color"
 					value={$canvas.color}
-					onChange={App.actions.canvas.setColor}
+					onChange={Editor.actions.canvas.setColor}
 				/>
 			</div>
 
@@ -102,7 +104,7 @@
 				</div>
 			{:else if selectedElement}
 				<div class="flex flex-col gap-x-2 gap-y-4">
-					<hr class="mx-4 my-2 opacity-50" />
+					<Separator class="mx-4 my-2 w-auto opacity-50" />
 					<span class="text-sidebar-foreground/30 text-sm font-semibold tracking-wide">Element</span>
 					<div class="flex flex-col gap-1">
 						<label for="{selectedElement.id}-name" class="text-sidebar-foreground/70 text-xs">Name</label>
@@ -132,16 +134,3 @@
 		</div>
 	</ScrollArea>
 </aside>
-
-<style>
-	:global(.no-spinner::-webkit-inner-spin-button),
-	:global(.no-spinner::-webkit-outer-spin-button) {
-		-webkit-appearance: none;
-		margin: 0;
-	}
-
-	:global(.no-spinner) {
-		-moz-appearance: textfield;
-		appearance: textfield;
-	}
-</style>

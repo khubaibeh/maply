@@ -1,8 +1,11 @@
 <script lang="ts">
-	import { App } from "@app";
-	import type { ImageElement, ResizeHandle } from "@app/types";
+	import { resizeAnchors } from "@components/canvas/interaction/handles";
+	import { createPointerDrag } from "@components/canvas/interaction/pointer-drag.svelte";
+	import { clientToSvgPoint, getSvgRoot } from "@components/canvas/interaction/svg";
 	import { canvasCursor, resizeCursor } from "@components/core/cursors";
-	import { onMount } from "svelte";
+	import type { ImageElement } from "@maply/model/types";
+	import { Editor } from "editor";
+	import type { ResizeHandle } from "editor/types";
 
 	interface Props {
 		element: ImageElement;
@@ -13,54 +16,38 @@
 
 	const HANDLE_SIZE_SCREEN = 10;
 	const HANDLE_OFFSET_SCREEN = 1;
-	const SELECTION_COLOR = "#2563eb";
-	const canvas = App.state.canvas;
+	const canvas = Editor.state.canvas;
 
-	let dragState = $state<
-		| {
-				kind: "pan";
-				svg: SVGSVGElement;
-				grabX: number;
-				grabY: number;
-		  }
-		| {
-				kind: "resize";
-				handle: ResizeHandle;
-				svg: SVGSVGElement;
-				grabX: number;
-				grabY: number;
-		  }
-		| null
-	>(null);
+	let dragKind: "pan" | "resize" | null = $state(null);
 
 	const handleSize = $derived(HANDLE_SIZE_SCREEN / $canvas.camera.zoom);
 	const handleOffset = $derived(HANDLE_OFFSET_SCREEN / $canvas.camera.zoom);
-	const panCursor = $derived(dragState?.kind === "pan" ? canvasCursor.grabbing : canvasCursor.hand);
+	const panCursor = $derived(dragKind === "pan" ? canvasCursor.grabbing : canvasCursor.hand);
 
-	const handles = $derived([
-		{ key: "nw" as const, x: element.x, y: element.y },
-		{ key: "n" as const, x: element.x + element.width / 2, y: element.y },
-		{ key: "ne" as const, x: element.x + element.width, y: element.y },
-		{ key: "e" as const, x: element.x + element.width, y: element.y + element.height / 2 },
-		{ key: "se" as const, x: element.x + element.width, y: element.y + element.height },
-		{ key: "s" as const, x: element.x + element.width / 2, y: element.y + element.height },
-		{ key: "sw" as const, x: element.x, y: element.y + element.height },
-		{ key: "w" as const, x: element.x, y: element.y + element.height / 2 }
-	]);
+	const handles = $derived(resizeAnchors(element));
+	const drag = createPointerDrag();
 
-	function getSvgRoot(target: EventTarget | null): SVGSVGElement | null {
-		if (!(target instanceof Element)) return null;
-		const node = target.closest("svg");
-		return node instanceof SVGSVGElement ? node : null;
-	}
-
-	function clientToSvgPoint(svg: SVGSVGElement, clientX: number, clientY: number) {
-		const ctm = svg.getScreenCTM();
-		if (!ctm) return null;
-		const point = svg.createSVGPoint();
-		point.x = clientX;
-		point.y = clientY;
-		return point.matrixTransform(ctm.inverse());
+	function beginDrag(
+		event: PointerEvent,
+		kind: "pan" | "resize",
+		svg: SVGSVGElement,
+		handle?: ResizeHandle,
+		source?: ImageElement
+	) {
+		const started = drag.start(event, {
+			project: (pointerEvent) => clientToSvgPoint(svg, pointerEvent.clientX, pointerEvent.clientY),
+			onMove: ({ delta, totalDelta }) => {
+				if (kind === "pan") {
+					Editor.image.translateCrop(element.id, delta.x, delta.y);
+				} else if (handle && source) {
+					Editor.image.resizeFrame(element.id, handle, totalDelta.x, totalDelta.y, undefined, source);
+				}
+			},
+			onEnd: () => {
+				dragKind = null;
+			}
+		});
+		if (started) dragKind = kind;
 	}
 
 	function startPan(event: PointerEvent) {
@@ -70,15 +57,7 @@
 
 		const svg = getSvgRoot(event.target);
 		if (!svg) return;
-		const svgPoint = clientToSvgPoint(svg, event.clientX, event.clientY);
-		if (!svgPoint) return;
-
-		dragState = {
-			kind: "pan",
-			svg,
-			grabX: svgPoint.x,
-			grabY: svgPoint.y
-		};
+		beginDrag(event, "pan", svg);
 	}
 
 	function startResize(event: PointerEvent, handle: ResizeHandle) {
@@ -88,52 +67,8 @@
 
 		const svg = getSvgRoot(event.target);
 		if (!svg) return;
-		const svgPoint = clientToSvgPoint(svg, event.clientX, event.clientY);
-		if (!svgPoint) return;
-
-		dragState = {
-			kind: "resize",
-			handle,
-			svg,
-			grabX: svgPoint.x,
-			grabY: svgPoint.y
-		};
+		beginDrag(event, "resize", svg, handle, { ...element });
 	}
-
-	onMount(() => {
-		function handlePointerMove(event: PointerEvent) {
-			if (!dragState) return;
-
-			const svgPoint = clientToSvgPoint(dragState.svg, event.clientX, event.clientY);
-			if (!svgPoint) return;
-
-			const dx = svgPoint.x - dragState.grabX;
-			const dy = svgPoint.y - dragState.grabY;
-
-			if (dragState.kind === "pan") {
-				App.actions.project.translateImageCrop(element.id, dx, dy);
-			} else {
-				App.actions.project.resizeImageFrame(element.id, dragState.handle, dx, dy);
-			}
-
-			dragState.grabX = svgPoint.x;
-			dragState.grabY = svgPoint.y;
-		}
-
-		function stopDragging() {
-			dragState = null;
-		}
-
-		window.addEventListener("pointermove", handlePointerMove);
-		window.addEventListener("pointerup", stopDragging);
-		window.addEventListener("pointercancel", stopDragging);
-
-		return () => {
-			window.removeEventListener("pointermove", handlePointerMove);
-			window.removeEventListener("pointerup", stopDragging);
-			window.removeEventListener("pointercancel", stopDragging);
-		};
-	});
 </script>
 
 <g class="image-crop-overlay">
@@ -184,7 +119,7 @@
 			width={element.width}
 			height={element.height}
 			fill="transparent"
-			stroke={SELECTION_COLOR}
+			stroke="var(--canvas-selection)"
 			stroke-width={2.5 / $canvas.camera.zoom}
 			onpointerdown={startPan}
 			style:cursor={panCursor}
@@ -200,8 +135,8 @@
 				width={handleSize}
 				height={handleSize}
 				rx={handleOffset}
-				fill="white"
-				stroke={SELECTION_COLOR}
+				fill="#eaeaea"
+				stroke="var(--canvas-selection)"
 				stroke-width={2 / $canvas.camera.zoom}
 				style:cursor={resizeCursor(handle.key)}
 				onpointerdown={(event) => startResize(event, handle.key)}

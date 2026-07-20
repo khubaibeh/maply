@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Button } from "$lib/components/ui/button";
 	import * as Tooltip from "$lib/components/ui/tooltip";
-	import type { ElementNameValidation } from "@app/types";
+	import type { ElementNameValidation } from "editor/types";
 	import Warning from "phosphor-svelte/lib/Warning";
 
 	let {

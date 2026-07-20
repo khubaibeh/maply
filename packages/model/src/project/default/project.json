@@ -1,0 +1,17 @@
+{
+	"id": "prod",
+	"name": "UntitledProject",
+	"canvas": {
+		"width": 800,
+		"height": 800,
+		"color": "#ffffff",
+		"x": 0,
+		"y": 0
+	},
+	"elements": [],
+	"camera": {
+		"x": -302.23521459629404,
+		"y": -92.0446555125453,
+		"zoom": 1.0327974561434663
+	}
+}

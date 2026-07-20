@@ -40,6 +40,8 @@
 	--sidebar-accent-foreground: oklch(0.218 0.008 223.9);
 	--sidebar-border: oklch(0.925 0.005 214.3);
 	--sidebar-ring: oklch(0.723 0.014 214.4);
+	--canvas-selection: oklch(0.546 0.245 262.881);
+	--canvas-handle-fill: oklch(1 0 0);
 }
 
 .dark {
@@ -74,6 +76,8 @@
 	--sidebar-accent-foreground: oklch(0.987 0.002 197.1);
 	--sidebar-border: oklch(1 0 0 / 10%);
 	--sidebar-ring: oklch(0.56 0.021 213.5);
+	--canvas-selection: oklch(0.707 0.165 254.624);
+	--canvas-handle-fill: oklch(0.218 0.008 223.9);
 }
 
 @theme inline {
@@ -124,9 +128,12 @@
 	* {
 		@apply border-border outline-ring/50;
 	}
+	html {
+		@apply font-sans;
+		cursor: var(--app-cursor-default, auto);
+	}
 	body {
 		@apply bg-background text-foreground;
-		cursor: var(--app-cursor-default, auto);
 	}
 	/* The UA stylesheet sets its own cursor on buttons, links, etc., which breaks
 	   inheritance and shows native cursors. Force everything to inherit so the
@@ -146,9 +153,6 @@
 	[data-canvas-element]:focus-visible {
 		outline: none;
 	}
-	html {
-		@apply font-sans;
-	}
 	.canvas-default-cursor,
 	.canvas-default-cursor * {
 		cursor: inherit !important;
@@ -161,6 +165,19 @@
 			border-color 0.25s ease-out,
 			color 0.25s ease-out;
 	} */
+}
+
+@layer utilities {
+	.no-spinner::-webkit-inner-spin-button,
+	.no-spinner::-webkit-outer-spin-button {
+		-webkit-appearance: none;
+		margin: 0;
+	}
+
+	.no-spinner {
+		-moz-appearance: textfield;
+		appearance: textfield;
+	}
 }
 
 @layer utilities {

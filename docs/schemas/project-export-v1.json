@@ -26,7 +26,7 @@
 		"project": {
 			"type": "object",
 			"additionalProperties": false,
-			"required": ["id", "name", "canvas", "elements", "importExportState"],
+			"required": ["id", "name", "canvas", "elements"],
 			"properties": {
 				"id": { "type": "string" },
 				"name": { "type": "string" },
@@ -35,8 +35,7 @@
 				"elements": {
 					"type": "array",
 					"items": { "$ref": "#/$defs/element" }
-				},
-				"importExportState": { "$ref": "#/$defs/importExportState" }
+				}
 			}
 		},
 		"canvas": {
@@ -59,15 +58,6 @@
 				"x": { "type": "number" },
 				"y": { "type": "number" },
 				"zoom": { "type": "number" }
-			}
-		},
-		"importExportState": {
-			"type": "object",
-			"additionalProperties": false,
-			"required": ["importsOpen", "elementsOpen"],
-			"properties": {
-				"importsOpen": { "type": "boolean" },
-				"elementsOpen": { "type": "boolean" }
 			}
 		},
 		"imageAsset": {

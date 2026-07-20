@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Input } from "$lib/components/ui/input";
-	import { App } from "@app";
+	import { parseHexColor } from "@maply/model";
 
 	let {
 		id,
@@ -32,7 +32,7 @@
 	});
 
 	function toSixDigitHex(color: string) {
-		const parsed = App.validate.hexColor(color);
+		const parsed = parseHexColor(color);
 		if (parsed === null) return "#ffffff";
 
 		if (parsed.length === 4) {
@@ -46,7 +46,7 @@
 	function updateDraft(nextDraft: string) {
 		draft = nextDraft.toUpperCase();
 
-		const color = App.validate.hexColor(draft);
+		const color = parseHexColor(draft);
 		if (color === null) {
 			invalid = draft.trim().length > 0;
 			return;
@@ -66,7 +66,7 @@
 	}
 
 	function restoreCommittedColor() {
-		if (App.validate.hexColor(draft) !== null) return;
+		if (parseHexColor(draft) !== null) return;
 		draft = lastCommittedColor;
 		invalid = false;
 	}
