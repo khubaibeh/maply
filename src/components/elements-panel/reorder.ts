@@ -17,3 +17,24 @@ export function reorderPreview<T extends { id: string }>(
 	result.splice(insertionIndex, 0, moved);
 	return result;
 }
+
+/** Returns the visual range spanning every selected row and a newly Shift-selected row. */
+export function getSelectionRange<T extends { id: string }>(
+	elements: readonly T[],
+	selectedIds: readonly string[],
+	targetId: string
+) {
+	const targetIndex = elements.findIndex((element) => element.id === targetId);
+	if (targetIndex === -1) return [];
+
+	const selected = new Set(selectedIds);
+	let first = targetIndex;
+	let last = targetIndex;
+	for (const [index, element] of elements.entries()) {
+		if (!selected.has(element.id)) continue;
+		first = Math.min(first, index);
+		last = Math.max(last, index);
+	}
+
+	return elements.slice(first, last + 1);
+}
