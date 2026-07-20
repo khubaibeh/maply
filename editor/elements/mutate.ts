@@ -263,6 +263,27 @@ export function updateElement(id: string, patch: Partial<Element>): void {
 	setProjectState(nextState, hint);
 }
 
+/** Applies one property patch to every identified element in a single state transition. */
+export function updateElements(ids: readonly string[], patch: Partial<Element>): void {
+	if (ids.length === 0) return;
+
+	const idSet = new Set(ids);
+	const canvas = get(canvasState);
+	const assets = get(imageAssetState);
+
+	updateProjectState(
+		(state) => ({
+			...state,
+			elements: state.elements.map((element) => {
+				if (!idSet.has(element.id)) return element;
+				const clamped = clampElementToCanvas({ ...element, ...patch } as Element, canvas);
+				return updateImageTransform(element, clamped, patch, assets);
+			})
+		}),
+		"rescan"
+	);
+}
+
 /** Raw name commit — callers may write invalid or duplicate names; validation is advisory. */
 export function renameElement(id: string, name: string): void {
 	updateProjectState(

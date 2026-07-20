@@ -14,6 +14,7 @@ import {
 	translateElement,
 	translateElements,
 	updateElement,
+	updateElements,
 	updatePathVertex,
 	renameElement
 } from "./elements/mutate";
@@ -97,6 +98,7 @@ export const Editor = {
 		setPosition: setElementPosition,
 		resize: resizeElementByHandle,
 		update: updateElement,
+		updateAll: updateElements,
 		rename: renameElement,
 		updatePathVertex,
 		clampAll: clampElementsToCanvas

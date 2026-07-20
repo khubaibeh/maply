@@ -6,6 +6,8 @@
 	import ColorPicker from "@components/core/ColorPicker.svelte";
 	import ElementNameValidation from "@components/core/ElementNameValidation.svelte";
 	import ElementProperties from "@components/properties/ElementProperties.svelte";
+	import { canEditSharedProperties, sharedPropertySelectionLimit } from "@components/properties/shared-properties";
+	import SharedProperties from "@components/properties/SharedProperties.svelte";
 	import { Editor } from "editor";
 
 	let { width = 288 }: { width?: number } = $props();
@@ -44,6 +46,9 @@
 			: null
 	);
 	const selectedElementCount = $derived($project.selectedElementIds.length);
+	const selectedElements = $derived(
+		$project.elements.filter((element) => $project.selectedElementIds.includes(element.id))
+	);
 	const elementNameValidations = $derived(Editor.naming.validate($project.elements));
 	const selectedElementNameValidation = $derived(
 		selectedElement ? (elementNameValidations.get(selectedElement.id) ?? null) : null
@@ -100,7 +105,13 @@
 					<div class="flex items-center gap-2">
 						<Badge variant="secondary">{selectedElementCount} selected</Badge>
 					</div>
-					<p class="text-sidebar-foreground/75 text-sm leading-6">Multi element support coming soon</p>
+					{#if canEditSharedProperties(selectedElementCount)}
+						<SharedProperties elements={selectedElements} />
+					{:else}
+						<p class="text-sidebar-foreground/75 text-sm leading-6">
+							Multi element support for selections over {sharedPropertySelectionLimit} elements is coming soon.
+						</p>
+					{/if}
 				</div>
 			{:else if selectedElement}
 				<div class="flex flex-col gap-x-2 gap-y-4">
