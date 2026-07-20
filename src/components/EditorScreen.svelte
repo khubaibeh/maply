@@ -41,12 +41,13 @@
 			}
 
 			if (!isEditingText(event)) {
-				const selectedId = $project.selectedElementIds.length === 1 ? $project.selectedElementId : null;
+				const selectedIds = $project.selectedElementIds;
 				const delta = getArrowDelta(event.key, event.shiftKey ? 10 : 1);
 
-				if (selectedId && delta) {
+				if (selectedIds.length > 0 && delta) {
 					event.preventDefault();
-					Editor.element.translate(selectedId, delta.dx, delta.dy);
+					if (selectedIds.length === 1) Editor.element.translate(selectedIds[0], delta.dx, delta.dy);
+					else Editor.element.translateAll(selectedIds, delta.dx, delta.dy);
 					return;
 				}
 			}
