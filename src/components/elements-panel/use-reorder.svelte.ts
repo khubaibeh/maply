@@ -31,7 +31,6 @@ export function createElementReorder({ list, viewport }: ReorderOptions) {
 	let pending: PendingState | null = null;
 	let frame: number | null = null;
 	let velocity = 0;
-	let suppressClick = false;
 
 	function preview(elements: Element[]) {
 		return reorderPreview(elements, active?.elementId ?? null, active?.insertionIndex ?? 0);
@@ -102,7 +101,6 @@ export function createElementReorder({ list, viewport }: ReorderOptions) {
 		if (!pending) return;
 		const next = pending;
 		pending = null;
-		suppressClick = true;
 		active = {
 			elementId: next.elementId,
 			fromIndex: next.fromIndex,
@@ -140,7 +138,6 @@ export function createElementReorder({ list, viewport }: ReorderOptions) {
 
 	function cancel() {
 		clearPending();
-		suppressClick = false;
 		active = null;
 		removeActiveListeners();
 	}
@@ -159,14 +156,23 @@ export function createElementReorder({ list, viewport }: ReorderOptions) {
 		window.addEventListener("pointercancel", clearPending);
 	}
 
-	function select(event: MouseEvent, elementId: string) {
-		if (suppressClick) {
-			event.preventDefault();
-			event.stopPropagation();
-			suppressClick = false;
-			return;
+	function select(event: PointerEvent, elementId: string) {
+		if (event.button !== 0 || event.target instanceof HTMLInputElement) return;
+		if (event.shiftKey && project.current.selectedElementIds.length > 0) {
+			const rows = [...project.current.elements].reverse();
+			const anchorIndex = rows.findIndex((element) => element.id === project.current.selectedElementIds[0]);
+			const targetIndex = rows.findIndex((element) => element.id === elementId);
+			if (anchorIndex !== -1 && targetIndex !== -1) {
+				const selected = rows.slice(Math.min(anchorIndex, targetIndex), Math.max(anchorIndex, targetIndex) + 1);
+				Editor.selection.selectMany(
+					anchorIndex > targetIndex
+						? selected.reverse().map((element) => element.id)
+						: selected.map((element) => element.id)
+				);
+				return;
+			}
 		}
-		Editor.selection.select(elementId, event.ctrlKey || event.metaKey);
+		Editor.selection.select(elementId, event.ctrlKey || event.metaKey || event.shiftKey);
 	}
 
 	onDestroy(cancel);

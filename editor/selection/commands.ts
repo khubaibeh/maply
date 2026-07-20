@@ -42,6 +42,22 @@ export function select(id: string | null, additive = false): void {
 	}, "preserve");
 }
 
+/** Replaces the current selection with the supplied element IDs. */
+export function selectMany(ids: readonly string[]): void {
+	updateProjectState((state) => {
+		const next = selection(ids);
+		return {
+			...state,
+			...next,
+			hoveredElementId: null,
+			cropEditingElementId:
+				state.cropEditingElementId && next.selectedElementIds.includes(state.cropEditingElementId)
+					? state.cropEditingElementId
+					: null
+		};
+	}, "preserve");
+}
+
 /** Selects every current element. */
 export function selectAll(): void {
 	updateProjectState(

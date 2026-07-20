@@ -32,7 +32,7 @@ import { exportProject } from "./project/export";
 import { importProject } from "./project/import";
 import { exportSvg, importSvg } from "./project/svg";
 import { copy, getClipboard, paste } from "./selection/clipboard";
-import { select, selectAll, setHover, toggleCrop } from "./selection/commands";
+import { select, selectAll, selectMany, setHover, toggleCrop } from "./selection/commands";
 import { deleteElements } from "./selection/delete";
 import { moveBackward, moveForward, moveToBack, moveToFront, reorder } from "./selection/ordering";
 import { loadEditorSession } from "./session/load";
@@ -102,7 +102,7 @@ export const Editor = {
 		clampAll: clampElementsToCanvas
 	},
 
-	selection: { select, selectAll, setHover, toggleCrop },
+	selection: { select, selectAll, selectMany, setHover, toggleCrop },
 
 	naming: { validate: validateElementNames, autofix: autofixElementName },
 

@@ -24,7 +24,7 @@
 		frontmost: boolean;
 		backmost: boolean;
 		onReorderStart: (event: PointerEvent, id: string, index: number) => void;
-		onSelect: (event: MouseEvent, id: string) => void;
+		onSelect: (event: PointerEvent, id: string) => void;
 	};
 
 	let { element, index, validation, selected, active, frontmost, backmost, onReorderStart, onSelect }: Props =
@@ -81,8 +81,10 @@
 			<button
 				type="button"
 				class="flex min-w-0 items-center gap-2 px-2 py-1.5 text-left text-xs outline-none select-none"
-				onpointerdown={(event) => onReorderStart(event, element.id, index)}
-				onclick={(event) => onSelect(event, element.id)}
+				onpointerdown={(event) => {
+					onSelect(event, element.id);
+					onReorderStart(event, element.id, index);
+				}}
 				ondblclick={edit}
 			>
 				<Icon class="size-3 shrink-0 {invalid ? 'text-destructive' : 'text-muted-foreground'}" />
