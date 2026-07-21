@@ -97,7 +97,7 @@
 							if (event.key === "Enter") save();
 							if (event.key === "Escape") editing = false;
 						}}
-						class="h-4 min-h-0 min-w-0 flex-1 border-0 bg-transparent p-0 text-xs leading-4 shadow-none transition-none focus-visible:ring-0 focus-visible:ring-offset-0"
+						class="h-4 min-h-0 min-w-0 flex-1 rounded-none! border-0 bg-transparent p-0 text-xs leading-4 shadow-none transition-none focus-visible:ring-0 focus-visible:ring-offset-0"
 						style="font: inherit;"
 					/>
 				{:else}
