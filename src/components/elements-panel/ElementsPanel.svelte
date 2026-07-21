@@ -17,7 +17,7 @@
 
 <div class="flex min-h-0 flex-1 flex-col pb-6">
 	<div class="px-4 pt-3 pb-2"><span class="text-sidebar-foreground/80 text-sm font-bold">Elements</span></div>
-	<Separator class="mx-4 w-auto opacity-50" />
+	<Separator class="mx-3 opacity-50 data-[orientation=horizontal]:w-auto" />
 	<ContextMenu.Root bind:open={backgroundOpen}>
 		<ContextMenu.Trigger class="contents">
 			<ScrollArea
