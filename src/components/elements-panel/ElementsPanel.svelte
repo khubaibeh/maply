@@ -47,7 +47,7 @@
 <div class="flex min-h-0 flex-1 flex-col pb-6">
 	<div class="px-4 pt-3 pb-2"><span class="text-sidebar-foreground/80 text-sm font-bold">Elements</span></div>
 	<Separator class="mx-3 opacity-50 data-[orientation=horizontal]:w-auto" />
-	<div class="relative m-2">
+	<div class="relative m-2 mb-0">
 		<MagnifyingGlassIcon
 			class="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-3 -translate-y-1/2"
 		/>
