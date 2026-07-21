@@ -1,5 +1,6 @@
 import type { Point } from "@maply/model/types";
 import { Editor } from "editor";
+import type { SelectionOrder } from "editor/types";
 import { fromStore } from "svelte/store";
 
 /** Owns canvas context-menu targeting, availability, and command dispatch. */
@@ -51,12 +52,13 @@ export function createCanvasContextMenu() {
 		state.open = false;
 	}
 
-	function order(action: "front" | "forward" | "backward" | "back") {
-		if (!state.elementId || project.current.selectedElementIds.length > 1) return;
-		if (action === "front") Editor.element.moveToFront(state.elementId);
-		else if (action === "forward") Editor.element.moveForward(state.elementId);
-		else if (action === "backward") Editor.element.moveBackward(state.elementId);
-		else Editor.element.moveToBack(state.elementId);
+	function order(action: SelectionOrder) {
+		const ids = orderingIds();
+		if (ids.length === 0) return;
+		if (action === "front") Editor.element.moveToFront(ids);
+		else if (action === "forward") Editor.element.moveForward(ids);
+		else if (action === "backward") Editor.element.moveBackward(ids);
+		else Editor.element.moveToBack(ids);
 		state.open = false;
 	}
 
@@ -71,8 +73,15 @@ export function createCanvasContextMenu() {
 		state.open = false;
 	}
 
-	function layerIndex() {
-		return state.elementId ? project.current.elements.findIndex((element) => element.id === state.elementId) : -1;
+	function orderingIds() {
+		if (!state.elementId) return [];
+		return project.current.selectedElementIds.includes(state.elementId)
+			? project.current.selectedElementIds
+			: [state.elementId];
+	}
+
+	function canOrder(action: SelectionOrder) {
+		return Editor.element.canReorder(project.current.elements, orderingIds(), action);
 	}
 
 	return {
@@ -88,7 +97,9 @@ export function createCanvasContextMenu() {
 		paste,
 		selectAll,
 		hasClipboardElement: () => Editor.clipboard.get().length > 0,
-		isFrontmost: () => layerIndex() === project.current.elements.length - 1,
-		isBackmost: () => layerIndex() === 0
+		canBringToFront: () => canOrder("front"),
+		canBringForward: () => canOrder("forward"),
+		canSendBackward: () => canOrder("backward"),
+		canSendToBack: () => canOrder("back")
 	};
 }

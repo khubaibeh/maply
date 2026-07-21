@@ -2,14 +2,25 @@
 	import * as ContextMenu from "$lib/components/ui/context-menu";
 	import type { Element } from "@maply/model/types";
 	import { Editor } from "editor";
+	import type { SelectionOrder } from "editor/types";
 
-	let {
-		element,
-		frontmost,
-		backmost,
-		close
-	}: { element: Element; frontmost: boolean; backmost: boolean; close: () => void } = $props();
+	let { element, close }: { element: Element; close: () => void } = $props();
 	const project = Editor.state.project;
+	const orderingIds = $derived(
+		$project.selectedElementIds.includes(element.id) ? $project.selectedElementIds : [element.id]
+	);
+
+	function canOrder(action: SelectionOrder) {
+		return Editor.element.canReorder($project.elements, orderingIds, action);
+	}
+
+	function order(action: SelectionOrder) {
+		if (action === "front") Editor.element.moveToFront(orderingIds);
+		else if (action === "forward") Editor.element.moveForward(orderingIds);
+		else if (action === "backward") Editor.element.moveBackward(orderingIds);
+		else Editor.element.moveToBack(orderingIds);
+		close();
+	}
 </script>
 
 <ContextMenu.Content class="min-w-40 rounded-xl p-1">
@@ -39,35 +50,23 @@
 	<ContextMenu.Group>
 		<ContextMenu.Item
 			class="rounded-lg px-2.5 py-1.5 text-xs"
-			disabled={frontmost}
-			onclick={() => {
-				Editor.element.moveToFront(element.id);
-				close();
-			}}>Bring to front</ContextMenu.Item
+			disabled={!canOrder("front")}
+			onclick={() => order("front")}>Bring to front</ContextMenu.Item
 		>
 		<ContextMenu.Item
 			class="rounded-lg px-2.5 py-1.5 text-xs"
-			disabled={frontmost}
-			onclick={() => {
-				Editor.element.moveForward(element.id);
-				close();
-			}}>Bring forward</ContextMenu.Item
+			disabled={!canOrder("forward")}
+			onclick={() => order("forward")}>Bring forward</ContextMenu.Item
 		>
 		<ContextMenu.Item
 			class="rounded-lg px-2.5 py-1.5 text-xs"
-			disabled={backmost}
-			onclick={() => {
-				Editor.element.moveBackward(element.id);
-				close();
-			}}>Send backward</ContextMenu.Item
+			disabled={!canOrder("backward")}
+			onclick={() => order("backward")}>Send backward</ContextMenu.Item
 		>
 		<ContextMenu.Item
 			class="rounded-lg px-2.5 py-1.5 text-xs"
-			disabled={backmost}
-			onclick={() => {
-				Editor.element.moveToBack(element.id);
-				close();
-			}}>Send to back</ContextMenu.Item
+			disabled={!canOrder("back")}
+			onclick={() => order("back")}>Send to back</ContextMenu.Item
 		>
 	</ContextMenu.Group>
 	<ContextMenu.Separator />

@@ -71,8 +71,10 @@
 			target={canvasArea.contextMenu.state.target}
 			hasClipboardElement={canvasArea.contextMenu.hasClipboardElement()}
 			hasElements={$project.elements.length > 0}
-			contextMenuElementIsFrontmost={canvasArea.contextMenu.isFrontmost()}
-			contextMenuElementIsBackmost={canvasArea.contextMenu.isBackmost()}
+			canBringToFront={canvasArea.contextMenu.canBringToFront()}
+			canBringForward={canvasArea.contextMenu.canBringForward()}
+			canSendBackward={canvasArea.contextMenu.canSendBackward()}
+			canSendToBack={canvasArea.contextMenu.canSendToBack()}
 			onCopy={canvasArea.contextMenu.copy}
 			onBringToFront={canvasArea.contextMenu.bringToFront}
 			onBringForward={canvasArea.contextMenu.bringForward}

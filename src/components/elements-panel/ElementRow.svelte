@@ -21,14 +21,11 @@
 		validation?: NameValidation;
 		selected: boolean;
 		active: boolean;
-		frontmost: boolean;
-		backmost: boolean;
 		onReorderStart: (event: PointerEvent, id: string, index: number) => void;
 		onSelect: (event: PointerEvent, id: string) => void;
 	};
 
-	let { element, index, validation, selected, active, frontmost, backmost, onReorderStart, onSelect }: Props =
-		$props();
+	let { element, index, validation, selected, active, onReorderStart, onSelect }: Props = $props();
 	let editing = $state(false);
 	let name = $state("");
 	let input: HTMLInputElement | null = $state(null);
@@ -126,5 +123,5 @@
 			>
 		</div>
 	</ContextMenu.Trigger>
-	<ElementRowContextMenu {element} {frontmost} {backmost} close={() => (menuOpen = false)} />
+	<ElementRowContextMenu {element} close={() => (menuOpen = false)} />
 </ContextMenu.Root>

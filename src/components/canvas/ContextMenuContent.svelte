@@ -6,8 +6,10 @@
 	let {
 		target,
 		hasClipboardElement,
-		contextMenuElementIsFrontmost,
-		contextMenuElementIsBackmost,
+		canBringToFront,
+		canBringForward,
+		canSendBackward,
+		canSendToBack,
 		onCopy,
 		onBringToFront,
 		onBringForward,
@@ -21,8 +23,10 @@
 		target: "element" | "empty";
 		hasClipboardElement: boolean;
 		hasElements: boolean;
-		contextMenuElementIsFrontmost: boolean;
-		contextMenuElementIsBackmost: boolean;
+		canBringToFront: boolean;
+		canBringForward: boolean;
+		canSendBackward: boolean;
+		canSendToBack: boolean;
 		onCopy: () => void;
 		onBringToFront: () => void;
 		onBringForward: () => void;
@@ -39,18 +43,16 @@
 	<ContextMenu.Separator />
 	<ContextMenu.Item class={itemClass} onclick={onCopy}>Copy</ContextMenu.Item>
 	<ContextMenu.Separator />
-	<ContextMenu.Item class={itemClass} disabled={contextMenuElementIsFrontmost} onclick={onBringToFront}>
+	<ContextMenu.Item class={itemClass} disabled={!canBringToFront} onclick={onBringToFront}>
 		Bring to front
 	</ContextMenu.Item>
-	<ContextMenu.Item class={itemClass} disabled={contextMenuElementIsFrontmost} onclick={onBringForward}
+	<ContextMenu.Item class={itemClass} disabled={!canBringForward} onclick={onBringForward}
 		>Bring forward</ContextMenu.Item
 	>
-	<ContextMenu.Item class={itemClass} disabled={contextMenuElementIsBackmost} onclick={onSendBackward}
+	<ContextMenu.Item class={itemClass} disabled={!canSendBackward} onclick={onSendBackward}
 		>Send backward</ContextMenu.Item
 	>
-	<ContextMenu.Item class={itemClass} disabled={contextMenuElementIsBackmost} onclick={onSendToBack}
-		>Send to back</ContextMenu.Item
-	>
+	<ContextMenu.Item class={itemClass} disabled={!canSendToBack} onclick={onSendToBack}>Send to back</ContextMenu.Item>
 	<ContextMenu.Separator />
 	<ContextMenu.Item class={itemClass} variant="destructive" onclick={onDelete}>Delete</ContextMenu.Item>
 {:else}

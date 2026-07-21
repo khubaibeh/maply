@@ -90,15 +90,12 @@
 					}}
 				>
 					{#each visibleElements as element, index (element.id)}
-						{@const projectIndex = $project.elements.findIndex((entry) => entry.id === element.id)}
 						<ElementRow
 							{element}
 							{index}
 							validation={validations.get(element.id)}
 							selected={$project.selectedElementIds.includes(element.id)}
 							active={reorder.isActive(element.id)}
-							frontmost={projectIndex === $project.elements.length - 1}
-							backmost={projectIndex === 0}
 							onReorderStart={(event, id, rowIndex) => {
 								if (!isSearching) reorder.start(event, id, rowIndex);
 							}}
