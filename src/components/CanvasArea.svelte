@@ -5,6 +5,8 @@
 	import ContextMenuContent from "@components/canvas/ContextMenuContent.svelte";
 	import DraftOverlay from "@components/canvas/DraftOverlay.svelte";
 	import ImageCropToolbar from "@components/canvas/ImageCropToolbar.svelte";
+	import MarqueeSelectionOverlay from "@components/canvas/MarqueeSelectionOverlay.svelte";
+	import MarqueeSelectionPreview from "@components/canvas/MarqueeSelectionPreview.svelte";
 	import { createCanvasAreaState } from "@components/core/canvas-area/area.state.svelte";
 	import { canvasCursor } from "@components/core/cursors";
 	import { Editor } from "editor";
@@ -40,6 +42,8 @@
 						camera={canvasArea.camera()}
 					/>
 					<Artboard />
+					<MarqueeSelectionPreview elements={canvasArea.marquee.state.candidates} />
+					<MarqueeSelectionOverlay box={canvasArea.marquee.state.box} />
 					<DraftOverlay
 						shapePreview={canvasArea.shapePreview()}
 						pathSession={canvasArea.path.state.session}
