@@ -28,4 +28,14 @@ describe("elements panel reorder", () => {
 			["polygon-2", "vertical", "polygon", "circle", "horizontal"]
 		);
 	});
+
+	it("extends Shift selection across visible rows only", () => {
+		const visibleRows = [{ id: "front" }, { id: "matching" }, { id: "back" }];
+
+		expect(getSelectionRange(visibleRows, ["front", "hidden"], "back").map((row) => row.id)).toEqual([
+			"front",
+			"matching",
+			"back"
+		]);
+	});
 });

@@ -156,10 +156,9 @@ export function createElementReorder({ list, viewport }: ReorderOptions) {
 		window.addEventListener("pointercancel", clearPending);
 	}
 
-	function select(event: PointerEvent, elementId: string) {
+	function select(event: PointerEvent, elementId: string, rows: readonly Element[]) {
 		if (event.button !== 0 || event.target instanceof HTMLInputElement) return;
 		if (event.shiftKey && project.current.selectedElementIds.length > 0) {
-			const rows = [...project.current.elements].reverse();
 			const selected = getSelectionRange(rows, project.current.selectedElementIds, elementId);
 			if (selected.length > 0) {
 				Editor.selection.selectMany(selected.map((element) => element.id));
