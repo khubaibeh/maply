@@ -55,7 +55,9 @@
 	}
 
 	function save() {
-		Editor.element.rename(element.id, name.trim());
+		const nextName = name.trim();
+		if (nextName) Editor.element.rename(element.id, nextName);
+		else name = element.name;
 		editing = false;
 	}
 </script>

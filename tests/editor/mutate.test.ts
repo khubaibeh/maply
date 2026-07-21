@@ -1,6 +1,7 @@
 import type { Element, ImageElement, RectElement } from "@maply/model/types";
 import {
 	resizeElementByHandle,
+	renameElement,
 	translateElement,
 	translateElements,
 	updateElement,
@@ -68,6 +69,15 @@ describe("translateElement", () => {
 });
 
 describe("updateElements", () => {
+	it("does not write blank names", () => {
+		setFixture([rect("a", 10, 20), rect("b", 30, 40)]);
+
+		updateElements(["a", "b"], { name: "   " });
+		renameElement("a", "");
+
+		expect(get(projectState).elements.map((element) => element.name)).toEqual(["a", "b"]);
+	});
+
 	it("updates multiple elements in one state transition", () => {
 		setFixture([rect("a", 10, 20), rect("b", 30, 40)]);
 

@@ -32,7 +32,12 @@
 	}
 
 	function updateElementName(event: Event, id: string) {
-		const value = (event.target as HTMLInputElement).value.trim();
+		const input = event.target as HTMLInputElement;
+		const value = input.value.trim();
+		if (!value) {
+			input.value = $project.elements.find((element) => element.id === id)?.name ?? "";
+			return;
+		}
 		Editor.element.rename(id, value);
 	}
 

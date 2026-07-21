@@ -10,10 +10,17 @@
 	let { elements }: { elements: readonly Element[] } = $props();
 	const canvas = Editor.state.canvas;
 	const properties = $derived(getSharedElementProperties(elements));
-	const numericProperties = $derived(properties.filter((property) => property !== "fill"));
+	const numericProperties = $derived(properties.filter((property) => property !== "name" && property !== "fill"));
+	const sharedName = $derived.by(() => {
+		const first = elements[0];
+		if (!first || elements.some((element) => element.name !== first.name)) return "";
+		return first.name;
+	});
 
 	function label(property: SharedElementProperty) {
 		switch (property) {
+			case "name":
+				return "Name";
 			case "x":
 				return "X";
 			case "y":
@@ -37,6 +44,8 @@
 
 	function value(element: Element, property: SharedElementProperty): number | string | null {
 		switch (property) {
+			case "name":
+				return element.name;
 			case "x":
 				return element.type === "circle" ? null : element.x - $canvas.x;
 			case "y":
@@ -104,8 +113,22 @@
 			{ fill }
 		);
 	}
+
+	function updateName(name: string) {
+		const trimmedName = name.trim();
+		if (!trimmedName) return false;
+
+		Editor.element.updateAll(
+			elements.map((element) => element.id),
+			{ name: trimmedName }
+		);
+		return true;
+	}
 </script>
 
+{#if properties.includes("name")}
+	<PropertyField id="shared-name" label="Name" value={sharedName} type="text" onChange={updateName} />
+{/if}
 {#if numericProperties.length > 0}
 	<div class="grid grid-cols-2 gap-2">
 		{#each numericProperties as property (property)}

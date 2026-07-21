@@ -2,7 +2,7 @@ import type { Element, ElementType } from "@maply/model/types";
 
 /** A property that can safely apply to every element in a multi-selection. */
 export type SharedElementProperty =
-	"x" | "y" | "width" | "height" | "centerX" | "centerY" | "radius" | "fontSize" | "fill";
+	"name" | "x" | "y" | "width" | "height" | "centerX" | "centerY" | "radius" | "fontSize" | "fill";
 
 type SelectedElement = Pick<Element, "type">;
 
@@ -10,18 +10,20 @@ type SelectedElement = Pick<Element, "type">;
 export const sharedPropertySelectionLimit = 100;
 
 const propertyMasks: Readonly<Record<SharedElementProperty, number>> = {
-	x: 1 << 0,
-	y: 1 << 1,
-	width: 1 << 2,
-	height: 1 << 3,
-	centerX: 1 << 4,
-	centerY: 1 << 5,
-	radius: 1 << 6,
-	fontSize: 1 << 7,
-	fill: 1 << 8
+	name: 1 << 0,
+	x: 1 << 1,
+	y: 1 << 2,
+	width: 1 << 3,
+	height: 1 << 4,
+	centerX: 1 << 5,
+	centerY: 1 << 6,
+	radius: 1 << 7,
+	fontSize: 1 << 8,
+	fill: 1 << 9
 };
 
 const propertyOrder: readonly SharedElementProperty[] = [
+	"name",
 	"x",
 	"y",
 	"width",
@@ -34,17 +36,25 @@ const propertyOrder: readonly SharedElementProperty[] = [
 ];
 
 const propertiesByType: Readonly<Record<ElementType, number>> = {
-	rect: propertyMasks.x | propertyMasks.y | propertyMasks.width | propertyMasks.height | propertyMasks.fill,
-	circle: propertyMasks.centerX | propertyMasks.centerY | propertyMasks.radius | propertyMasks.fill,
-	path: propertyMasks.x | propertyMasks.y | propertyMasks.fill,
+	rect:
+		propertyMasks.name |
+		propertyMasks.x |
+		propertyMasks.y |
+		propertyMasks.width |
+		propertyMasks.height |
+		propertyMasks.fill,
+	circle:
+		propertyMasks.name | propertyMasks.centerX | propertyMasks.centerY | propertyMasks.radius | propertyMasks.fill,
+	path: propertyMasks.name | propertyMasks.x | propertyMasks.y | propertyMasks.fill,
 	text:
+		propertyMasks.name |
 		propertyMasks.x |
 		propertyMasks.y |
 		propertyMasks.width |
 		propertyMasks.height |
 		propertyMasks.fontSize |
 		propertyMasks.fill,
-	image: propertyMasks.x | propertyMasks.y | propertyMasks.width | propertyMasks.height
+	image: propertyMasks.name | propertyMasks.x | propertyMasks.y | propertyMasks.width | propertyMasks.height
 };
 
 /** Returns properties supported by every selected element type in a stable display order. */

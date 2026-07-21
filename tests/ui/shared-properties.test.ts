@@ -56,7 +56,7 @@ describe("getSharedElementProperties", () => {
 		const rect = { type: "rect" } satisfies { type: ElementType };
 		const elements = Array.from({ length: 1_000 }, () => rect);
 
-		expect(getSharedElementProperties(elements)).toEqual(["x", "y", "width", "height", "fill"]);
+		expect(getSharedElementProperties(elements)).toEqual(["name", "x", "y", "width", "height", "fill"]);
 	});
 
 	it("limits batch property editing to one hundred selected elements", () => {
@@ -66,6 +66,6 @@ describe("getSharedElementProperties", () => {
 	});
 
 	it.each(cases)("intersects $types", ({ types, expected }) => {
-		expect(getSharedElementProperties(types.map((type) => ({ type })))).toEqual(expected);
+		expect(getSharedElementProperties(types.map((type) => ({ type })))).toEqual(["name", ...expected]);
 	});
 });

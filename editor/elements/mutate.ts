@@ -239,11 +239,20 @@ function hasImageRectPatch(patch: Partial<Element>): boolean {
 	return "imageX" in patch || "imageY" in patch || "imageWidth" in patch || "imageHeight" in patch;
 }
 
+function normalizeNamePatch(patch: Partial<Element>): Partial<Element> {
+	if (patch.name === undefined) return patch;
+
+	const { name, ...rest } = patch;
+	const trimmedName = name.trim();
+	return trimmedName ? { ...rest, name: trimmedName } : rest;
+}
+
 /** Applies an element property patch and clamps the resulting element. */
 export function updateElement(id: string, patch: Partial<Element>): void {
 	const state = get(projectState);
 	const canvas = get(canvasState);
 	const assets = get(imageAssetState);
+	const normalizedPatch = normalizeNamePatch(patch);
 	let beforeChange: Element | null = null;
 	let afterChange: Element | null = null;
 
@@ -251,8 +260,8 @@ export function updateElement(id: string, patch: Partial<Element>): void {
 		...state,
 		elements: state.elements.map((element) => {
 			if (element.id !== id) return element;
-			const clamped = clampElementToCanvas({ ...element, ...patch } as Element, canvas);
-			const next = updateImageTransform(element, clamped, patch, assets);
+			const clamped = clampElementToCanvas({ ...element, ...normalizedPatch } as Element, canvas);
+			const next = updateImageTransform(element, clamped, normalizedPatch, assets);
 			beforeChange = element;
 			afterChange = next;
 			return next;
@@ -270,26 +279,30 @@ export function updateElements(ids: readonly string[], patch: Partial<Element>):
 	const idSet = new Set(ids);
 	const canvas = get(canvasState);
 	const assets = get(imageAssetState);
+	const normalizedPatch = normalizeNamePatch(patch);
 
 	updateProjectState(
 		(state) => ({
 			...state,
 			elements: state.elements.map((element) => {
 				if (!idSet.has(element.id)) return element;
-				const clamped = clampElementToCanvas({ ...element, ...patch } as Element, canvas);
-				return updateImageTransform(element, clamped, patch, assets);
+				const clamped = clampElementToCanvas({ ...element, ...normalizedPatch } as Element, canvas);
+				return updateImageTransform(element, clamped, normalizedPatch, assets);
 			})
 		}),
 		"rescan"
 	);
 }
 
-/** Raw name commit — callers may write invalid or duplicate names; validation is advisory. */
+/** Commits a nonblank name; selector-safety and duplicate validation remains advisory. */
 export function renameElement(id: string, name: string): void {
+	const trimmedName = name.trim();
+	if (!trimmedName) return;
+
 	updateProjectState(
 		(state) => ({
 			...state,
-			elements: state.elements.map((element) => (element.id === id ? { ...element, name } : element))
+			elements: state.elements.map((element) => (element.id === id ? { ...element, name: trimmedName } : element))
 		}),
 		"preserve"
 	);
