@@ -23,7 +23,10 @@ function rect(overrides: Partial<RectElement> = {}): RectElement {
 		fill: "#000",
 		stroke: "#000",
 		strokeWidth: 0,
-		...overrides
+		...overrides,
+		locked: overrides.locked ?? false,
+		visible: overrides.visible ?? true,
+		bindable: overrides.bindable ?? true
 	};
 }
 
@@ -38,7 +41,10 @@ function circle(overrides: Partial<CircleElement> = {}): CircleElement {
 		fill: "#000",
 		stroke: "#000",
 		strokeWidth: 0,
-		...overrides
+		...overrides,
+		locked: overrides.locked ?? false,
+		visible: overrides.visible ?? true,
+		bindable: overrides.bindable ?? true
 	};
 }
 
@@ -54,7 +60,10 @@ function text(overrides: Partial<TextElement> = {}): TextElement {
 		text: "hello",
 		fontSize: 24,
 		fill: "#000",
-		...overrides
+		...overrides,
+		locked: overrides.locked ?? false,
+		visible: overrides.visible ?? true,
+		bindable: overrides.bindable ?? false
 	};
 }
 
@@ -72,7 +81,10 @@ function image(overrides: Partial<ImageElement> = {}): ImageElement {
 		cropX: 0,
 		cropY: 0,
 		cropScale: 100,
-		...overrides
+		...overrides,
+		locked: overrides.locked ?? false,
+		visible: overrides.visible ?? true,
+		bindable: overrides.bindable ?? false
 	};
 }
 
@@ -88,7 +100,10 @@ function path(overrides: Partial<PathElement> = {}): PathElement {
 		stroke: "#000",
 		strokeWidth: 2,
 		closed: false,
-		...overrides
+		...overrides,
+		locked: overrides.locked ?? false,
+		visible: overrides.visible ?? true,
+		bindable: overrides.bindable ?? true
 	};
 }
 

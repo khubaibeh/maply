@@ -1,9 +1,25 @@
-import { Schema } from "effect";
+import { Effect, Schema } from "effect";
+
+const ElementStateSchema = {
+	locked: Schema.Boolean.pipe(Schema.withDecodingDefaultKey(Effect.succeed(false))),
+	visible: Schema.Boolean.pipe(Schema.withDecodingDefaultKey(Effect.succeed(true)))
+};
+
+const BindableElementStateSchema = {
+	...ElementStateSchema,
+	bindable: Schema.Boolean.pipe(Schema.withDecodingDefaultKey(Effect.succeed(true)))
+};
+
+const NonBindableElementStateSchema = {
+	...ElementStateSchema,
+	bindable: Schema.Boolean.pipe(Schema.withDecodingDefaultKey(Effect.succeed(false)))
+};
 
 export const RectElementSchema = Schema.Struct({
 	id: Schema.String,
 	name: Schema.String,
 	type: Schema.Literal("rect"),
+	...BindableElementStateSchema,
 	x: Schema.Number,
 	y: Schema.Number,
 	width: Schema.Number,
@@ -17,6 +33,7 @@ export const CircleElementSchema = Schema.Struct({
 	id: Schema.String,
 	name: Schema.String,
 	type: Schema.Literal("circle"),
+	...BindableElementStateSchema,
 	cx: Schema.Number,
 	cy: Schema.Number,
 	r: Schema.Number,
@@ -29,6 +46,7 @@ export const PathElementSchema = Schema.Struct({
 	id: Schema.String,
 	name: Schema.String,
 	type: Schema.Literal("path"),
+	...BindableElementStateSchema,
 	x: Schema.Number,
 	y: Schema.Number,
 	d: Schema.String,
@@ -42,6 +60,7 @@ export const TextElementSchema = Schema.Struct({
 	id: Schema.String,
 	name: Schema.String,
 	type: Schema.Literal("text"),
+	...NonBindableElementStateSchema,
 	x: Schema.Number,
 	y: Schema.Number,
 	width: Schema.Number,
@@ -55,6 +74,7 @@ export const ImageElementSchema = Schema.Struct({
 	id: Schema.String,
 	name: Schema.String,
 	type: Schema.Literal("image"),
+	...NonBindableElementStateSchema,
 	x: Schema.Number,
 	y: Schema.Number,
 	width: Schema.Number,
