@@ -144,6 +144,7 @@ export function createElementReorder({ list, viewport }: ReorderOptions) {
 
 	function start(event: PointerEvent, elementId: string, index: number) {
 		if (event.button !== 0 || event.target instanceof HTMLInputElement) return;
+		if (project.current.elements.find((element) => element.id === elementId)?.locked) return;
 		clearPending();
 		pending = {
 			elementId,

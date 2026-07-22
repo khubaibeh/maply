@@ -71,4 +71,23 @@ describe("selection ordering", () => {
 			"b"
 		]);
 	});
+
+	it("blocks ordering when the selected set contains a locked element", () => {
+		const lockedElements = elements.map((element) => ({ ...element, locked: element.id === "b" }));
+
+		expect(reorderSelection(lockedElements, ["b", "d"], "front")).toEqual(lockedElements);
+		expect(canReorderSelection(lockedElements, ["b", "d"], "front")).toBe(false);
+	});
+
+	it("allows unlocked selections to cross locked unselected layers", () => {
+		const lockedElements = elements.map((element) => ({ ...element, locked: element.id === "b" }));
+
+		expect(reorderSelection(lockedElements, ["c"], "backward").map((element) => element.id)).toEqual([
+			"a",
+			"c",
+			"b",
+			"d",
+			"e"
+		]);
+	});
 });

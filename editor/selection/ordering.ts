@@ -3,6 +3,7 @@ import type { ProjectState, SelectionOrder } from "../types";
 
 function reorderInState(state: ProjectState, from: number, to: number): ProjectState {
 	if (from === to || from < 0 || to < 0 || from >= state.elements.length || to >= state.elements.length) return state;
+	if (state.elements[from]?.locked) return state;
 
 	const next = [...state.elements];
 	const [element] = next.splice(from, 1);
@@ -12,13 +13,14 @@ function reorderInState(state: ProjectState, from: number, to: number): ProjectS
 }
 
 /** Returns paint order after moving selected elements together in the requested direction. */
-export function reorderSelection<T extends { id: string }>(
+export function reorderSelection<T extends { id: string; locked?: boolean }>(
 	elements: readonly T[],
 	ids: readonly string[],
 	direction: SelectionOrder
 ): T[] {
 	const selectedIds = new Set(ids);
 	if (!elements.some((element) => selectedIds.has(element.id))) return [...elements];
+	if (elements.some((element) => selectedIds.has(element.id) && element.locked)) return [...elements];
 
 	if (direction === "front") {
 		return [
@@ -52,7 +54,7 @@ export function reorderSelection<T extends { id: string }>(
 }
 
 /** Returns whether a selected set has at least one valid move in the requested direction. */
-export function canReorderSelection<T extends { id: string }>(
+export function canReorderSelection<T extends { id: string; locked?: boolean }>(
 	elements: readonly T[],
 	ids: readonly string[],
 	direction: SelectionOrder

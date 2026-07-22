@@ -72,6 +72,23 @@ describe("translateElement", () => {
 			{ id: "b", x: 200, y: 0 }
 		]);
 	});
+
+	it("does not move a locked element", () => {
+		setFixture([{ ...rect("locked", 40, 40), locked: true }]);
+
+		expect(translateElement("locked", 50, 50)).toEqual({ x: 0, y: 0 });
+		expect(get(projectState).elements[0]).toMatchObject({ x: 40, y: 40 });
+	});
+
+	it("moves only unlocked elements in a mixed selection", () => {
+		setFixture([{ ...rect("locked", 0, 0), locked: true }, rect("unlocked", 180, 0)]);
+
+		expect(translateElements(["locked", "unlocked"], 50, 0)).toEqual({ x: 20, y: 0 });
+		expect(get(projectState).elements).toMatchObject([
+			{ id: "locked", x: 0, y: 0 },
+			{ id: "unlocked", x: 200, y: 0 }
+		]);
+	});
 });
 
 describe("updateElements", () => {

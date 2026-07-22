@@ -76,7 +76,7 @@ export function translateElement(id: string, dx: number, dy: number) {
 		(state) => ({
 			...state,
 			elements: state.elements.map((element) => {
-				if (element.id !== id) return element;
+				if (element.id !== id || element.locked) return element;
 				const next = clampElementToCanvas(translate(element, dx, dy), canvas);
 				const before = getElementPosition(element);
 				const after = getElementPosition(next);
@@ -99,8 +99,9 @@ export function translateElements(ids: readonly string[], dx: number, dy: number
 	let applied = { x: 0, y: 0 };
 
 	updateProjectState((state) => {
-		const selected = state.elements.filter((element) => idSet.has(element.id));
+		const selected = state.elements.filter((element) => idSet.has(element.id) && !element.locked);
 		if (selected.length === 0) return state;
+		const movableIds = new Set(selected.map((element) => element.id));
 
 		const bounds = selected.map(getElementBounds);
 
@@ -125,7 +126,7 @@ export function translateElements(ids: readonly string[], dx: number, dy: number
 		return {
 			...state,
 			elements: state.elements.map((element) =>
-				idSet.has(element.id) ? translate(element, nextDx, nextDy) : element
+				movableIds.has(element.id) ? translate(element, nextDx, nextDy) : element
 			)
 		};
 	}, "preserve");
