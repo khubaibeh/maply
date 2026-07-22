@@ -10,10 +10,13 @@
 	import { Editor } from "editor";
 	import DotsThreeIcon from "phosphor-svelte/lib/DotsThree";
 	import FunnelXIcon from "phosphor-svelte/lib/FunnelXIcon";
+	import GridNineIcon from "phosphor-svelte/lib/GridNineIcon";
 	import MagnifyingGlassIcon from "phosphor-svelte/lib/MagnifyingGlassIcon";
 
 	import ElementRow from "./ElementRow.svelte";
 	import { elementNamesCsv, elementTypeLabels, elementTypes, filterElements, toggleType } from "./filter";
+	import { importNamesOverlayOpen } from "./import-names-overlay";
+	import ImportNamesOverlay from "./ImportNamesOverlay.svelte";
 	import { createElementReorder } from "./use-reorder.svelte";
 
 	const project = Editor.state.project;
@@ -72,7 +75,7 @@
 	}
 </script>
 
-<div class="flex min-h-0 flex-1 flex-col pb-6">
+<div class="relative flex min-h-0 flex-1 flex-col pb-6">
 	<div class="grid grid-cols-[minmax(0,1fr)_auto] items-center px-4 pt-3 pb-2">
 		<div class="flex min-w-0 items-center gap-2">
 			<span class="text-sidebar-foreground/80 truncate text-sm font-bold">Elements</span>
@@ -91,7 +94,17 @@
 				>
 			{/if}
 		</div>
-		<div class="flex justify-end">
+		<div class="flex items-center justify-end gap-0.5">
+			<Button
+				variant="ghost"
+				size="icon-xs"
+				class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-sidebar-ring/40 size-7 rounded-lg focus-visible:ring-2"
+				onclick={() => importNamesOverlayOpen.set(true)}
+				aria-label="Import names"
+				title="Import names"
+			>
+				<GridNineIcon class="size-5" />
+			</Button>
 			<DropdownMenu.Root>
 				<DropdownMenu.Trigger
 					class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-sidebar-ring/40 inline-flex size-7 items-center justify-center rounded-lg outline-none focus-visible:ring-2"
@@ -217,4 +230,7 @@
 			</ContextMenu.Group>
 		</ContextMenu.Content>
 	</ContextMenu.Root>
+	{#if $importNamesOverlayOpen}
+		<ImportNamesOverlay onClose={() => importNamesOverlayOpen.set(false)} />
+	{/if}
 </div>
