@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { downloadName, downloadText } from "../../src/components/project-menu/browser-download";
+import { downloadName, downloadText } from "../../src/lib/browser-download";
 
 afterEach(() => {
 	vi.useRealTimers();

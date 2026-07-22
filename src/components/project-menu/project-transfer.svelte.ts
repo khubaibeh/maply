@@ -1,11 +1,10 @@
+import { downloadName, downloadText } from "$lib/browser-download";
 import { canvasCursor } from "@components/core/cursors";
 import { toast } from "@components/core/toast";
 import { project as projectIo, svg as svgIo } from "@maply/io";
 import type { ProjectFilePackage } from "@maply/io/types";
 import { Editor } from "editor";
 import { fromStore } from "svelte/store";
-
-import { downloadName, downloadText } from "./browser-download";
 
 type BusyOperation = "project-import" | "project-export" | "svg-export";
 
