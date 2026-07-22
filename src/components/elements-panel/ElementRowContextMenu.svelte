@@ -95,6 +95,14 @@
 				close();
 			}}>Copy</ContextMenu.Item
 		>
+		<ContextMenu.Item
+			class="rounded-lg px-2.5 py-1.5 text-xs"
+			disabled={Editor.clipboard.get().length === 0}
+			onclick={() => {
+				void Editor.clipboard.paste();
+				close();
+			}}>Paste</ContextMenu.Item
+		>
 	</ContextMenu.Group>
 	<ContextMenu.Separator />
 	<ContextMenu.Group>

@@ -9,7 +9,7 @@
 	import { Editor } from "editor";
 	import { onMount } from "svelte";
 
-	const LEFT_SIDEBAR_WIDTH = 240;
+	const LEFT_SIDEBAR_WIDTH = 324;
 	const RIGHT_SIDEBAR_WIDTH = 285;
 
 	const project = Editor.state.project;

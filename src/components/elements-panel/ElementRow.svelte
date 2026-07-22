@@ -51,6 +51,11 @@
 	const isBindable = $derived(
 		element.bindable ?? (element.type === "rect" || element.type === "circle" || element.type === "path")
 	);
+	function stateControlClass(isPersistent: boolean) {
+		return `text-sidebar-foreground/60 hover:text-sidebar-foreground size-6 rounded-md transition-[color,opacity] ${
+			isPersistent ? "opacity-100" : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+		}`;
+	}
 
 	$effect(() => {
 		if (!editing || !input) return;
@@ -68,12 +73,6 @@
 		if (nextName) Editor.element.rename(element.id, nextName);
 		else name = element.name;
 		editing = false;
-	}
-
-	function stateControlClass(isPersistent: boolean) {
-		return `text-sidebar-foreground/60 hover:text-sidebar-foreground size-6 rounded-md transition-[color,opacity] ${
-			isPersistent ? "opacity-100" : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
-		}`;
 	}
 
 	function stopPropagation(event: Event) {
@@ -136,7 +135,8 @@
 				variant="ghost"
 				size="icon-xs"
 				class={stateControlClass(isLocked)}
-				aria-label="{isLocked ? 'Unlock' : 'Lock'} {element.name}"
+				aria-label="Lock"
+				title="Lock"
 				aria-pressed={isLocked}
 				onpointerdown={stopPropagation}
 				oncontextmenu={stopPropagation}
@@ -151,7 +151,8 @@
 				variant="ghost"
 				size="icon-xs"
 				class={stateControlClass(!isBindable)}
-				aria-label="{isBindable ? 'Disable' : 'Enable'} binding for {element.name}"
+				aria-label="Bindable"
+				title="Bindable"
 				aria-pressed={isBindable}
 				onpointerdown={stopPropagation}
 				oncontextmenu={stopPropagation}
@@ -168,7 +169,8 @@
 				variant="ghost"
 				size="icon-xs"
 				class={stateControlClass(!isVisible)}
-				aria-label="{isVisible ? 'Hide' : 'Show'} {element.name}"
+				aria-label="Visible"
+				title="Visible"
 				aria-pressed={isVisible}
 				onpointerdown={stopPropagation}
 				oncontextmenu={stopPropagation}

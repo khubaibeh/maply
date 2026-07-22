@@ -206,6 +206,14 @@
 						backgroundOpen = false;
 					}}>Select all</ContextMenu.Item
 				>
+				<ContextMenu.Item
+					class="rounded-lg px-2.5 py-1.5 text-xs"
+					disabled={Editor.clipboard.get().length === 0}
+					onclick={() => {
+						void Editor.clipboard.paste();
+						backgroundOpen = false;
+					}}>Paste</ContextMenu.Item
+				>
 			</ContextMenu.Group>
 		</ContextMenu.Content>
 	</ContextMenu.Root>
