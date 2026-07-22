@@ -123,5 +123,5 @@
 			>
 		</div>
 	</ContextMenu.Trigger>
-	<ElementRowContextMenu {element} close={() => (menuOpen = false)} />
+	<ElementRowContextMenu {element} close={() => (menuOpen = false)} onRename={edit} />
 </ContextMenu.Root>

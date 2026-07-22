@@ -4,7 +4,7 @@
 	import { Editor } from "editor";
 	import type { SelectionOrder } from "editor/types";
 
-	let { element, close }: { element: Element; close: () => void } = $props();
+	let { element, close, onRename }: { element: Element; close: () => void; onRename: () => void } = $props();
 	const project = Editor.state.project;
 	const orderingIds = $derived(
 		$project.selectedElementIds.includes(element.id) ? $project.selectedElementIds : [element.id]
@@ -31,6 +31,13 @@
 				Editor.selection.selectAll();
 				close();
 			}}>Select all</ContextMenu.Item
+		>
+		<ContextMenu.Item
+			class="rounded-lg px-2.5 py-1.5 text-xs"
+			onclick={() => {
+				close();
+				onRename();
+			}}>Rename</ContextMenu.Item
 		>
 	</ContextMenu.Group>
 	<ContextMenu.Separator />
