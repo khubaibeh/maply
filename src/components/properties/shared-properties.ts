@@ -1,8 +1,12 @@
+import { defaultBindable } from "@maply/model";
 import type { Element, ElementType } from "@maply/model/types";
 
 /** A property that can safely apply to every element in a multi-selection. */
 export type SharedElementProperty =
 	"name" | "x" | "y" | "width" | "height" | "centerX" | "centerY" | "radius" | "fontSize" | "fill";
+
+/** A persisted element state that supports shared editing. */
+export type SharedElementState = "locked" | "bindable" | "visible";
 
 type SelectedElement = Pick<Element, "type">;
 
@@ -72,4 +76,27 @@ export function getSharedElementProperties(elements: readonly SelectedElement[])
 /** Reports whether a selection count is within the supported batch-editing limit. */
 export function canEditSharedProperties(elementCount: number): boolean {
 	return elementCount <= sharedPropertySelectionLimit;
+}
+
+function elementState(element: Pick<Element, "type" | "locked" | "bindable" | "visible">, state: SharedElementState) {
+	switch (state) {
+		case "locked":
+			return element.locked ?? false;
+		case "bindable":
+			return element.bindable ?? defaultBindable(element.type);
+		case "visible":
+			return element.visible !== false;
+	}
+}
+
+/** Returns a shared element-state value, or null when the selection contains mixed values. */
+export function getSharedElementState(
+	elements: readonly Pick<Element, "type" | "locked" | "bindable" | "visible">[],
+	state: SharedElementState
+): boolean | null {
+	const first = elements[0];
+	if (!first) return null;
+
+	const value = elementState(first, state);
+	return elements.every((element) => elementState(element, state) === value) ? value : null;
 }

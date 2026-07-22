@@ -6,6 +6,7 @@
 	import ColorPicker from "@components/core/ColorPicker.svelte";
 	import ElementNameValidation from "@components/core/ElementNameValidation.svelte";
 	import ElementProperties from "@components/properties/ElementProperties.svelte";
+	import ElementStateProperties from "@components/properties/ElementStateProperties.svelte";
 	import { canEditSharedProperties, sharedPropertySelectionLimit } from "@components/properties/shared-properties";
 	import SharedProperties from "@components/properties/SharedProperties.svelte";
 	import { Editor } from "editor";
@@ -110,6 +111,7 @@
 					<div class="flex items-center gap-2">
 						<Badge variant="secondary">{selectedElementCount} selected</Badge>
 					</div>
+					<ElementStateProperties elements={selectedElements} />
 					{#if canEditSharedProperties(selectedElementCount)}
 						<SharedProperties elements={selectedElements} />
 					{:else}
@@ -122,6 +124,7 @@
 				<div class="flex flex-col gap-x-2 gap-y-4">
 					<Separator class="mx-4 my-2 opacity-50 data-[orientation=horizontal]:w-auto" />
 					<span class="text-sidebar-foreground/30 text-sm font-semibold tracking-wide">Element</span>
+					<ElementStateProperties elements={[selectedElement]} />
 					<div class="flex flex-col gap-1">
 						<label for="{selectedElement.id}-name" class="text-sidebar-foreground/70 text-xs">Name</label>
 						<Input

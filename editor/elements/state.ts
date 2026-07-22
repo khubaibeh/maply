@@ -30,7 +30,7 @@ export function setBindable(ids: string | readonly string[], bindable: boolean):
 	);
 }
 
-/** Sets visibility and clears editor interaction state for elements that become hidden. */
+/** Sets visibility and clears hover or crop state for elements that become hidden. */
 export function setVisible(ids: string | readonly string[], visible: boolean): void {
 	const idSet = toIdSet(ids);
 
@@ -38,13 +38,10 @@ export function setVisible(ids: string | readonly string[], visible: boolean): v
 		const hiddenIds = visible
 			? new Set<string>()
 			: new Set(state.elements.filter((element) => idSet.has(element.id)).map((element) => element.id));
-		const selectedElementIds = state.selectedElementIds.filter((id) => !hiddenIds.has(id));
 
 		return {
 			...state,
 			elements: state.elements.map((element) => (idSet.has(element.id) ? { ...element, visible } : element)),
-			selectedElementIds,
-			selectedElementId: selectedElementIds.at(-1) ?? null,
 			hoveredElementId: hiddenIds.has(state.hoveredElementId ?? "") ? null : state.hoveredElementId,
 			cropEditingElementId: hiddenIds.has(state.cropEditingElementId ?? "") ? null : state.cropEditingElementId
 		};

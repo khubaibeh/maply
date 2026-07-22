@@ -5,6 +5,7 @@ export {
 	hasValidImageRect,
 	isPointInsideCanvas
 } from "./project/geometry";
+export { defaultBindable } from "./project/state";
 export { drawingTools, isDrawingTool } from "./project/tool";
 export {
 	hexColorPattern,

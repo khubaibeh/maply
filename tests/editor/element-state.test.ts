@@ -70,7 +70,7 @@ describe("element state", () => {
 		]);
 	});
 
-	it("hiding elements clears their hover, selection, and crop state", () => {
+	it("hiding elements clears their hover and crop state while retaining selection", () => {
 		setFixture([rect("first"), image("image"), rect("last")], ["first", "image", "last"]);
 		setProjectState({ ...get(projectState), hoveredElementId: "image", cropEditingElementId: "image" }, "preserve");
 
@@ -82,11 +82,20 @@ describe("element state", () => {
 				{ id: "image", visible: false },
 				{ id: "last", visible: true }
 			],
-			selectedElementIds: ["last"],
+			selectedElementIds: ["first", "image", "last"],
 			selectedElementId: "last",
 			hoveredElementId: null,
 			cropEditingElementId: null
 		});
+
+		setVisible(["first", "image"], true);
+		expect(get(projectState)).toMatchObject({
+			selectedElementIds: ["first", "image", "last"]
+		});
+		expect(get(projectState).elements.slice(0, 2)).toMatchObject([
+			{ id: "first", visible: true },
+			{ id: "image", visible: true }
+		]);
 	});
 
 	it("keeps crop mode when hiding a different element", () => {

@@ -1,4 +1,4 @@
-import { getImageRenderRect } from "@maply/model";
+import { defaultBindable, getImageRenderRect } from "@maply/model";
 import type { Element, ImageElement, Project, StoredImageAsset, TextElement } from "@maply/model/types";
 
 import { TEXT_CHARACTER_WIDTH_RATIO, TEXT_LINE_HEIGHT_RATIO } from "../../common";
@@ -67,8 +67,7 @@ function textLines(element: TextElement) {
 
 function elementAttributes(element: Element): string {
 	const visible = element.visible !== false;
-	const bindable =
-		element.bindable ?? (element.type === "rect" || element.type === "circle" || element.type === "path");
+	const bindable = element.bindable ?? defaultBindable(element.type);
 	const shouldBind = visible && bindable;
 
 	return `${shouldBind ? ` id="${escapeXml(element.name)}"` : ""}${visible ? "" : ' display="none"'}`;

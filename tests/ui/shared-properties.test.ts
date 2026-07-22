@@ -3,8 +3,10 @@ import { describe, expect, it } from "vitest";
 
 import {
 	canEditSharedProperties,
+	getSharedElementState,
 	getSharedElementProperties,
 	sharedPropertySelectionLimit,
+	type SharedElementState,
 	type SharedElementProperty
 } from "../../src/components/properties/shared-properties";
 
@@ -67,5 +69,22 @@ describe("getSharedElementProperties", () => {
 
 	it.each(cases)("intersects $types", ({ types, expected }) => {
 		expect(getSharedElementProperties(types.map((type) => ({ type })))).toEqual(["name", ...expected]);
+	});
+});
+
+describe("getSharedElementState", () => {
+	const rect = (state: Partial<Record<SharedElementState, boolean>>) => ({
+		type: "rect" as const,
+		locked: state.locked ?? false,
+		visible: state.visible ?? true,
+		bindable: state.bindable ?? true
+	});
+
+	it("returns the common value for a selection", () => {
+		expect(getSharedElementState([rect({ locked: true }), rect({ locked: true })], "locked")).toBe(true);
+	});
+
+	it("returns null for mixed values", () => {
+		expect(getSharedElementState([rect({ visible: true }), rect({ visible: false })], "visible")).toBeNull();
 	});
 });

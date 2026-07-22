@@ -3,6 +3,7 @@
 	import * as ContextMenu from "$lib/components/ui/context-menu";
 	import { Input } from "$lib/components/ui/input";
 	import ElementNameValidation from "@components/core/ElementNameValidation.svelte";
+	import { defaultBindable } from "@maply/model";
 	import type { Element } from "@maply/model/types";
 	import { Editor } from "editor";
 	import type { ElementNameValidation as NameValidation } from "editor/types";
@@ -48,9 +49,7 @@
 	const Icon = $derived(icons[element.type]);
 	const isLocked = $derived(element.locked ?? false);
 	const isVisible = $derived(element.visible !== false);
-	const isBindable = $derived(
-		element.bindable ?? (element.type === "rect" || element.type === "circle" || element.type === "path")
-	);
+	const isBindable = $derived(element.bindable ?? defaultBindable(element.type));
 	function stateControlClass(isPersistent: boolean) {
 		return `text-sidebar-foreground/60 hover:text-sidebar-foreground size-6 rounded-md transition-[color,opacity] ${
 			isPersistent ? "opacity-100" : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100"

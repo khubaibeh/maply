@@ -1,6 +1,7 @@
 import {
 	createDefaultProject,
 	createSampleProject,
+	defaultBindable,
 	defaultProject,
 	drawingTools,
 	getImageRenderRect,
@@ -207,6 +208,14 @@ describe("@maply/model exports", () => {
 				fill: "#000000"
 			})
 		).toMatchObject({ locked: false, visible: true, bindable: false });
+	});
+
+	it("exposes type-based bindable defaults", () => {
+		expect(defaultBindable("rect")).toBe(true);
+		expect(defaultBindable("circle")).toBe(true);
+		expect(defaultBindable("path")).toBe(true);
+		expect(defaultBindable("text")).toBe(false);
+		expect(defaultBindable("image")).toBe(false);
 	});
 
 	it("exposes shared image render geometry", () => {
