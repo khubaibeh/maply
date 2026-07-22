@@ -123,7 +123,6 @@
 			{:else if selectedElement}
 				<div class="flex flex-col gap-x-2 gap-y-4">
 					<Separator class="mx-4 my-2 opacity-50 data-[orientation=horizontal]:w-auto" />
-					<span class="text-sidebar-foreground/30 text-sm font-semibold tracking-wide">Element</span>
 					<ElementStateProperties elements={[selectedElement]} />
 					<div class="flex flex-col gap-1">
 						<label for="{selectedElement.id}-name" class="text-sidebar-foreground/70 text-xs">Name</label>

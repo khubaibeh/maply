@@ -9,6 +9,7 @@
 	import MarqueeSelectionPreview from "@components/canvas/MarqueeSelectionPreview.svelte";
 	import { createCanvasAreaState } from "@components/core/canvas-area/area.state.svelte";
 	import { canvasCursor } from "@components/core/cursors";
+	import { importNamesOverlayOpen } from "@components/elements-panel/import-names-overlay";
 	import { Editor } from "editor";
 
 	const canvasArea = createCanvasAreaState();
@@ -19,6 +20,7 @@
 	<ContextMenu.Trigger class="contents">
 		<div
 			bind:this={canvasArea.state.container}
+			class:pointer-events-none={$importNamesOverlayOpen}
 			class="canvas-viewport bg-muted relative min-h-0 flex-1 overflow-hidden outline-none"
 			style:cursor={canvasArea.toolCursor() ?? canvasArea.cursorClass()}
 			role="application"

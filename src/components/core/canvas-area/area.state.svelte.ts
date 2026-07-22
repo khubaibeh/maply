@@ -1,10 +1,11 @@
 import { clientToSvgPoint } from "@components/canvas/interaction/svg";
 import { canvasCursor } from "@components/core/cursors";
+import { importNamesOverlayOpen } from "@components/elements-panel/import-names-overlay";
 import { isPointInsideCanvas } from "@maply/model";
 import type { ImageElement, Point } from "@maply/model/types";
 import { Editor } from "editor";
 import { onMount } from "svelte";
-import { fromStore } from "svelte/store";
+import { fromStore, get } from "svelte/store";
 
 import { panFromDrag, zoomAt } from "./camera";
 import { createCanvasContextMenu } from "./context-menu.svelte";
@@ -146,6 +147,7 @@ export function createCanvasAreaState() {
 		}
 
 		function startPan(event: MouseEvent) {
+			if (get(importNamesOverlayOpen)) return;
 			const canPan = event.button === 1 || (event.button === 0 && isHandActive);
 			if (!canPan) return;
 
@@ -189,6 +191,9 @@ export function createCanvasAreaState() {
 		}
 
 		function handleKeyDown(event: KeyboardEvent) {
+			// Don't let canvas key handling run while the Element Names overlay is open.
+			if (get(importNamesOverlayOpen)) return;
+
 			if (event.key === "Escape" && marquee.state.active) {
 				event.preventDefault();
 				marquee.cancel();
@@ -271,6 +276,7 @@ export function createCanvasAreaState() {
 	}
 
 	function handleSvgPointerDown(event: PointerEvent) {
+		if (get(importNamesOverlayOpen)) return;
 		if (event.button !== 0) return;
 		if (isHandActive) return;
 		if (tool.current.activeTool === "select") {
@@ -331,6 +337,7 @@ export function createCanvasAreaState() {
 	}
 
 	function handleContextMenu(event: MouseEvent) {
+		if (get(importNamesOverlayOpen)) return;
 		contextMenu.handle(event, projectPoint(event.clientX, event.clientY));
 	}
 

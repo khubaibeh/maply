@@ -23,7 +23,8 @@
 		"@maply/io": "workspace:*",
 		"@maply/model": "workspace:*",
 		"@maply/storage": "workspace:*",
-		"effect": "catalog:"
+		"effect": "catalog:",
+		"xlsx": "^0.18.5"
 	},
 	"devDependencies": {
 		"@eslint/js": "catalog:",
@@ -66,10 +67,14 @@
 		"vitest": "catalog:"
 	},
 	"lint-staged": {
-		"*.{js,ts,svelte,json,css}": [
+		"*.{js,ts,svelte}": [
 			"oxfmt",
 			"prettier --write",
 			"eslint --ignore-pattern \"src/lib/components/ui/**\" --fix"
+		],
+		"*.{json,css}": [
+			"oxfmt",
+			"prettier --write"
 		]
 	},
 	"engines": {
