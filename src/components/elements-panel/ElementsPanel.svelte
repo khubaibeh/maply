@@ -73,9 +73,9 @@
 </script>
 
 <div class="flex min-h-0 flex-1 flex-col pb-6">
-	<div class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center px-4 pt-3 pb-2">
-		<span class="text-sidebar-foreground/80 truncate text-sm font-bold">Elements</span>
-		<div class="min-w-0 justify-self-stretch text-center">
+	<div class="grid grid-cols-[minmax(0,1fr)_auto] items-center px-4 pt-3 pb-2">
+		<div class="flex min-w-0 items-center gap-2">
+			<span class="text-sidebar-foreground/80 truncate text-sm font-bold">Elements</span>
 			{#if hasActiveFilter}
 				<Button
 					variant="ghost"
