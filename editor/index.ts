@@ -27,6 +27,7 @@ import {
 } from "./elements/mutate";
 import { autofixElementName, validateElementNames } from "./elements/naming";
 import { snapPathSegment, toPathPoints } from "./elements/path";
+import { setBindable, setLocked, setVisible } from "./elements/state";
 import {
 	getTextLayoutMetrics,
 	getWrappedTextLineHeight,
@@ -112,6 +113,9 @@ export const Editor = {
 		resize: resizeElementByHandle,
 		update: updateElement,
 		updateAll: updateElements,
+		setLocked,
+		setBindable,
+		setVisible,
 		rename: renameElement,
 		updatePathVertex,
 		clampAll: clampElementsToCanvas
