@@ -65,7 +65,16 @@ function textLines(element: TextElement) {
 	});
 }
 
-function renderText(element: TextElement, dx: number, dy: number, defs: string[]) {
+function elementAttributes(element: Element): string {
+	const visible = element.visible !== false;
+	const bindable =
+		element.bindable ?? (element.type === "rect" || element.type === "circle" || element.type === "path");
+	const shouldBind = visible && bindable;
+
+	return `${shouldBind ? ` id="${escapeXml(element.name)}"` : ""}${visible ? "" : ' display="none"'}`;
+}
+
+function renderText(element: TextElement, attributes: string, dx: number, dy: number, defs: string[]) {
 	const clipId = `text-clip-${element.id.replace(/[^a-zA-Z0-9_-]+/g, "-")}`;
 	defs.push(
 		[
@@ -84,7 +93,7 @@ function renderText(element: TextElement, dx: number, dy: number, defs: string[]
 		.join(" ");
 
 	return [
-		`<text id="${escapeXml(element.name)}" x="${element.x + dx}" y="${element.y + dy}"`,
+		`<text${attributes} x="${element.x + dx}" y="${element.y + dy}"`,
 		` font-size="${element.fontSize}" fill="${escapeXml(element.fill)}" xml:space="preserve"`,
 		` clip-path="url(#${clipId})" text-rendering="geometricPrecision">`,
 		spans,
@@ -93,12 +102,18 @@ function renderText(element: TextElement, dx: number, dy: number, defs: string[]
 }
 
 /* Falls back to a placeholder rect when no image data is available. */
-function renderImage(element: ImageElement, asset: StoredImageAsset | undefined, dx: number, dy: number) {
+function renderImage(
+	element: ImageElement,
+	attributes: string,
+	asset: StoredImageAsset | undefined,
+	dx: number,
+	dy: number
+) {
 	const href = asset?.dataUrl ?? element.href ?? "";
 
 	if (!href) {
 		return [
-			`<rect x="${element.x + dx}" y="${element.y + dy}" width="${element.width}"`,
+			`<rect${attributes} x="${element.x + dx}" y="${element.y + dy}" width="${element.width}"`,
 			` height="${element.height}" fill="${IMAGE_FILL}" stroke="${IMAGE_STROKE}" />`
 		].join(" ");
 	}
@@ -107,7 +122,7 @@ function renderImage(element: ImageElement, asset: StoredImageAsset | undefined,
 		? getImageRenderRect(element, asset)
 		: { x: 0, y: 0, width: element.width, height: element.height };
 	return [
-		`<g id="${escapeXml(element.name)}">`,
+		`<g${attributes}>`,
 		`<svg x="${element.x + dx}" y="${element.y + dy}" width="${element.width}" height="${element.height}"`,
 		` viewBox="0 0 ${element.width} ${element.height}" overflow="hidden">`,
 		`<image${asset ? ` data-maply-asset-id="${escapeXml(asset.id)}"` : ""} x="${rect.x}" y="${rect.y}"`,
@@ -124,17 +139,19 @@ function renderElement(
 	dy: number,
 	defs: string[]
 ) {
+	const attributes = elementAttributes(element);
+
 	switch (element.type) {
 		case "rect":
 			return [
-				`<rect id="${escapeXml(element.name)}" x="${element.x + dx}" y="${element.y + dy}"`,
+				`<rect${attributes} x="${element.x + dx}" y="${element.y + dy}"`,
 				` width="${element.width}" height="${element.height}" fill="${escapeXml(element.fill)}"`,
 				` stroke="${escapeXml(element.stroke)}" stroke-width="${element.strokeWidth}" />`
 			].join(" ");
 
 		case "circle":
 			return [
-				`<circle id="${escapeXml(element.name)}" cx="${element.cx + dx}" cy="${element.cy + dy}" r="${element.r}"`,
+				`<circle${attributes} cx="${element.cx + dx}" cy="${element.cy + dy}" r="${element.r}"`,
 				` fill="${escapeXml(element.fill)}" stroke="${escapeXml(element.stroke)}"`,
 				` stroke-width="${element.strokeWidth}" />`
 			].join(" ");
@@ -143,17 +160,17 @@ function renderElement(
 			const bounds = pathBounds(element.d);
 			const strokePad = Math.ceil(element.strokeWidth / 2);
 			return [
-				`<path id="${escapeXml(element.name)}" transform="translate(${element.x - bounds.x + strokePad + dx}, ${element.y - bounds.y + strokePad + dy})"`,
+				`<path${attributes} transform="translate(${element.x - bounds.x + strokePad + dx}, ${element.y - bounds.y + strokePad + dy})"`,
 				` d="${escapeXml(element.d)}" fill="${escapeXml(element.fill)}"`,
 				` stroke="${escapeXml(element.stroke)}" stroke-width="${element.strokeWidth}" />`
 			].join(" ");
 		}
 
 		case "text":
-			return renderText(element, dx, dy, defs);
+			return renderText(element, attributes, dx, dy, defs);
 
 		case "image":
-			return renderImage(element, element.assetId ? assets.get(element.assetId) : undefined, dx, dy);
+			return renderImage(element, attributes, element.assetId ? assets.get(element.assetId) : undefined, dx, dy);
 	}
 }
 

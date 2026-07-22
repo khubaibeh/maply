@@ -55,6 +55,9 @@ describe("svg export", () => {
 					id: "image-1",
 					name: "Photo",
 					type: "image",
+					locked: false,
+					visible: true,
+					bindable: false,
 					x: 10,
 					y: 20,
 					width: 100,
@@ -72,7 +75,75 @@ describe("svg export", () => {
 
 		expect(svg).toContain('data-maply-asset-id="asset-1"');
 		expect(svg).toContain('href="data:image/png;base64,abc"');
+		expect(svg).not.toContain('id="Photo"');
 		expect(metadata).not.toContain("data:image/png;base64,abc");
+	});
+
+	it("exports only visible bindable elements with name IDs", () => {
+		const project: Project = {
+			...createDefaultProject("prod"),
+			elements: [
+				{
+					id: "visible-bound",
+					name: "visible-bound",
+					type: "rect",
+					locked: false,
+					visible: true,
+					bindable: true,
+					x: 0,
+					y: 0,
+					width: 10,
+					height: 10,
+					fill: "#000",
+					stroke: "none",
+					strokeWidth: 0
+				},
+				{
+					id: "visible-unbound",
+					name: "visible-unbound",
+					type: "rect",
+					locked: false,
+					visible: true,
+					bindable: false,
+					x: 20,
+					y: 0,
+					width: 10,
+					height: 10,
+					fill: "#000",
+					stroke: "none",
+					strokeWidth: 0
+				},
+				{
+					id: "hidden-bound",
+					name: "hidden-bound",
+					type: "rect",
+					locked: false,
+					visible: false,
+					bindable: true,
+					x: 40,
+					y: 0,
+					width: 10,
+					height: 10,
+					fill: "#000",
+					stroke: "none",
+					strokeWidth: 0
+				}
+			]
+		};
+
+		const svg = Effect.runSync(svgEffect.export(project, []));
+		const imported = Effect.runSync(svgEffect.import(svg));
+
+		expect(svg).toContain('<rect id="visible-bound"');
+		expect(svg).toContain('<rect x="20"');
+		expect(svg).not.toContain('id="visible-unbound"');
+		expect(svg).toContain('<rect display="none" x="40"');
+		expect(svg).not.toContain('id="hidden-bound"');
+		expect(imported.file.project.elements).toMatchObject([
+			{ id: "visible-bound", visible: true, bindable: true },
+			{ id: "visible-unbound", visible: true, bindable: false },
+			{ id: "hidden-bound", visible: false, bindable: true }
+		]);
 	});
 
 	it("returns handled root export results", async () => {

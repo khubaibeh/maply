@@ -17,14 +17,18 @@
 	const elementMove = createElementMove();
 
 	const selectedElements = $derived(
-		$project.elements.filter((element) => $project.selectedElementIds.includes(element.id))
+		$project.elements.filter(
+			(element) => element.visible !== false && $project.selectedElementIds.includes(element.id)
+		)
 	);
 	const selectedElement = $derived(selectedElements.length === 1 ? (selectedElements[0] ?? null) : null);
 	const hoveredElement = $derived(
 		$tool.activeTool === "select" &&
 			$project.hoveredElementId &&
 			!$project.selectedElementIds.includes($project.hoveredElementId)
-			? ($project.elements.find((element) => element.id === $project.hoveredElementId) ?? null)
+			? ($project.elements.find(
+					(element) => element.id === $project.hoveredElementId && element.visible !== false
+				) ?? null)
 			: null
 	);
 </script>
