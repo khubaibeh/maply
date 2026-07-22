@@ -1,3 +1,4 @@
+import { canSelectOnCanvas } from "@components/canvas/interaction/element-selection";
 import { describe, expect, it } from "vitest";
 
 import { measureDrag } from "../../src/components/canvas/interaction/drag";
@@ -22,5 +23,10 @@ describe("canvas interaction", () => {
 			{ key: "sw", x: 10, y: 40 },
 			{ key: "w", x: 10, y: 30 }
 		]);
+	});
+
+	it("excludes locked elements from canvas selection interactions", () => {
+		expect(canSelectOnCanvas({ locked: true })).toBe(false);
+		expect(canSelectOnCanvas({ locked: false })).toBe(true);
 	});
 });

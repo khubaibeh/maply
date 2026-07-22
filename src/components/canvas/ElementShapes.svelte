@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { canSelectOnCanvas } from "@components/canvas/interaction/element-selection";
 	import CircleShape from "@components/canvas/shapes/CircleShape.svelte";
 	import ImageShape from "@components/canvas/shapes/ImageShape.svelte";
 	import PathShape from "@components/canvas/shapes/PathShape.svelte";
@@ -12,7 +13,8 @@
 	const project = Editor.state.project;
 	const tool = Editor.state.tool;
 
-	function hover(id: string) {
+	function hover(id: string, locked: boolean) {
+		if (!canSelectOnCanvas({ locked })) return;
 		if ($tool.activeTool === "select" && !$tool.isCanvasResizing) Editor.selection.setHover(id);
 	}
 
@@ -32,7 +34,7 @@
 				aria-label="Select {element.name}"
 				class="canvas-element outline-none"
 				onpointerdown={(event) => onElementPointerDown(event, element.id)}
-				onpointerenter={() => hover(element.id)}
+				onpointerenter={() => hover(element.id, element.locked ?? false)}
 				onpointerleave={() => clearHover(element.id)}
 			>
 				{#if element.type === "rect"}

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { createElementMove } from "@components/canvas/interaction/element-move.svelte";
+	import { canSelectOnCanvas } from "@components/canvas/interaction/element-selection";
 	import { canvasCursor } from "@components/core/cursors";
 	import { Editor } from "editor";
 
@@ -27,7 +28,10 @@
 			$project.hoveredElementId &&
 			!$project.selectedElementIds.includes($project.hoveredElementId)
 			? ($project.elements.find(
-					(element) => element.id === $project.hoveredElementId && element.visible !== false
+					(element) =>
+						element.id === $project.hoveredElementId &&
+						element.visible !== false &&
+						canSelectOnCanvas(element)
 				) ?? null)
 			: null
 	);

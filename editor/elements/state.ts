@@ -4,17 +4,19 @@ function toIdSet(ids: string | readonly string[]): Set<string> {
 	return new Set(typeof ids === "string" ? [ids] : ids);
 }
 
-/** Sets the locked state for one or more existing elements. */
+/** Sets the locked state for one or more existing elements and ends their canvas interactions. */
 export function setLocked(ids: string | readonly string[], locked: boolean): void {
 	const idSet = toIdSet(ids);
 
-	updateProjectState(
-		(state) => ({
+	updateProjectState((state) => {
+		return {
 			...state,
-			elements: state.elements.map((element) => (idSet.has(element.id) ? { ...element, locked } : element))
-		}),
-		"preserve"
-	);
+			elements: state.elements.map((element) => (idSet.has(element.id) ? { ...element, locked } : element)),
+			hoveredElementId: locked && idSet.has(state.hoveredElementId ?? "") ? null : state.hoveredElementId,
+			cropEditingElementId:
+				locked && idSet.has(state.cropEditingElementId ?? "") ? null : state.cropEditingElementId
+		};
+	}, "preserve");
 }
 
 /** Sets the bindable state for one or more existing elements. */

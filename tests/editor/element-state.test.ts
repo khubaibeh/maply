@@ -70,6 +70,23 @@ describe("element state", () => {
 		]);
 	});
 
+	it("locking elements clears their hover and crop state while retaining selection", () => {
+		setFixture([rect("first"), image("image")], ["first", "image"]);
+		setProjectState({ ...get(projectState), hoveredElementId: "image", cropEditingElementId: "image" }, "preserve");
+
+		setLocked("image", true);
+
+		expect(get(projectState)).toMatchObject({
+			elements: [
+				{ id: "first", locked: false },
+				{ id: "image", locked: true }
+			],
+			selectedElementIds: ["first", "image"],
+			hoveredElementId: null,
+			cropEditingElementId: null
+		});
+	});
+
 	it("hiding elements clears their hover and crop state while retaining selection", () => {
 		setFixture([rect("first"), image("image"), rect("last")], ["first", "image", "last"]);
 		setProjectState({ ...get(projectState), hoveredElementId: "image", cropEditingElementId: "image" }, "preserve");

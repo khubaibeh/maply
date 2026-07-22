@@ -1,3 +1,4 @@
+import { canSelectOnCanvas } from "@components/canvas/interaction/element-selection";
 import {
 	exceedsMarqueeThreshold,
 	getMarqueeBounds,
@@ -38,8 +39,9 @@ export function createMarqueeSelection() {
 				if (!exceedsMarqueeThreshold(totalDelta, canvas.current.camera.zoom, MIN_MARQUEE_SCREEN_PX)) return;
 				const box = getMarqueeBounds(startPoint, current);
 				state.box = box;
-				state.candidates = project.current.elements.filter((element) =>
-					intersectsBounds(box, Editor.geometry.elementBounds(element))
+				state.candidates = project.current.elements.filter(
+					(element) =>
+						canSelectOnCanvas(element) && intersectsBounds(box, Editor.geometry.elementBounds(element))
 				);
 			},
 			onEnd: ({ cancelled }) => {
