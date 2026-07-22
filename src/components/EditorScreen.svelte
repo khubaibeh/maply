@@ -3,11 +3,13 @@
 	import { getArrowDelta, getShortcutTool, isEditingText } from "@components/core/shortcuts";
 	import Toolbar from "@components/core/Toolbar.svelte";
 	import Topbar from "@components/core/Topbar.svelte";
+	import { importNamesOverlayOpen } from "@components/elements-panel/import-names-overlay";
 	import LeftSidebar from "@components/LeftSidebar.svelte";
 	import ProjectMenuOverlay from "@components/project-menu/ProjectMenuOverlay.svelte";
 	import RightSidebar from "@components/RightSidebar.svelte";
 	import { Editor } from "editor";
 	import { onMount } from "svelte";
+	import { get } from "svelte/store";
 
 	const LEFT_SIDEBAR_WIDTH = 324;
 	const RIGHT_SIDEBAR_WIDTH = 285;
@@ -21,6 +23,9 @@
 	onMount(() => {
 		function handleKeyDown(event: KeyboardEvent) {
 			if (event.defaultPrevented) return;
+			// The Element Names overlay is a modal editor: don't let canvas shortcuts
+			// (select-all, delete, copy/paste, tool switches…) act on the canvas underneath.
+			if (get(importNamesOverlayOpen)) return;
 
 			if (!isEditingText(event) && !event.ctrlKey && !event.metaKey && !event.altKey) {
 				const shortcutTool = getShortcutTool(event.key);
