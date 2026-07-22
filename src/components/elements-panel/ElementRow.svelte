@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Button } from "$lib/components/ui/button";
 	import * as ContextMenu from "$lib/components/ui/context-menu";
 	import { Input } from "$lib/components/ui/input";
 	import ElementNameValidation from "@components/core/ElementNameValidation.svelte";
@@ -6,7 +7,13 @@
 	import { Editor } from "editor";
 	import type { ElementNameValidation as NameValidation } from "editor/types";
 	import Circle from "phosphor-svelte/lib/Circle";
+	import EyeIcon from "phosphor-svelte/lib/EyeIcon";
+	import EyeSlashIcon from "phosphor-svelte/lib/EyeSlashIcon";
 	import Image from "phosphor-svelte/lib/Image";
+	import LinkBreakIcon from "phosphor-svelte/lib/LinkBreakIcon";
+	import LinkIcon from "phosphor-svelte/lib/LinkIcon";
+	import LockIcon from "phosphor-svelte/lib/LockIcon";
+	import LockOpenIcon from "phosphor-svelte/lib/LockOpenIcon";
 	import Pencil from "phosphor-svelte/lib/Pencil";
 	import Rectangle from "phosphor-svelte/lib/Rectangle";
 	import TextT from "phosphor-svelte/lib/TextT";
@@ -39,6 +46,11 @@
 		image: Image
 	};
 	const Icon = $derived(icons[element.type]);
+	const isLocked = $derived(element.locked ?? false);
+	const isVisible = $derived(element.visible !== false);
+	const isBindable = $derived(
+		element.bindable ?? (element.type === "rect" || element.type === "circle" || element.type === "path")
+	);
 
 	$effect(() => {
 		if (!editing || !input) return;
@@ -57,6 +69,16 @@
 		else name = element.name;
 		editing = false;
 	}
+
+	function stateControlClass(isPersistent: boolean) {
+		return `text-sidebar-foreground/60 hover:text-sidebar-foreground size-6 rounded-md transition-[color,opacity] ${
+			isPersistent ? "opacity-100" : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+		}`;
+	}
+
+	function stopPropagation(event: Event) {
+		event.stopPropagation();
+	}
 </script>
 
 <ContextMenu.Root
@@ -69,7 +91,7 @@
 		<div
 			data-element-row
 			data-element-id={element.id}
-			class="group grid w-full grid-cols-[minmax(0,1fr)_auto_auto] items-center rounded-lg {invalid
+			class="group grid w-full grid-cols-[minmax(0,1fr)_auto_auto_auto_auto_auto] items-center rounded-lg {invalid
 				? 'bg-destructive/10 text-destructive hover:bg-destructive/15'
 				: active
 					? 'ring-sidebar-ring/50 bg-sidebar-accent/80 text-sidebar-accent-foreground shadow-sm ring-1'
@@ -110,6 +132,53 @@
 					class={editing ? "mr-1" : ""}
 				/>
 			{/if}
+			<Button
+				variant="ghost"
+				size="icon-xs"
+				class={stateControlClass(isLocked)}
+				aria-label="{isLocked ? 'Unlock' : 'Lock'} {element.name}"
+				aria-pressed={isLocked}
+				onpointerdown={stopPropagation}
+				oncontextmenu={stopPropagation}
+				onclick={(event) => {
+					stopPropagation(event);
+					Editor.element.setLocked(element.id, !isLocked);
+				}}
+			>
+				{#if isLocked}<LockIcon data-icon="inline-start" />{:else}<LockOpenIcon data-icon="inline-start" />{/if}
+			</Button>
+			<Button
+				variant="ghost"
+				size="icon-xs"
+				class={stateControlClass(!isBindable)}
+				aria-label="{isBindable ? 'Disable' : 'Enable'} binding for {element.name}"
+				aria-pressed={isBindable}
+				onpointerdown={stopPropagation}
+				oncontextmenu={stopPropagation}
+				onclick={(event) => {
+					stopPropagation(event);
+					Editor.element.setBindable(element.id, !isBindable);
+				}}
+			>
+				{#if isBindable}<LinkIcon data-icon="inline-start" />{:else}<LinkBreakIcon
+						data-icon="inline-start"
+					/>{/if}
+			</Button>
+			<Button
+				variant="ghost"
+				size="icon-xs"
+				class={stateControlClass(!isVisible)}
+				aria-label="{isVisible ? 'Hide' : 'Show'} {element.name}"
+				aria-pressed={isVisible}
+				onpointerdown={stopPropagation}
+				oncontextmenu={stopPropagation}
+				onclick={(event) => {
+					stopPropagation(event);
+					Editor.element.setVisible(element.id, !isVisible);
+				}}
+			>
+				{#if isVisible}<EyeIcon data-icon="inline-start" />{:else}<EyeSlashIcon data-icon="inline-start" />{/if}
+			</Button>
 			<button
 				type="button"
 				class="text-sidebar-foreground/60 hover:text-destructive mr-1 flex size-6 items-center justify-center rounded-md opacity-0 transition-[color,opacity] outline-none group-hover:opacity-100 focus-visible:opacity-100 {editing

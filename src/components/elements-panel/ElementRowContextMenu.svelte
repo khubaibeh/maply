@@ -9,6 +9,26 @@
 	const orderingIds = $derived(
 		$project.selectedElementIds.includes(element.id) ? $project.selectedElementIds : [element.id]
 	);
+	const stateElements = $derived($project.elements.filter((entry) => orderingIds.includes(entry.id)));
+
+	type ElementState = "locked" | "bindable" | "visible";
+
+	function stateValue(entry: Element, state: ElementState): boolean {
+		switch (state) {
+			case "locked":
+				return entry.locked ?? false;
+			case "bindable":
+				return entry.bindable ?? (entry.type === "rect" || entry.type === "circle" || entry.type === "path");
+			case "visible":
+				return entry.visible !== false;
+		}
+	}
+
+	function stateStatus(state: ElementState) {
+		const values = stateElements.map((entry) => stateValue(entry, state));
+		const checked = values.every(Boolean);
+		return { checked, indeterminate: !checked && values.some(Boolean) };
+	}
 
 	function canOrder(action: SelectionOrder) {
 		return Editor.element.canReorder($project.elements, orderingIds, action);
@@ -38,6 +58,29 @@
 				close();
 				onRename();
 			}}>Rename</ContextMenu.Item
+		>
+	</ContextMenu.Group>
+	<ContextMenu.Separator />
+	<ContextMenu.Group>
+		<ContextMenu.CheckboxItem
+			class="rounded-lg px-2.5 py-1.5 text-xs"
+			checked={stateStatus("locked").checked}
+			indeterminate={stateStatus("locked").indeterminate}
+			onCheckedChange={(locked) => Editor.element.setLocked(orderingIds, locked)}>Locked</ContextMenu.CheckboxItem
+		>
+		<ContextMenu.CheckboxItem
+			class="rounded-lg px-2.5 py-1.5 text-xs"
+			checked={stateStatus("bindable").checked}
+			indeterminate={stateStatus("bindable").indeterminate}
+			onCheckedChange={(bindable) => Editor.element.setBindable(orderingIds, bindable)}
+			>Bindable</ContextMenu.CheckboxItem
+		>
+		<ContextMenu.CheckboxItem
+			class="rounded-lg px-2.5 py-1.5 text-xs"
+			checked={stateStatus("visible").checked}
+			indeterminate={stateStatus("visible").indeterminate}
+			onCheckedChange={(visible) => Editor.element.setVisible(orderingIds, visible)}
+			>Visible</ContextMenu.CheckboxItem
 		>
 	</ContextMenu.Group>
 	<ContextMenu.Separator />
