@@ -69,6 +69,10 @@ describe("delimiter detection", () => {
 		const delimiter = detectDelimiter(lines);
 		expect(delimiter).toBe(",");
 	});
+
+	it("ignores tabs and semicolons inside quoted fields", () => {
+		expect(detectDelimiter('"notes; with\ttabs",name\n"more; notes",value')).toBe(",");
+	});
 });
 
 describe("auto-detect parsing", () => {

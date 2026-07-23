@@ -40,4 +40,11 @@ describe("name mapping export", () => {
 
 		expect(csv).toBe('Name,Elements\r\n"A, B","Door ""A"""');
 	});
+
+	it.each(["=SUM(A1:A2)", "+value", "-value", "@value", "  =value"])(
+		"neutralizes spreadsheet formulas starting with %s",
+		(value) => {
+			expect(nameMappingsCsv(["Name"], [[value]], [[]])).toBe(`Name,Elements\r\n'${value},`);
+		}
+	);
 });

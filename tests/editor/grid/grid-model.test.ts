@@ -6,6 +6,8 @@ import {
 	deleteRows,
 	deleteColumns,
 	setCell,
+	setGridHeader,
+	normalizeNameRows,
 	growToFit
 } from "../../../src/components/elements-panel/grid/grid-model";
 
@@ -50,7 +52,7 @@ describe("grid mutations", () => {
 		});
 
 		it("maintains rectangularity", () => {
-			const headers = ["A", "B", "C"];
+			const headers = ["Name", "B", "C"];
 			const rows = [["a", "b", "c"]];
 			const result = insertRows(headers, rows, 0, 1);
 			expect(result.rows.every((row) => row.length === 3)).toBe(true);
@@ -85,20 +87,20 @@ describe("grid mutations", () => {
 			const headers = ["A", "B", "C"];
 			const rows = [["a", "b", "c"]];
 			const result = deleteColumns(headers, rows, new Set([1]));
-			expect(result.headers).toEqual(["A", "C"]);
+			expect(result.headers).toEqual(["Name", "C"]);
 			expect(result.rows).toEqual([["a", "c"]]);
 		});
 
 		it("deletes multiple columns", () => {
-			const headers = ["A", "B", "C", "D"];
+			const headers = ["Name", "B", "C", "D"];
 			const rows = [["a", "b", "c", "d"]];
 			const result = deleteColumns(headers, rows, new Set([1, 3]));
-			expect(result.headers).toEqual(["A", "C"]);
+			expect(result.headers).toEqual(["Name", "C"]);
 			expect(result.rows).toEqual([["a", "c"]]);
 		});
 
 		it("ensures at least one column remains", () => {
-			const headers = ["A"];
+			const headers = ["Name"];
 			const rows = [["a"]];
 			const result = deleteColumns(headers, rows, new Set([0]));
 			expect(result.headers.length).toBeGreaterThanOrEqual(1);
@@ -110,6 +112,51 @@ describe("grid mutations", () => {
 			const rows = [["a", "b", "c"]];
 			const result = deleteColumns(headers, rows, new Set([1]));
 			expect(result.rows.every((row) => row.length === result.headers.length)).toBe(true);
+		});
+	});
+
+	describe("Name column invariant", () => {
+		it("cannot rename the Name column through a model operation", () => {
+			expect(setGridHeader(["Name", "Category"], 0, "Alias")).toEqual(["Name", "Category"]);
+		});
+
+		it("keeps Name when deleting it with other columns", () => {
+			const result = deleteColumns(["Name", "Category", "Type"], [["A", "Room", "Label"]], new Set([0, 1]));
+			expect(result.headers).toEqual(["Name", "Type"]);
+			expect(result.rows).toEqual([["A", "Label"]]);
+		});
+
+		it("restores Name through row model operations", () => {
+			expect(insertRows(["Alias"], [], 0, 1).headers).toEqual(["Name"]);
+			expect(deleteRows(["Alias"], [["value"]], 0, 1).headers).toEqual(["Name"]);
+		});
+
+		it("rejects multiple blank names that contain supplied data", () => {
+			expect(() =>
+				normalizeNameRows(
+					[
+						["", "first"],
+						["", "second"]
+					],
+					2
+				)
+			).toThrow("Name is required for imported rows 1, 2.");
+		});
+
+		it("retains one blank-name row with secondary data", () => {
+			expect(
+				normalizeNameRows(
+					[
+						["Alpha", ""],
+						["", "unmatched"],
+						["", ""]
+					],
+					2
+				)
+			).toEqual([
+				["Alpha", ""],
+				["", "unmatched"]
+			]);
 		});
 	});
 

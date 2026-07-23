@@ -30,8 +30,12 @@
 		onChange: (data) => saveNameGrid($project.id, data)
 	});
 	let warnings = $state<IngestWarning[]>([]);
+	let gridError = $state<string | null>(null);
 	let importOpen = $state(true);
 	const rowElements = $derived(elementsByNameRow(grid.rows, $project.elements));
+	const onlyNameColumnSelected = $derived(
+		grid.headerSel?.kind === "col" && grid.headerSel.indices.size === 1 && grid.headerSel.indices.has(0)
+	);
 
 	function downloadMappings() {
 		downloadText(
@@ -50,6 +54,7 @@
 		aria-modal="true"
 		aria-labelledby="import-names-title"
 		onkeydown={(event) => {
+			if (event.defaultPrevented) return;
 			if (event.key === "Escape") {
 				event.preventDefault();
 				onClose();
@@ -134,6 +139,8 @@
 									variant="destructive"
 									onclick={() => grid.deleteSelected()}
 									class="flex items-center gap-1"
+									disabled={onlyNameColumnSelected}
+									title={onlyNameColumnSelected ? "The Name column cannot be deleted" : undefined}
 								>
 									<TrashIcon data-icon="inline-start" />
 									Delete {grid.headerSel.kind === "row" ? "Rows" : "Columns"}
@@ -141,7 +148,12 @@
 							{/if}
 						</div>
 					</div>
-					<GridEditor {grid} elements={$project.elements} />
+					{#if gridError}
+						<div class="bg-destructive/10 text-destructive mb-3 rounded-lg p-3 text-sm" role="alert">
+							{gridError}
+						</div>
+					{/if}
+					<GridEditor {grid} elements={$project.elements} onError={(message) => (gridError = message)} />
 				</div>
 			</div>
 		</section>

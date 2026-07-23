@@ -4,6 +4,7 @@ import {
 	parseDelimitedMatrix,
 	escapeDelimitedCell
 } from "../../../../src/components/elements-panel/grid/ingest/matrix";
+import { MAX_CELLS, MAX_COLUMNS, MAX_ROWS } from "../../../../src/components/elements-panel/grid/ingest/types";
 
 describe("matrix parsing", () => {
 	it("parses simple comma-delimited values", () => {
@@ -111,9 +112,17 @@ describe("matrix parsing", () => {
 		expect(result).toEqual([['a"b"c']]);
 	});
 
+	it("rejects unterminated quoted fields", () => {
+		expect(() => parseDelimitedMatrix('a,"unterminated', ",")).toThrow("unterminated");
+	});
+
+	it("rejects a quote that starts in the middle of a field", () => {
+		expect(() => parseDelimitedMatrix('a"b,c', ",")).toThrow("start of a field");
+	});
+
 	it("handles empty input", () => {
 		const result = parseDelimitedMatrix("", ",");
-		expect(result).toEqual([]);
+		expect(result).toEqual([[""]]);
 	});
 
 	it("handles single cell", () => {
@@ -127,5 +136,50 @@ describe("matrix parsing", () => {
 			["a", "b", "c"],
 			["d", "e", "f"]
 		]);
+	});
+
+	it("accepts exactly the maximum row count", () => {
+		const input = Array.from({ length: MAX_ROWS }, () => "value").join("\n");
+		expect(parseDelimitedMatrix(input, ",")).toHaveLength(MAX_ROWS);
+	});
+
+	it("rejects more than the maximum row count", () => {
+		const input = Array.from({ length: MAX_ROWS + 1 }, () => "value").join("\n");
+		expect(() => parseDelimitedMatrix(input, ",")).toThrow("at most");
+	});
+
+	it("accepts exactly the maximum column count", () => {
+		const input = Array.from({ length: MAX_COLUMNS }, () => "value").join(",");
+		expect(parseDelimitedMatrix(input, ",")[0]).toHaveLength(MAX_COLUMNS);
+	});
+
+	it("rejects more than the maximum column count", () => {
+		const input = Array.from({ length: MAX_COLUMNS + 1 }, () => "value").join(",");
+		expect(() => parseDelimitedMatrix(input, ",")).toThrow("at most");
+	});
+
+	it("accepts exactly the maximum cell count", () => {
+		const columns = 40;
+		const rows = MAX_CELLS / columns;
+		const input = Array.from({ length: rows }, () => Array.from({ length: columns }, () => "v").join(",")).join(
+			"\n"
+		);
+		expect(parseDelimitedMatrix(input, ",")).toHaveLength(rows);
+	});
+
+	it("rejects more than the maximum cell count", () => {
+		const columns = 40;
+		const rows = MAX_CELLS / columns + 1;
+		const input = Array.from({ length: rows }, () => Array.from({ length: columns }, () => "v").join(",")).join(
+			"\n"
+		);
+		expect(() => parseDelimitedMatrix(input, ",")).toThrow("at most");
+	});
+
+	it("rejects ragged input whose rectangular form exceeds the cell limit", () => {
+		const wideRow = Array.from({ length: MAX_COLUMNS }, () => "value").join(",");
+		const narrowRows = Array.from({ length: MAX_ROWS - 1 }, () => "value").join("\n");
+
+		expect(() => parseDelimitedMatrix(`${wideRow}\n${narrowRows}`, ",")).toThrow("at most");
 	});
 });

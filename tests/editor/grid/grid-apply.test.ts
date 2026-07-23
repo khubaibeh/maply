@@ -9,7 +9,10 @@ describe("applyMatrix", () => {
 			const rows = [["x", "y"]];
 			const matrix = [["a", "b"]];
 			const result = applyMatrix(headers, rows, matrix, { r: 0, c: 0 });
-			expect(result.rows).toEqual([["a", "b"]]);
+			expect(result.rows).toEqual([
+				["a", "b"],
+				["", ""]
+			]);
 			expect(result.warnings).toEqual([]);
 		});
 
@@ -42,7 +45,7 @@ describe("applyMatrix", () => {
 				["c", "d"]
 			];
 			const result = applyMatrix(headers, rows, matrix, { r: 0, c: 0 });
-			expect(result.rows.length).toBe(2);
+			expect(result.rows.length).toBe(3);
 		});
 
 		it("pads new rows to width", () => {
@@ -62,30 +65,31 @@ describe("applyMatrix", () => {
 		});
 	});
 
-	describe("column handling", () => {
-		it("truncates matrix columns beyond grid width", () => {
+	describe("column growth", () => {
+		it("grows columns to retain matrix values beyond the current width", () => {
 			const headers = ["A", "B"];
 			const rows = [["x", "y"]];
 			const matrix = [["a", "b", "c", "d"]];
 			const result = applyMatrix(headers, rows, matrix, { r: 0, c: 0 });
-			expect(result.rows[0]).toEqual(["a", "b"]);
+			expect(result.headers).toEqual(["Name", "B", "", ""]);
+			expect(result.rows[0]).toEqual(["a", "b", "c", "d"]);
 		});
 
-		it("warns on truncated columns", () => {
+		it("does not warn when growing for pasted columns", () => {
 			const headers = ["A"];
 			const rows = [["x"]];
 			const matrix = [["a", "b", "c"]];
 			const result = applyMatrix(headers, rows, matrix, { r: 0, c: 0 });
-			expect(result.warnings.length).toBeGreaterThan(0);
-			expect(result.warnings[0]?.type).toBe("truncated_columns");
+			expect(result.warnings).toEqual([]);
+			expect(result.rows[0]).toEqual(["a", "b", "c"]);
 		});
 
-		it("fills only up to grid width at offset", () => {
+		it("grows by the required number of columns from an offset", () => {
 			const headers = ["A", "B", "C"];
 			const rows = [["x", "y", "z"]];
 			const matrix = [["a", "b", "c", "d"]];
 			const result = applyMatrix(headers, rows, matrix, { r: 0, c: 1 });
-			expect(result.rows[0]).toEqual(["x", "a", "b"]);
+			expect(result.rows[0]).toEqual(["x", "a", "b", "c", "d"]);
 		});
 	});
 
@@ -95,7 +99,10 @@ describe("applyMatrix", () => {
 			const rows = [["x", "y"]];
 			const matrix: string[][] = [];
 			const result = applyMatrix(headers, rows, matrix, { r: 0, c: 0 });
-			expect(result.rows).toEqual(rows);
+			expect(result.rows).toEqual([
+				["x", "y"],
+				["", ""]
+			]);
 		});
 
 		it("handles single cell matrix", () => {
@@ -115,11 +122,12 @@ describe("applyMatrix", () => {
 				["e", "f"]
 			];
 			const result = applyMatrix(headers, rows, matrix, { r: 0, c: 0 });
-			expect(result.rows.length).toBe(3);
+			expect(result.rows.length).toBe(4);
 			expect(result.rows).toEqual([
 				["a", "b"],
 				["c", "d"],
-				["e", "f"]
+				["e", "f"],
+				["", ""]
 			]);
 		});
 

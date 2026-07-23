@@ -9,7 +9,8 @@ function keyEvent(key: string, target: EventTarget | null = null) {
 		ctrlKey: false,
 		metaKey: false,
 		target,
-		preventDefault() {}
+		preventDefault() {},
+		stopPropagation() {}
 	};
 }
 
@@ -39,6 +40,40 @@ describe("grid defaults", () => {
 	});
 });
 
+describe("grid paste", () => {
+	it("grows a one-column grid for multi-column clipboard data", () => {
+		const grid = createGrid();
+
+		grid.handlePaste("Alice\t30");
+
+		expect(grid.headers).toEqual(["Name", ""]);
+		expect(grid.rows).toEqual([
+			["Alice", "30"],
+			["", ""]
+		]);
+	});
+
+	it("retains ragged rows and grows from the active column", () => {
+		const grid = createGrid();
+		grid.addNewColumn();
+		grid.rows = [
+			["Alpha", ""],
+			["Beta", ""],
+			["", ""]
+		];
+		grid.moveTo({ r: 0, c: 1 });
+
+		grid.handlePaste("one\ttwo\nthree");
+
+		expect(grid.headers).toEqual(["Name", "", ""]);
+		expect(grid.rows).toEqual([
+			["Alpha", "one", "two"],
+			["Beta", "three", ""],
+			["", "", ""]
+		]);
+	});
+});
+
 describe("blank name row", () => {
 	it("adds a new blank bucket after naming the current blank row", () => {
 		const grid = createGrid();
@@ -47,6 +82,21 @@ describe("blank name row", () => {
 		grid.commitEdit("Alpha");
 
 		expect(grid.rows).toEqual([["Alpha"], [""]]);
+	});
+
+	it("keeps the grid unchanged when a paste would create two blank Name rows with values", () => {
+		const grid = createGrid();
+		grid.addNewColumn();
+		grid.rows = [
+			["Existing", "Room"],
+			["", ""]
+		];
+
+		expect(() => grid.handlePaste("\tFirst\n\tSecond")).toThrow("Name is required for imported rows 1, 2.");
+		expect(grid.rows).toEqual([
+			["Existing", "Room"],
+			["", ""]
+		]);
 	});
 
 	it("removes a row committed blank when a blank bucket already exists", () => {
@@ -97,6 +147,28 @@ describe("grid cell selection", () => {
 			focus: { r: 2, c: 0 }
 		});
 	});
+
+	it("clears a selection when Escape is consumed", () => {
+		const grid = gridWithRows(3);
+		let prevented = false;
+		let stopped = false;
+		grid.startCellSelection({ r: 0, c: 0 }, false);
+		grid.extendCellSelection({ r: 1, c: 0 });
+
+		grid.handleKeydown({
+			...keyEvent("Escape"),
+			preventDefault() {
+				prevented = true;
+			},
+			stopPropagation() {
+				stopped = true;
+			}
+		});
+
+		expect(grid.selection).toBeNull();
+		expect(prevented).toBe(true);
+		expect(stopped).toBe(true);
+	});
 });
 
 describe("grid filters", () => {
@@ -121,7 +193,7 @@ describe("grid filters", () => {
 		expect(grid.hasFilters).toBe(false);
 	});
 
-	it("clears filters when deleting columns", () => {
+	it("keeps filters for retained columns when deleting columns", () => {
 		const grid = createGrid();
 		grid.addNewColumn();
 		grid.applyFilter(0, new Set(["Alpha"]));
@@ -129,7 +201,7 @@ describe("grid filters", () => {
 
 		grid.deleteSelected();
 
-		expect(grid.hasFilters).toBe(false);
+		expect(grid.hasFilters).toBe(true);
 	});
 });
 
@@ -155,6 +227,76 @@ describe("grid sorting", () => {
 		grid.toggleSort(1);
 
 		expect(grid.sort).toEqual({ column: 1, direction: "ascending" });
+	});
+
+	it("navigates in the displayed sort order without a filter", () => {
+		const grid = gridWithRows(4);
+		grid.setVisibleRows([2, 1, 0, 3]);
+		grid.moveTo({ r: 2, c: 0 });
+
+		grid.handleKeydown(keyEvent("ArrowDown"));
+
+		expect(grid.active).toEqual({ r: 1, c: 0 });
+	});
+
+	it("does not select hidden rows when a filter has no results", () => {
+		const grid = gridWithRows(3);
+		grid.setVisibleRows([]);
+
+		grid.selectAllRows();
+		grid.deleteSelected();
+
+		expect(grid.headerSel).toBeNull();
+		expect(grid.rows).toEqual([["row-0"], ["row-1"], [""]]);
+	});
+});
+
+describe("Name column invariant", () => {
+	it("cannot rename or delete Name through grid methods", () => {
+		const grid = createGrid();
+		grid.addNewColumn();
+
+		grid.setHeader(0, "Alias");
+		grid.startColumnSelection(0, false, false);
+		grid.deleteSelected();
+
+		expect(grid.headers).toEqual(["Name", ""]);
+	});
+
+	it("remaps active column and sort state after deleting an editable column", () => {
+		const grid = createGrid();
+		grid.addNewColumn();
+		grid.addNewColumn();
+		grid.moveTo({ r: 0, c: 2 });
+		grid.toggleSort(2);
+		grid.startColumnSelection(1, false, false);
+
+		grid.deleteSelected();
+
+		expect(grid.active).toEqual({ r: 0, c: 1 });
+		expect(grid.sort).toEqual({ column: 1, direction: "ascending" });
+	});
+});
+
+describe("grid copying", () => {
+	it("copies selected rows in displayed order", () => {
+		const grid = gridWithRows(4);
+		grid.setVisibleRows([2, 0, 1, 3]);
+		grid.startCellSelection({ r: 2, c: 0 }, false);
+		grid.extendCellSelection({ r: 0, c: 0 });
+
+		expect(grid.copySelection()).toBe("row-2\nrow-0\n");
+	});
+
+	it("highlights only displayed rows in a sorted cell range", () => {
+		const grid = gridWithRows(4);
+		grid.setVisibleRows([2, 0, 1, 3]);
+		grid.startCellSelection({ r: 2, c: 0 }, false);
+		grid.extendCellSelection({ r: 0, c: 0 });
+
+		expect(grid.selectedCellStatus({ r: 2, c: 0 })).toBe("active");
+		expect(grid.selectedCellStatus({ r: 0, c: 0 })).toBe("selected");
+		expect(grid.selectedCellStatus({ r: 1, c: 0 })).toBe("normal");
 	});
 });
 
@@ -298,7 +440,7 @@ describe("grid keyboard editing", () => {
 		grid.setVisibleRows([2]);
 
 		expect(grid.active).toEqual({ r: 2, c: 0 });
-		expect(grid.takeFocusAfterCommit()).toBe(true);
+		expect(grid.takeFocusRequest()).toBe(true);
 	});
 
 	it("keeps focus on the trailing blank row when Arrow Down is pressed", () => {

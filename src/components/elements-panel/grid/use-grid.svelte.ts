@@ -3,11 +3,20 @@ import { SvelteMap, SvelteSet } from "svelte/reactivity";
 import { applyMatrix } from "./grid-apply";
 import type { GridColumn } from "./grid-filter";
 import { applyImportMatrix } from "./grid-import";
-import { addColumn, deleteColumns, deleteRows, growToFit, insertRows, normalizeNameRows, setCell } from "./grid-model";
+import {
+	addColumn,
+	deleteColumns,
+	deleteRows,
+	insertRows,
+	normalizeHeaders,
+	normalizeNameRows,
+	setCell,
+	setGridHeader
+} from "./grid-model";
 import type { CellAddr } from "./grid-model";
 import { navigate } from "./grid-navigation";
 import type { CellStatus, Range } from "./grid-selection";
-import { cellStatus, normalizeRange, updateHeaderSelection } from "./grid-selection";
+import { normalizeRange, updateHeaderSelection } from "./grid-selection";
 import type { GridSort } from "./grid-sort";
 import { parseClipboard } from "./ingest/clipboard";
 import { serializeGridRange } from "./ingest/clipboard";
@@ -19,11 +28,14 @@ export interface HeaderSelection {
 	indices: Set<number>;
 }
 
-type GridKeyEvent = Pick<KeyboardEvent, "key" | "shiftKey" | "ctrlKey" | "metaKey" | "target" | "preventDefault">;
+type GridKeyEvent = Pick<
+	KeyboardEvent,
+	"key" | "shiftKey" | "ctrlKey" | "metaKey" | "target" | "preventDefault" | "stopPropagation"
+>;
 
 /** The grid hook. Owns all `$state` and provides intent methods for the UI. */
 export function createGrid(options: { data?: NameGridData; onChange?: (data: NameGridData) => void } = {}) {
-	const initialHeaders = options.data?.headers.length ? [...options.data.headers] : ["Name"];
+	const initialHeaders = normalizeHeaders(options.data?.headers ?? ["Name"]);
 	const initialRows = normalizeNameRows(options.data?.rows ?? [[""]], initialHeaders.length);
 
 	// Core state
@@ -37,7 +49,7 @@ export function createGrid(options: { data?: NameGridData; onChange?: (data: Nam
 	let headerSel = $state<HeaderSelection | null>(null);
 	const filters = new SvelteMap<GridColumn, SvelteSet<string>>();
 	let sort = $state<GridSort | null>(null);
-	let visibleRows = $state<number[]>([]);
+	let visibleRows = $state<number[] | null>(null);
 	let rowSelectionAnchor: number | null = null;
 	let columnSelectionAnchor: number | null = null;
 
@@ -49,7 +61,7 @@ export function createGrid(options: { data?: NameGridData; onChange?: (data: Nam
 	const dims = $derived({ rows: rows.length, cols: headers.length });
 	// Selecting every row means the whole table is selected, so columns read as selected too.
 	function currentVisibleRows() {
-		return filters.size === 0 ? rows.map((_, index) => index) : visibleRows;
+		return visibleRows ?? rows.map((_, index) => index);
 	}
 
 	const allRowsSelected = $derived(
@@ -78,12 +90,25 @@ export function createGrid(options: { data?: NameGridData; onChange?: (data: Nam
 			if (headerSel.kind === "col" && headerSel.indices.has(addr.c)) return "selected";
 			return "normal";
 		}
-		return cellStatus(addr, active, selection, editing);
+		if (editing && editing.r === addr.r && editing.c === addr.c) return "editing";
+		if (active.r === addr.r && active.c === addr.c) return "active";
+		if (!selection) return "normal";
+		const displayedRows = currentVisibleRows();
+		const anchor = displayedRows.indexOf(selection.anchor.r);
+		const focus = displayedRows.indexOf(selection.focus.r);
+		const row = displayedRows.indexOf(addr.r);
+		const from = Math.min(anchor, focus);
+		const to = Math.max(anchor, focus);
+		const minColumn = Math.min(selection.anchor.c, selection.focus.c);
+		const maxColumn = Math.max(selection.anchor.c, selection.focus.c);
+		return anchor >= 0 && focus >= 0 && row >= from && row <= to && addr.c >= minColumn && addr.c <= maxColumn
+			? "selected"
+			: "normal";
 	}
 
 	// Intent methods
 	function setHeader(colIndex: number, value: string) {
-		headers[colIndex] = value;
+		headers = setGridHeader(headers, colIndex, value);
 		persist();
 	}
 
@@ -120,14 +145,16 @@ export function createGrid(options: { data?: NameGridData; onChange?: (data: Nam
 		persist();
 	}
 
-	function cancelEdit() {
+	function cancelEdit(requestFocus = false) {
 		editing = null;
 		editingValue = "";
+		if (requestFocus) focusAfterCommit = true;
 	}
 
 	function moveTo(addr: CellAddr, clearSelection = true) {
 		if (addr.r >= 0 && addr.r < dims.rows && addr.c >= 0 && addr.c < dims.cols) {
 			active = addr;
+			focusAfterCommit = true;
 			if (clearSelection) selection = null;
 			// Focusing a cell clears any row/column header selection
 			headerSel = null;
@@ -195,9 +222,12 @@ export function createGrid(options: { data?: NameGridData; onChange?: (data: Nam
 				rows = normalizeNameRows(setCell(rows, active, ""), headers.length);
 				persist();
 			} else if (event.key === "Escape") {
-				// Cancel any multi-selection
-				selection = null;
-				headerSel = null;
+				if (selection || headerSel) {
+					event.preventDefault();
+					event.stopPropagation();
+					selection = null;
+					headerSel = null;
+				}
 			}
 		} else if (editing) {
 			// Editing mode
@@ -210,21 +240,16 @@ export function createGrid(options: { data?: NameGridData; onChange?: (data: Nam
 				moveTo(nextTabCell(event.shiftKey));
 			} else if (event.key === "Escape") {
 				event.preventDefault();
-				cancelEdit();
+				cancelEdit(true);
 			}
 		}
 	}
 
-	async function handlePaste(text: string) {
+	function handlePaste(text: string) {
 		const result = parseClipboard(text);
 		const applied = applyMatrix(headers, rows, result.matrix, active);
+		headers = applied.headers;
 		rows = applied.rows;
-		// On paste, grow to fit if needed
-		const maxR = active.r + result.matrix.length - 1;
-		const maxC = active.c + (result.matrix[0]?.length ?? 0) - 1;
-		const grown = growToFit(headers, rows, { r: maxR, c: maxC });
-		headers = grown.headers;
-		rows = normalizeNameRows(grown.rows, grown.headers.length);
 		persist();
 	}
 
@@ -255,8 +280,9 @@ export function createGrid(options: { data?: NameGridData; onChange?: (data: Nam
 	/** Row indices affected by a row action: the whole row selection if `index` is part
 	 *  of it, otherwise just the clicked row. */
 	function targetRows(index: number): number[] {
-		if (headerSel?.kind === "row" && headerSel.indices.has(index)) {
-			return Array.from(headerSel.indices).sort((a, b) => a - b);
+		const selected = headerSel;
+		if (selected?.kind === "row" && selected.indices.has(index)) {
+			return currentVisibleRows().filter((rowIndex) => selected.indices.has(rowIndex));
 		}
 		return [index];
 	}
@@ -306,7 +332,7 @@ export function createGrid(options: { data?: NameGridData; onChange?: (data: Nam
 
 	function setVisibleRows(indices: readonly number[]) {
 		if (
-			visibleRows.length === indices.length &&
+			visibleRows?.length === indices.length &&
 			visibleRows.every((rowIndex, index) => rowIndex === indices[index])
 		) {
 			return;
@@ -317,7 +343,8 @@ export function createGrid(options: { data?: NameGridData; onChange?: (data: Nam
 		}
 	}
 
-	function takeFocusAfterCommit() {
+	/** Returns and clears a focus request caused by an explicit grid interaction. */
+	function takeFocusRequest() {
 		const shouldFocus = focusAfterCommit;
 		focusAfterCommit = false;
 		return shouldFocus;
@@ -388,8 +415,8 @@ export function createGrid(options: { data?: NameGridData; onChange?: (data: Nam
 		if (matrix.length === 0) return;
 		const inserted = insertRows(headers, rows, index, matrix.length);
 		const applied = applyMatrix(inserted.headers, inserted.rows, matrix, { r: index, c: 0 });
-		headers = inserted.headers;
-		rows = normalizeNameRows(applied.rows, inserted.headers.length);
+		headers = applied.headers;
+		rows = applied.rows;
 		persist();
 	}
 
@@ -492,16 +519,40 @@ export function createGrid(options: { data?: NameGridData; onChange?: (data: Nam
 				active.r = Math.max(0, rows.length - 1);
 			}
 		} else if (headerSel.kind === "col") {
+			const removed = Array.from(headerSel.indices)
+				.filter((index) => index > 0)
+				.sort((left, right) => left - right);
+			const remapColumn = (column: number) => {
+				if (removed.includes(column)) return null;
+				return column - removed.filter((index) => index < column).length;
+			};
 			const result = deleteColumns(headers, rows, headerSel.indices);
 			headers = result.headers;
 			rows = normalizeNameRows(result.rows, result.headers.length);
+			const nextFilters = new SvelteMap<GridColumn, SvelteSet<string>>();
+			for (const [column, values] of filters) {
+				if (typeof column === "string") nextFilters.set(column, values);
+				else {
+					const nextColumn = remapColumn(column);
+					if (nextColumn !== null) nextFilters.set(nextColumn, values);
+				}
+			}
 			filters.clear();
+			for (const [column, values] of nextFilters) filters.set(column, values);
+			if (sort) {
+				const nextColumn = remapColumn(sort.column);
+				sort = nextColumn === null ? null : { ...sort, column: nextColumn };
+			}
 			persist();
 			headerSel = null;
-			// Move active to a valid cell
-			if (active.c >= headers.length) {
-				active.c = Math.max(0, headers.length - 1);
-			}
+			const nextActiveColumn = remapColumn(active.c);
+			active.c = Math.max(
+				0,
+				Math.min(
+					nextActiveColumn ?? active.c - removed.filter((index) => index < active.c).length,
+					headers.length - 1
+				)
+			);
 		}
 	}
 
@@ -512,8 +563,17 @@ export function createGrid(options: { data?: NameGridData; onChange?: (data: Nam
 			return value + "\n";
 		}
 		const norm = normalizeRange(selection);
+		const displayedRows = currentVisibleRows();
+		const anchor = displayedRows.indexOf(selection.anchor.r);
+		const focus = displayedRows.indexOf(selection.focus.r);
+		const selectedRows =
+			anchor >= 0 && focus >= 0
+				? displayedRows
+						.slice(Math.min(anchor, focus), Math.max(anchor, focus) + 1)
+						.map((index) => rows[index] ?? [])
+				: rows.slice(norm.minRow, norm.maxRow + 1);
 		return serializeGridRange(
-			rows.slice(norm.minRow, norm.maxRow + 1).map((row) => row.slice(norm.minCol, norm.maxCol + 1)),
+			selectedRows.map((row) => row.slice(norm.minCol, norm.maxCol + 1)),
 			{ from: 0, to: norm.maxCol - norm.minCol }
 		);
 	}
@@ -524,7 +584,7 @@ export function createGrid(options: { data?: NameGridData; onChange?: (data: Nam
 			return headers;
 		},
 		set headers(value: string[]) {
-			headers = value;
+			headers = normalizeHeaders(value);
 			rows = normalizeNameRows(rows, headers.length);
 			persist();
 		},
@@ -560,7 +620,7 @@ export function createGrid(options: { data?: NameGridData; onChange?: (data: Nam
 			return sort;
 		},
 		get visibleRows() {
-			return visibleRows;
+			return visibleRows ?? [];
 		},
 		get dims() {
 			return dims;
@@ -587,7 +647,7 @@ export function createGrid(options: { data?: NameGridData; onChange?: (data: Nam
 		clearFilters,
 		toggleSort,
 		setVisibleRows,
-		takeFocusAfterCommit,
+		takeFocusRequest,
 		get allRowsSelected() {
 			return allRowsSelected;
 		},

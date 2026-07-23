@@ -1,17 +1,16 @@
-import type { CellAddr } from "./grid-model";
+import { growToFit, normalizeHeaders, normalizeNameRows, validateNameRows, type CellAddr } from "./grid-model";
 import type { IngestWarning } from "./ingest/types";
 
 export interface ApplyMatrixResult {
+	headers: string[];
 	rows: string[][];
 	warnings: IngestWarning[];
 }
 
 /** Apply an imported matrix starting at anchor cell.
  *
- * - Fills EXISTING columns only (extra columns in matrix -> warning, truncated)
- * - Grows/pads rows as needed
- * - All rows padded to headers.length
- * - Used identically by paste AND file import
+ * Grows, applies, validates, normalizes, and returns the full replacement grid.
+ * It never discards supplied matrix cells.
  */
 export function applyMatrix(
 	headers: string[],
@@ -19,46 +18,19 @@ export function applyMatrix(
 	matrix: string[][],
 	anchor: CellAddr
 ): ApplyMatrixResult {
-	const warnings: IngestWarning[] = [];
-	const width = headers.length;
-	const newRows = rows.map((r) => [...r]); // Copy existing
-
 	if (matrix.length === 0) {
-		return { rows: newRows, warnings };
+		const normalizedHeaders = normalizeHeaders(headers);
+		return { headers: normalizedHeaders, rows: normalizeNameRows(rows, normalizedHeaders.length), warnings: [] };
 	}
-
-	// Grow rows to fit matrix
-	const maxRow = anchor.r + matrix.length - 1;
-	while (newRows.length <= maxRow) {
-		newRows.push(Array(width).fill(""));
-	}
-
-	// Fill matrix cells starting at anchor
-	for (let mi = 0; mi < matrix.length; mi++) {
-		const matrixRow = matrix[mi];
-		const gridRow = anchor.r + mi;
-
-		// Check for columns beyond grid width
-		if (matrixRow.length > width) {
-			warnings.push({
-				type: "truncated_columns",
-				message: `Row ${gridRow + 1} has ${matrixRow.length} columns but grid has only ${width}. Extra columns truncated.`
-			});
-		}
-
-		// Fill up to grid width, truncating extras
-		for (let mc = 0; mc < Math.min(matrixRow.length, width); mc++) {
-			const gridCol = anchor.c + mc;
-			if (gridCol < width) {
-				newRows[gridRow][gridCol] = matrixRow[mc];
-			}
-		}
-
-		// Pad row to width
-		while (newRows[gridRow].length < width) {
-			newRows[gridRow].push("");
+	let matrixWidth = 0;
+	for (const matrixRow of matrix) matrixWidth = Math.max(matrixWidth, matrixRow.length);
+	const grown = growToFit(headers, rows, { r: anchor.r + matrix.length - 1, c: anchor.c + matrixWidth - 1 });
+	const nextRows = grown.rows.map((row) => [...row]);
+	for (const [rowOffset, matrixRow] of matrix.entries()) {
+		for (const [columnOffset, value] of matrixRow.entries()) {
+			nextRows[anchor.r + rowOffset]![anchor.c + columnOffset] = value;
 		}
 	}
-
-	return { rows: newRows, warnings };
+	validateNameRows(nextRows);
+	return { headers: grown.headers, rows: normalizeNameRows(nextRows, grown.headers.length), warnings: [] };
 }

@@ -16,7 +16,10 @@ describe("grid import", () => {
 		);
 
 		expect(result.headers).toEqual(["Name", "Age", "Status"]);
-		expect(result.rows).toEqual([["Alice", "30", "Active"]]);
+		expect(result.rows).toEqual([
+			["Alice", "30", "Active"],
+			["", "", ""]
+		]);
 	});
 
 	it("imports every row as data when the file has no header", () => {
@@ -34,7 +37,33 @@ describe("grid import", () => {
 		expect(result.headers).toEqual(["Name", ""]);
 		expect(result.rows).toEqual([
 			["Alice", "30"],
-			["Bob", "25"]
+			["Bob", "25"],
+			["", ""]
+		]);
+	});
+
+	it("rejects multiple blank Name rows with supplied values without changing the source rows", () => {
+		const headers = ["Name", "Category"];
+		const rows = [
+			["Existing", "Room"],
+			["", ""]
+		];
+
+		expect(() =>
+			applyImportMatrix(
+				headers,
+				rows,
+				[
+					["", "First"],
+					["", "Second"]
+				],
+				{ r: 0, c: 0 },
+				false
+			)
+		).toThrow("Name is required for imported rows 1, 2.");
+		expect(rows).toEqual([
+			["Existing", "Room"],
+			["", ""]
 		]);
 	});
 });

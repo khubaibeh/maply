@@ -1,3 +1,4 @@
+import { encodeDelimitedCell } from "$lib/delimited";
 import type { Element, ElementType } from "@maply/model/types";
 
 export const elementTypeLabels = {
@@ -21,11 +22,7 @@ export function filterElements(elements: readonly Element[], selectedTypes: read
 
 /** Serializes element names as a one-column CSV file. */
 export function elementNamesCsv(elements: readonly Element[]) {
-	return elements.map((element) => csvCell(element.name)).join("\r\n");
-}
-
-function csvCell(value: string) {
-	return /[",\r\n]/.test(value) ? `"${value.replaceAll('"', '""')}"` : value;
+	return elements.map((element) => encodeDelimitedCell(element.name, ",", true)).join("\r\n");
 }
 
 /** Toggles a type in the selection, normalizing "all selected" back to empty. */

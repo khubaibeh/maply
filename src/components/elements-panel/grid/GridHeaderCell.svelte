@@ -15,6 +15,7 @@
 	}
 
 	let { colIndex, value, selected, filterValues, grid }: Props = $props();
+	const isNameColumn = $derived(colIndex === 0);
 	let editing = $state(false);
 	let input: HTMLInputElement | null = $state(null);
 	let localValue = $derived(value);
@@ -39,6 +40,7 @@
 
 	function handleDoubleClick(event: MouseEvent) {
 		event.stopPropagation();
+		if (isNameColumn) return;
 		editing = true;
 	}
 
@@ -88,7 +90,7 @@
 		}
 	}}
 >
-	{#if editing}
+	{#if editing && !isNameColumn}
 		<input
 			bind:this={input}
 			bind:value={localValue}
@@ -101,7 +103,7 @@
 		/>
 	{:else}
 		<div class="flex min-w-0 flex-1 items-center gap-1">
-			<span class="truncate">{value || "Column"}</span>
+			<span class="truncate">{isNameColumn ? "Name" : value || "Column"}</span>
 			<button
 				type="button"
 				class="hover:bg-muted text-muted-foreground hover:text-foreground inline-flex size-5 shrink-0 items-center justify-center rounded-sm outline-none"

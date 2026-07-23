@@ -1,6 +1,4 @@
 <script lang="ts">
-	import { tick } from "svelte";
-
 	import type { CellAddr } from "./grid-model";
 	import type { Grid } from "./use-grid.svelte";
 
@@ -13,7 +11,6 @@
 	}
 
 	let { addr, value, status, grid, onFocus }: Props = $props();
-	let cell: HTMLDivElement | null = $state(null);
 	let input: HTMLInputElement | null = $state(null);
 	let localValue = $derived(status === "editing" ? grid.editingValue : value);
 
@@ -40,30 +37,20 @@
 		grid.setEditing(addr);
 	}
 
-	async function focusActiveCell() {
-		await tick();
-		await tick();
-		const { r, c } = grid.active;
-		cell?.closest("[data-grid-root]")?.querySelector<HTMLElement>(`[data-grid-cell="${r}:${c}"]`)?.focus();
-	}
-
-	async function handleInputKeydown(event: KeyboardEvent) {
+	function handleInputKeydown(event: KeyboardEvent) {
 		if (event.key === "Enter") {
 			event.preventDefault();
 			event.stopPropagation();
 			grid.commitEdit(localValue);
-			await focusActiveCell();
 		} else if (event.key === "Tab") {
 			event.preventDefault();
 			event.stopPropagation();
 			grid.commitEdit(localValue);
 			grid.handleKeydown(event);
-			await focusActiveCell();
 		} else if (event.key === "Escape") {
 			event.preventDefault();
 			event.stopPropagation();
-			grid.cancelEdit();
-			await focusActiveCell();
+			grid.cancelEdit(true);
 		}
 	}
 
@@ -75,7 +62,6 @@
 </script>
 
 <div
-	bind:this={cell}
 	class="border-border text-foreground relative flex min-h-8 cursor-cell items-center border-r border-b px-2 py-1 text-xs transition-colors outline-none select-none {status ===
 	'editing'
 		? 'bg-background ring-primary z-20 ring-1 ring-inset'

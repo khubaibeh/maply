@@ -23,9 +23,10 @@
 	interface Props {
 		grid: Grid;
 		elements: readonly Element[];
+		onError?: (message: string) => void;
 	}
 
-	let { grid, elements }: Props = $props();
+	let { grid, elements, onError }: Props = $props();
 	let gridContainer: HTMLElement | null = $state(null);
 	const rowElements = $derived(elementsByNameRow(grid.rows, elements));
 	const visibleRowIndexes = $derived(
@@ -35,19 +36,19 @@
 
 	$effect(() => {
 		grid.setVisibleRows(visibleRowIndexes);
-		if (grid.takeFocusAfterCommit()) void focusActiveCell();
+		if (grid.takeFocusRequest()) void focusActiveCell(grid.active);
 	});
 	// The row right-click selection is transient: cleared when the menu closes,
 	// unless an action (e.g. "Select all rows") opts to keep it.
 	let keepSelectionOnClose = $state(false);
 
 	onMount(() => {
-		gridContainer?.querySelector<HTMLElement>('[role="gridcell"][tabindex="0"]')?.focus();
+		void focusActiveCell(grid.active);
 	});
 
-	async function focusActiveCell() {
+	async function focusActiveCell(active: { r: number; c: number }) {
 		await tick();
-		const { r, c } = grid.active;
+		const { r, c } = active;
 		gridContainer?.querySelector<HTMLElement>(`[data-grid-cell="${r}:${c}"]`)?.focus();
 	}
 
@@ -59,10 +60,21 @@
 	}
 
 	function handlePaste(event: ClipboardEvent) {
+		const target = event.target;
+		if (
+			target instanceof HTMLElement &&
+			(target.closest("input, textarea, [contenteditable='true']") || target.isContentEditable)
+		) {
+			return;
+		}
 		event.preventDefault();
 		const text = event.clipboardData?.getData("text/plain");
 		if (text) {
-			grid.handlePaste(text);
+			try {
+				grid.handlePaste(text);
+			} catch (error) {
+				onError?.(error instanceof Error ? error.message : "Could not paste the clipboard data.");
+			}
 		}
 	}
 
@@ -72,6 +84,19 @@
 			grid.handleKeydown(event);
 		}
 	}
+
+	function handleCopy(event: ClipboardEvent) {
+		const target = event.target;
+		if (
+			target instanceof HTMLElement &&
+			(target.closest("input, textarea, [contenteditable='true']") || target.isContentEditable)
+		) {
+			return;
+		}
+		if (!event.clipboardData) return;
+		event.clipboardData.setData("text/plain", grid.copySelection());
+		event.preventDefault();
+	}
 </script>
 
 <div
@@ -80,6 +105,7 @@
 	class="border-border/30 bg-background/50 flex min-h-0 w-full flex-1 flex-col gap-0 overflow-hidden rounded-lg border"
 	role="grid"
 	onpaste={handlePaste}
+	oncopy={handleCopy}
 	onkeydown={handleKeydown}
 	tabindex={-1}
 >

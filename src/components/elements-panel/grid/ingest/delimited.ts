@@ -13,30 +13,42 @@ export function parseTsv(text: string): IngestResult {
 	return { matrix, warnings: [] };
 }
 
-/** Detect whether text is more likely CSV (comma) or TSV (tab).
- *
- * Heuristic: count occurrences of comma vs tab in first 10 lines.
- * Handle locale differences (some regions use ; as CSV delimiter).
- */
+/** Detect a delimiter outside quoted fields in the first ten logical records. */
 export function detectDelimiter(text: string): string {
-	const lines = text.split("\n").slice(0, 10);
-	let commaCount = 0;
-	let tabCount = 0;
-	let semicolonCount = 0;
-
-	for (const line of lines) {
-		for (const char of line) {
-			if (char === ",") commaCount++;
-			else if (char === "\t") tabCount++;
-			else if (char === ";") semicolonCount++;
+	const candidates = [",", "\t", ";"];
+	const counts = new Map(candidates.map((candidate) => [candidate, 0]));
+	let inQuotes = false;
+	let fieldStart = true;
+	let records = 0;
+	for (let index = 0; index < text.length && records < 10; index++) {
+		const char = text[index] ?? "";
+		if (inQuotes) {
+			if (char === '"') {
+				if (text[index + 1] === '"') index++;
+				else inQuotes = false;
+			}
+			continue;
+		}
+		if (char === '"' && fieldStart) {
+			inQuotes = true;
+			continue;
+		}
+		if (char === "\r" || char === "\n") {
+			if (char === "\r" && text[index + 1] === "\n") index++;
+			records++;
+			fieldStart = true;
+			continue;
+		}
+		if (counts.has(char)) {
+			counts.set(char, (counts.get(char) ?? 0) + 1);
+			fieldStart = true;
+		} else {
+			fieldStart = false;
 		}
 	}
-
-	// Tab is strongest signal (spreadsheets typically export TSV with tabs)
-	if (tabCount > 0) return "\t";
-	// Otherwise check between comma and semicolon
-	if (semicolonCount > commaCount) return ";";
-	return ",";
+	return candidates.reduce((best, candidate) =>
+		(counts.get(candidate) ?? 0) > (counts.get(best) ?? 0) ? candidate : best
+	);
 }
 
 /** Parse delimited text, auto-detecting delimiter. */

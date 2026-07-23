@@ -1,4 +1,6 @@
-/** Parse delimited text into a rectangular matrix of cells.
+import { ImportError, MAX_CELLS, MAX_COLUMNS, MAX_ROWS } from "./types";
+
+/** Parse delimited text into a bounded rectangular matrix of cells.
  *
  * Handles:
  * - RFC 4180-style quoted fields with "" escaping
@@ -8,16 +10,41 @@
  * - Rectangular enforcement via padding
  */
 export function parseDelimitedMatrix(text: string, delimiter: string): string[][] {
-	// Normalize line endings and strip trailing newline
-	const normalized = text.replace(/\r\n/g, "\n").replace(/\n$/, "");
+	// Normalize line endings and strip one UTF-8 BOM.
+	const normalized = text.replace(/^\uFEFF/, "").replace(/\r\n?|\n/g, "\n");
 
-	if (!normalized) return [];
+	if (!normalized) return [[""]];
 
 	const matrix: string[][] = [];
 	let row: string[] = [];
 	let cell = "";
 	let inQuotes = false;
+	let quotedFieldClosed = false;
 	let i = 0;
+	let cellCount = 0;
+
+	function appendCell() {
+		if (row.length >= MAX_COLUMNS) {
+			throw new ImportError(
+				"too_many_columns",
+				`Imports may contain at most ${MAX_COLUMNS.toLocaleString()} columns.`
+			);
+		}
+		row.push(cell);
+		cell = "";
+	}
+
+	function appendRow() {
+		if (matrix.length >= MAX_ROWS) {
+			throw new ImportError("too_many_rows", `Imports may contain at most ${MAX_ROWS.toLocaleString()} rows.`);
+		}
+		cellCount += row.length;
+		if (cellCount > MAX_CELLS) {
+			throw new ImportError("too_many_cells", `Imports may contain at most ${MAX_CELLS.toLocaleString()} cells.`);
+		}
+		matrix.push(row);
+		row = [];
+	}
 
 	while (i < normalized.length) {
 		const char = normalized[i];
@@ -34,6 +61,7 @@ export function parseDelimitedMatrix(text: string, delimiter: string): string[][
 				} else {
 					// End of quoted field
 					inQuotes = false;
+					quotedFieldClosed = true;
 					i++;
 					continue;
 				}
@@ -49,25 +77,26 @@ export function parseDelimitedMatrix(text: string, delimiter: string): string[][
 			}
 		} else {
 			// Not in quotes
-			if (char === '"') {
+			if (quotedFieldClosed && char !== delimiter && char !== "\n") {
+				throw new ImportError("invalid_file", "Quoted fields must end before the next delimiter or row.");
+			} else if (char === '"') {
+				if (cell.length > 0)
+					throw new ImportError("invalid_file", "Quotes may only begin at the start of a field.");
 				// Start of quoted field
 				inQuotes = true;
 				i++;
 				continue;
 			} else if (char === delimiter) {
 				// Field separator
-				row.push(cell);
-				cell = "";
+				appendCell();
+				quotedFieldClosed = false;
 				i++;
 				continue;
 			} else if (char === "\n") {
 				// Row separator
-				row.push(cell);
-				if (row.length > 0) {
-					matrix.push(row);
-				}
-				row = [];
-				cell = "";
+				appendCell();
+				appendRow();
+				quotedFieldClosed = false;
 				i++;
 				continue;
 			} else {
@@ -78,15 +107,21 @@ export function parseDelimitedMatrix(text: string, delimiter: string): string[][
 		}
 	}
 
-	// Add final cell and row
-	row.push(cell);
-	if (row.length > 0) {
-		matrix.push(row);
+	if (inQuotes) throw new ImportError("invalid_file", "The import contains an unterminated quoted field.");
+
+	// Add final cell and row unless the input ended with a row ending.
+	if (!normalized.endsWith("\n")) {
+		appendCell();
+		appendRow();
 	}
 
 	// Rectangularize: pad all rows to max length
 	if (matrix.length === 0) return [];
-	const maxCols = Math.max(...matrix.map((r) => r.length));
+	let maxCols = 0;
+	for (const parsedRow of matrix) maxCols = Math.max(maxCols, parsedRow.length);
+	if (matrix.length * maxCols > MAX_CELLS) {
+		throw new ImportError("too_many_cells", `Imports may contain at most ${MAX_CELLS.toLocaleString()} cells.`);
+	}
 	for (const r of matrix) {
 		while (r.length < maxCols) r.push("");
 	}

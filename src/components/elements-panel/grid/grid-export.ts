@@ -1,3 +1,4 @@
+import { encodeDelimitedCell } from "$lib/delimited";
 import type { Element } from "@maply/model/types";
 
 /** Serializes grid values and their matched element names as a CSV file. */
@@ -13,9 +14,5 @@ export function nameMappingsCsv(
 			(rowElements[index] ?? []).map((element) => element.name).join(";")
 		])
 	];
-	return csvRows.map((row) => row.map(csvCell).join(",")).join("\r\n");
-}
-
-function csvCell(value: string): string {
-	return /[",\r\n]/.test(value) ? `"${value.replaceAll('"', '""')}"` : value;
+	return csvRows.map((row) => row.map((value) => encodeDelimitedCell(value, ",", true)).join(",")).join("\r\n");
 }
