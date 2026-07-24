@@ -1,11 +1,18 @@
 import { getImageRenderRect } from "@maply/model";
+import type { Element } from "@maply/model/types";
 import { readonly } from "svelte/store";
 
 import { centerCamera, pan, resetCamera, resetZoom, setCamera, zoomIn, zoomOut } from "./canvas/camera";
 import { setColor, setFrame, setPosition, setSize } from "./canvas/commands";
 import { setCanvasResizing, setSpacePressed, setTool } from "./canvas/tool";
 import { circleFromDrag, imageFromDrag, pathFromPoints, rectFromDrag, textFromDrag } from "./elements/create";
-import { getElementBounds, getPathRenderTransform, getPointBounds, getShapeDragBox } from "./elements/geometry";
+import {
+	getElementBounds,
+	getElementsBounds,
+	getPathRenderTransform,
+	getPointBounds,
+	getShapeDragBox
+} from "./elements/geometry";
 import {
 	addElement,
 	clampElementsToCanvas,
@@ -14,11 +21,14 @@ import {
 	translateElement,
 	translateElements,
 	updateElement,
+	updateElements,
 	updatePathVertex,
 	renameElement
 } from "./elements/mutate";
+import { replaceElementNameGrid, setElementNameImportOpen } from "./elements/name-grid";
 import { autofixElementName, validateElementNames } from "./elements/naming";
 import { snapPathSegment, toPathPoints } from "./elements/path";
+import { setBindable, setLocked, setVisible } from "./elements/state";
 import {
 	getTextLayoutMetrics,
 	getWrappedTextLineHeight,
@@ -34,15 +44,20 @@ import { exportSvg, importSvg } from "./project/svg";
 import { copy, getClipboard, paste } from "./selection/clipboard";
 import { select, selectAll, selectMany, setHover, toggleCrop } from "./selection/commands";
 import { deleteElements } from "./selection/delete";
-import { moveBackward, moveForward, moveToBack, moveToFront, reorder } from "./selection/ordering";
+import { canReorderSelection, moveBackward, moveForward, moveToBack, moveToFront, reorder } from "./selection/ordering";
 import { loadEditorSession } from "./session/load";
 import { flushEditorSave, queueEditorSave } from "./session/save";
 import { imageAssetState } from "./state/assets";
 import { fillState, minimumCanvasSizeState, projectState } from "./state/document";
 import { toolState, canvasState, zoomLimits } from "./state/workspace";
+import type { SelectionOrder } from "./types";
 
 function setFill(fill: string): void {
 	fillState.set(fill);
+}
+
+function canReorder(elements: readonly Element[], ids: readonly string[], direction: SelectionOrder): boolean {
+	return canReorderSelection(elements, ids, direction);
 }
 
 /** Maply's application-specific editing composition boundary. */
@@ -92,11 +107,16 @@ export const Editor = {
 		moveForward,
 		moveBackward,
 		moveToBack,
+		canReorder,
 		translate: translateElement,
 		translateAll: translateElements,
 		setPosition: setElementPosition,
 		resize: resizeElementByHandle,
 		update: updateElement,
+		updateAll: updateElements,
+		setLocked,
+		setBindable,
+		setVisible,
 		rename: renameElement,
 		updatePathVertex,
 		clampAll: clampElementsToCanvas
@@ -105,12 +125,14 @@ export const Editor = {
 	selection: { select, selectAll, selectMany, setHover, toggleCrop },
 
 	naming: { validate: validateElementNames, autofix: autofixElementName },
+	elementNameGrid: { replace: replaceElementNameGrid, setImportOpen: setElementNameImportOpen },
 
 	fill: { set: setFill },
 
 	geometry: {
 		shapeDragBox: getShapeDragBox,
 		elementBounds: getElementBounds,
+		elementsBounds: getElementsBounds,
 		pathPoints: toPathPoints,
 		pathBounds: getPointBounds,
 		pathRenderTransform: getPathRenderTransform,

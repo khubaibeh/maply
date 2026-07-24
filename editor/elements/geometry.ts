@@ -66,6 +66,28 @@ export function getElementBounds(element: Element) {
 	}
 }
 
+/** Returns the smallest axis-aligned bounds containing every supplied element, or null when empty. */
+export function getElementsBounds(elements: readonly Element[]) {
+	const first = elements[0];
+	if (!first) return null;
+
+	const firstBounds = getElementBounds(first);
+	let left = firstBounds.x;
+	let top = firstBounds.y;
+	let right = firstBounds.x + firstBounds.width;
+	let bottom = firstBounds.y + firstBounds.height;
+
+	for (let index = 1; index < elements.length; index += 1) {
+		const bounds = getElementBounds(elements[index]);
+		left = Math.min(left, bounds.x);
+		top = Math.min(top, bounds.y);
+		right = Math.max(right, bounds.x + bounds.width);
+		bottom = Math.max(bottom, bounds.y + bounds.height);
+	}
+
+	return { x: left, y: top, width: right - left, height: bottom - top };
+}
+
 /** Returns the smallest canvas size that can contain the largest current element without shrinking it. */
 export function getMinimumCanvasSize(elements: readonly Element[]) {
 	if (elements.length === 0) return { width: 1, height: 1 };

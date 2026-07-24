@@ -1,4 +1,5 @@
 import { project as ioProject } from "@maply/io";
+import { copyProjectEditorData } from "@maply/model";
 import { storage } from "@maply/storage";
 import { get } from "svelte/store";
 
@@ -16,7 +17,14 @@ export async function importProject(
 		return { ok: false, error: assigned.error };
 	}
 
-	const replaced = await storage.project.replace(assigned.value.project, assigned.value.imageAssets);
+	const replaced = await storage.project.replace(
+		{
+			...assigned.value.project,
+			editorData: copyProjectEditorData(assigned.value.editorData),
+			isElementNameImportOpen: true
+		},
+		assigned.value.imageAssets
+	);
 
 	if (!replaced.ok) {
 		return { ok: false, error: replaced.error };

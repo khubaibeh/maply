@@ -1,5 +1,6 @@
-import type { Project } from "@maply/model/types";
+import { copyProjectEditorData } from "@maply/model";
 import { storage } from "@maply/storage";
+import type { StoredEditorProject } from "@maply/storage/types";
 import { get } from "svelte/store";
 
 import { projectState } from "../state/document";
@@ -13,7 +14,7 @@ function clearPendingSave() {
 	saveTimeout = null;
 }
 
-function currentProject(): Project {
+function currentProject(): StoredEditorProject {
 	const project = get(projectState);
 	const canvas = get(canvasState);
 
@@ -28,7 +29,9 @@ function currentProject(): Project {
 			y: canvas.y
 		},
 		camera: { ...canvas.camera },
-		elements: project.elements.map((element) => ({ ...element }))
+		elements: project.elements.map((element) => ({ ...element })),
+		editorData: copyProjectEditorData({ elementNameGrid: project.elementNameGrid }),
+		isElementNameImportOpen: project.isElementNameImportOpen
 	};
 }
 

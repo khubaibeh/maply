@@ -1,4 +1,4 @@
-/** Produces a filesystem-safe project download name with the requested extension. */
+/** Produces a filesystem-safe download name with the requested extension. */
 export function downloadName(name: string, extension: string) {
 	const base = name
 		.trim()

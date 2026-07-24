@@ -1,4 +1,5 @@
 import { project as ioProject } from "@maply/io";
+import { copyProjectEditorData } from "@maply/model";
 import { get } from "svelte/store";
 
 import { imageAssetState } from "../state/assets";
@@ -32,6 +33,7 @@ export async function exportProject() {
 
 	return ioProject.file.create(
 		project,
-		referenced.filter((asset) => asset !== undefined)
+		referenced.filter((asset) => asset !== undefined),
+		copyProjectEditorData({ elementNameGrid: state.elementNameGrid })
 	);
 }

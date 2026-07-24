@@ -1,5 +1,4 @@
 <script lang="ts">
-	import Logo from "$lib/assets/favicon.svg";
 	import * as ToggleGroup from "$lib/components/ui/toggle-group";
 	import { useTheme } from "$lib/state.svelte";
 	import Monitor from "phosphor-svelte/lib/Monitor";
@@ -19,12 +18,7 @@
 	}
 </script>
 
-<header class="flex h-6 shrink-0 items-center justify-between px-3">
-	<div class="flex flex-row items-center gap-2">
-		<img src={Logo} class="size-4" alt="Maply Logo" />
-		<h1 class="text-foreground/50 font-extrabold uppercase select-none">Maply</h1>
-	</div>
-
+<header class="flex h-6 shrink-0 items-center justify-end px-3">
 	<ToggleGroup.Root type="single" bind:value onValueChange={handleChange} variant="default" size="sm" class="gap-0.5">
 		<ToggleGroup.Item
 			value="light"

@@ -1,6 +1,7 @@
 import {
 	createDefaultProject,
 	createSampleProject,
+	defaultBindable,
 	defaultProject,
 	drawingTools,
 	getImageRenderRect,
@@ -176,6 +177,45 @@ describe("@maply/model exports", () => {
 			StoredImageAssetSchema,
 			TextElementSchema
 		]).toHaveLength(10);
+	});
+
+	it("defaults element state by element type", () => {
+		expect(
+			decodeElement({
+				id: "rect",
+				name: "rect",
+				type: "rect",
+				x: 0,
+				y: 0,
+				width: 1,
+				height: 1,
+				fill: "#ffffff",
+				stroke: "#000000",
+				strokeWidth: 0
+			})
+		).toMatchObject({ locked: false, visible: true, bindable: true });
+		expect(
+			decodeElement({
+				id: "text",
+				name: "text",
+				type: "text",
+				x: 0,
+				y: 0,
+				width: 1,
+				height: 1,
+				text: "text",
+				fontSize: 12,
+				fill: "#000000"
+			})
+		).toMatchObject({ locked: false, visible: true, bindable: false });
+	});
+
+	it("exposes type-based bindable defaults", () => {
+		expect(defaultBindable("rect")).toBe(true);
+		expect(defaultBindable("circle")).toBe(true);
+		expect(defaultBindable("path")).toBe(true);
+		expect(defaultBindable("text")).toBe(false);
+		expect(defaultBindable("image")).toBe(false);
 	});
 
 	it("exposes shared image render geometry", () => {

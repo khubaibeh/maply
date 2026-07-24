@@ -2,6 +2,7 @@ import type { Canvas, CircleElement, ImageElement, PathElement, RectElement, Tex
 import {
 	clampElementToCanvas,
 	getElementBounds,
+	getElementsBounds,
 	getMinimumCanvasSize,
 	getPointBounds,
 	getShapeDragBox
@@ -22,7 +23,10 @@ function rect(overrides: Partial<RectElement> = {}): RectElement {
 		fill: "#000",
 		stroke: "#000",
 		strokeWidth: 0,
-		...overrides
+		...overrides,
+		locked: overrides.locked ?? false,
+		visible: overrides.visible ?? true,
+		bindable: overrides.bindable ?? true
 	};
 }
 
@@ -37,7 +41,10 @@ function circle(overrides: Partial<CircleElement> = {}): CircleElement {
 		fill: "#000",
 		stroke: "#000",
 		strokeWidth: 0,
-		...overrides
+		...overrides,
+		locked: overrides.locked ?? false,
+		visible: overrides.visible ?? true,
+		bindable: overrides.bindable ?? true
 	};
 }
 
@@ -53,7 +60,10 @@ function text(overrides: Partial<TextElement> = {}): TextElement {
 		text: "hello",
 		fontSize: 24,
 		fill: "#000",
-		...overrides
+		...overrides,
+		locked: overrides.locked ?? false,
+		visible: overrides.visible ?? true,
+		bindable: overrides.bindable ?? false
 	};
 }
 
@@ -71,7 +81,10 @@ function image(overrides: Partial<ImageElement> = {}): ImageElement {
 		cropX: 0,
 		cropY: 0,
 		cropScale: 100,
-		...overrides
+		...overrides,
+		locked: overrides.locked ?? false,
+		visible: overrides.visible ?? true,
+		bindable: overrides.bindable ?? false
 	};
 }
 
@@ -87,7 +100,10 @@ function path(overrides: Partial<PathElement> = {}): PathElement {
 		stroke: "#000",
 		strokeWidth: 2,
 		closed: false,
-		...overrides
+		...overrides,
+		locked: overrides.locked ?? false,
+		visible: overrides.visible ?? true,
+		bindable: overrides.bindable ?? true
 	};
 }
 
@@ -265,6 +281,21 @@ describe("getElementBounds", () => {
 		const bounds = getElementBounds(rect({ width: -10, height: -20 }));
 		expect(bounds.width).toBe(-10);
 		expect(bounds.height).toBe(-20);
+	});
+});
+
+describe("getElementsBounds", () => {
+	it("returns null for no elements", () => {
+		expect(getElementsBounds([])).toBeNull();
+	});
+
+	it("encloses every selected element", () => {
+		const bounds = getElementsBounds([
+			rect({ x: 10, y: 20, width: 20, height: 30 }),
+			circle({ cx: 100, cy: 100, r: 10 })
+		]);
+
+		expect(bounds).toEqual({ x: 10, y: 20, width: 100, height: 90 });
 	});
 });
 

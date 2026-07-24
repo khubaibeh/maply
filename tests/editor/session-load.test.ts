@@ -15,14 +15,35 @@ describe("loadEditorSession", () => {
 		await loadEditorSession("prod");
 
 		const state = get(projectState);
-		expect(state.elements[0]).toMatchObject({ name: "path", x: 0, y: 0, closed: true, strokeWidth: 0 });
-		expect(state.elements[1]).toMatchObject({ name: "text", width: 58, height: 29 });
+		expect(state.elementNameGrid).toEqual({ headers: ["Name"], rows: [[""]] });
+		expect(state.isElementNameImportOpen).toBe(true);
+		expect(state.elements[0]).toMatchObject({
+			name: "path",
+			x: 0,
+			y: 0,
+			closed: true,
+			strokeWidth: 0,
+			locked: false,
+			visible: true,
+			bindable: true
+		});
+		expect(state.elements[1]).toMatchObject({
+			name: "text",
+			width: 58,
+			height: 29,
+			locked: false,
+			visible: true,
+			bindable: false
+		});
 		expect(state.elements[2]).toMatchObject({
 			name: "image",
 			assetId: null,
 			cropX: 100,
 			cropY: 0,
-			cropScale: 100
+			cropScale: 100,
+			locked: false,
+			visible: true,
+			bindable: false
 		});
 	});
 });

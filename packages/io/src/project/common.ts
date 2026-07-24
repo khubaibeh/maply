@@ -1,5 +1,6 @@
-import { ProjectSchema, StoredImageAssetSchema } from "@maply/model/effect";
-import type { Project, StoredImageAsset } from "@maply/model/types";
+import { copyProjectEditorData, createProjectEditorData, getProjectEditorDataIssue } from "@maply/model";
+import { ProjectEditorDataSchema, ProjectSchema, StoredImageAssetSchema } from "@maply/model/effect";
+import type { Project, ProjectEditorData, StoredImageAsset } from "@maply/model/types";
 import { Effect, Schema } from "effect";
 
 import {
@@ -11,18 +12,28 @@ import {
 import { getAssetReferenceIssue, normalizeProject } from "./utils";
 
 export const PROJECT_FILE_FORMAT = "maply-project";
-export const PROJECT_FILE_VERSION = 1;
+export const PROJECT_FILE_VERSION = 2;
+export const LEGACY_PROJECT_FILE_VERSION = 1;
 
 export type ProjectFilePackage = {
 	format: typeof PROJECT_FILE_FORMAT;
 	version: typeof PROJECT_FILE_VERSION;
 	project: Project;
 	imageAssets: readonly StoredImageAsset[];
+	editorData: ProjectEditorData;
 };
 
 const ProjectFilePackageSchema = Schema.Struct({
 	format: Schema.Literal(PROJECT_FILE_FORMAT),
 	version: Schema.Literal(PROJECT_FILE_VERSION),
+	project: ProjectSchema,
+	imageAssets: Schema.Array(StoredImageAssetSchema),
+	editorData: ProjectEditorDataSchema
+});
+
+const LegacyProjectFilePackageSchema = Schema.Struct({
+	format: Schema.Literal(PROJECT_FILE_FORMAT),
+	version: Schema.Literal(LEGACY_PROJECT_FILE_VERSION),
 	project: ProjectSchema,
 	imageAssets: Schema.Array(StoredImageAssetSchema)
 });
@@ -30,7 +41,19 @@ const ProjectFilePackageSchema = Schema.Struct({
 const decodeProject = Schema.decodeUnknownEffect(ProjectSchema);
 const decodeImageAsset = Schema.decodeUnknownEffect(StoredImageAssetSchema);
 
-export const decodeProjectFilePackage = Schema.decodeUnknownEffect(ProjectFilePackageSchema);
+const decodeProjectFilePackageVersion = Schema.decodeUnknownEffect(
+	Schema.Union([LegacyProjectFilePackageSchema, ProjectFilePackageSchema])
+);
+
+export function decodeProjectFilePackage(value: unknown) {
+	return decodeProjectFilePackageVersion(value).pipe(
+		Effect.map((file): ProjectFilePackage =>
+			file.version === LEGACY_PROJECT_FILE_VERSION
+				? { ...file, version: PROJECT_FILE_VERSION, editorData: createProjectEditorData() }
+				: file
+		)
+	);
+}
 
 export function schemaError(operation: ProjectFileOperation, section: ProjectFileSection) {
 	return (error: { message: string }) =>
@@ -74,7 +97,8 @@ function validateAssetRefs(
 export function normalizePackage(
 	operation: ProjectFileOperation,
 	project: Project,
-	imageAssets: readonly StoredImageAsset[]
+	imageAssets: readonly StoredImageAsset[],
+	editorData: ProjectEditorData = createProjectEditorData()
 ): Effect.Effect<ProjectFilePackage, ProjectFileSchemaError | ProjectFileAssetReferenceError> {
 	return Effect.gen(function* () {
 		// Normalize project-specific derived fields before validating its current schema.
@@ -90,11 +114,23 @@ export function normalizePackage(
 		// References are valid only after both the project and assets have been normalized.
 		yield* validateAssetRefs(operation, normalizedProject, normalizedAssets);
 
+		const editorDataIssue = getProjectEditorDataIssue(editorData);
+		if (editorDataIssue)
+			return yield* Effect.fail(
+				new ProjectFileSchemaError({
+					operation,
+					section: "editorData",
+					message: editorDataIssue,
+					details: {}
+				})
+			);
+
 		return {
 			format: PROJECT_FILE_FORMAT,
 			version: PROJECT_FILE_VERSION,
 			project: normalizedProject,
-			imageAssets: normalizedAssets
+			imageAssets: normalizedAssets,
+			editorData: copyProjectEditorData(editorData)
 		};
 	});
 }

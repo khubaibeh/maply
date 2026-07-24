@@ -3,6 +3,7 @@ import { Effect } from "effect";
 import { isRecord } from "../common";
 import {
 	decodeProjectFilePackage,
+	LEGACY_PROJECT_FILE_VERSION,
 	normalizePackage,
 	PROJECT_FILE_FORMAT,
 	PROJECT_FILE_VERSION,
@@ -40,7 +41,11 @@ function checkSupport(parsed: unknown): Effect.Effect<void, UnsupportedProjectFi
 		);
 	}
 
-	if ("version" in parsed && parsed.version !== PROJECT_FILE_VERSION) {
+	if (
+		"version" in parsed &&
+		parsed.version !== PROJECT_FILE_VERSION &&
+		parsed.version !== LEGACY_PROJECT_FILE_VERSION
+	) {
 		return Effect.fail(
 			new UnsupportedProjectFileError({
 				operation: "parse",
@@ -80,7 +85,7 @@ export function parse(
 			Effect.mapError(schemaError("parse", "package"))
 		);
 
-		return yield* normalizePackage("parse", projectFile.project, projectFile.imageAssets);
+		return yield* normalizePackage("parse", projectFile.project, projectFile.imageAssets, projectFile.editorData);
 	});
 }
 
@@ -90,13 +95,19 @@ export function assign(
 	projectId: string
 ): Effect.Effect<ProjectFilePackage, ProjectFileSchemaError | ProjectFileAssetReferenceError> {
 	return Effect.gen(function* () {
-		const normalized = yield* normalizePackage("import", projectFile.project, projectFile.imageAssets);
+		const normalized = yield* normalizePackage(
+			"import",
+			projectFile.project,
+			projectFile.imageAssets,
+			projectFile.editorData
+		);
 
 		// Rebinding requires normalization again because every asset must match the active project id.
 		return yield* normalizePackage(
 			"import",
 			{ ...normalized.project, id: projectId },
-			normalized.imageAssets.map((asset) => ({ ...asset, projectId }))
+			normalized.imageAssets.map((asset) => ({ ...asset, projectId })),
+			normalized.editorData
 		);
 	});
 }

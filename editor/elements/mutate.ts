@@ -76,7 +76,7 @@ export function translateElement(id: string, dx: number, dy: number) {
 		(state) => ({
 			...state,
 			elements: state.elements.map((element) => {
-				if (element.id !== id) return element;
+				if (element.id !== id || element.locked) return element;
 				const next = clampElementToCanvas(translate(element, dx, dy), canvas);
 				const before = getElementPosition(element);
 				const after = getElementPosition(next);
@@ -99,8 +99,9 @@ export function translateElements(ids: readonly string[], dx: number, dy: number
 	let applied = { x: 0, y: 0 };
 
 	updateProjectState((state) => {
-		const selected = state.elements.filter((element) => idSet.has(element.id));
+		const selected = state.elements.filter((element) => idSet.has(element.id) && !element.locked);
 		if (selected.length === 0) return state;
+		const movableIds = new Set(selected.map((element) => element.id));
 
 		const bounds = selected.map(getElementBounds);
 
@@ -125,7 +126,7 @@ export function translateElements(ids: readonly string[], dx: number, dy: number
 		return {
 			...state,
 			elements: state.elements.map((element) =>
-				idSet.has(element.id) ? translate(element, nextDx, nextDy) : element
+				movableIds.has(element.id) ? translate(element, nextDx, nextDy) : element
 			)
 		};
 	}, "preserve");
@@ -239,11 +240,20 @@ function hasImageRectPatch(patch: Partial<Element>): boolean {
 	return "imageX" in patch || "imageY" in patch || "imageWidth" in patch || "imageHeight" in patch;
 }
 
+function normalizeNamePatch(patch: Partial<Element>): Partial<Element> {
+	if (patch.name === undefined) return patch;
+
+	const { name, ...rest } = patch;
+	const trimmedName = name.trim();
+	return trimmedName ? { ...rest, name: trimmedName } : rest;
+}
+
 /** Applies an element property patch and clamps the resulting element. */
 export function updateElement(id: string, patch: Partial<Element>): void {
 	const state = get(projectState);
 	const canvas = get(canvasState);
 	const assets = get(imageAssetState);
+	const normalizedPatch = normalizeNamePatch(patch);
 	let beforeChange: Element | null = null;
 	let afterChange: Element | null = null;
 
@@ -251,8 +261,8 @@ export function updateElement(id: string, patch: Partial<Element>): void {
 		...state,
 		elements: state.elements.map((element) => {
 			if (element.id !== id) return element;
-			const clamped = clampElementToCanvas({ ...element, ...patch } as Element, canvas);
-			const next = updateImageTransform(element, clamped, patch, assets);
+			const clamped = clampElementToCanvas({ ...element, ...normalizedPatch } as Element, canvas);
+			const next = updateImageTransform(element, clamped, normalizedPatch, assets);
 			beforeChange = element;
 			afterChange = next;
 			return next;
@@ -263,12 +273,37 @@ export function updateElement(id: string, patch: Partial<Element>): void {
 	setProjectState(nextState, hint);
 }
 
-/** Raw name commit — callers may write invalid or duplicate names; validation is advisory. */
-export function renameElement(id: string, name: string): void {
+/** Applies one property patch to every identified element in a single state transition. */
+export function updateElements(ids: readonly string[], patch: Partial<Element>): void {
+	if (ids.length === 0) return;
+
+	const idSet = new Set(ids);
+	const canvas = get(canvasState);
+	const assets = get(imageAssetState);
+	const normalizedPatch = normalizeNamePatch(patch);
+
 	updateProjectState(
 		(state) => ({
 			...state,
-			elements: state.elements.map((element) => (element.id === id ? { ...element, name } : element))
+			elements: state.elements.map((element) => {
+				if (!idSet.has(element.id)) return element;
+				const clamped = clampElementToCanvas({ ...element, ...normalizedPatch } as Element, canvas);
+				return updateImageTransform(element, clamped, normalizedPatch, assets);
+			})
+		}),
+		"rescan"
+	);
+}
+
+/** Commits a nonblank name; selector-safety and duplicate validation remains advisory. */
+export function renameElement(id: string, name: string): void {
+	const trimmedName = name.trim();
+	if (!trimmedName) return;
+
+	updateProjectState(
+		(state) => ({
+			...state,
+			elements: state.elements.map((element) => (element.id === id ? { ...element, name: trimmedName } : element))
 		}),
 		"preserve"
 	);

@@ -1,5 +1,7 @@
-import type { Element, Project } from "@maply/model/types";
+import { copyProjectEditorData } from "@maply/model";
+import type { Element } from "@maply/model/types";
 import { storage } from "@maply/storage";
+import type { StoredEditorProject } from "@maply/storage/types";
 
 import { clampZoom } from "../canvas/camera";
 import { clampElementToCanvas } from "../elements/geometry";
@@ -14,8 +16,9 @@ function imageAssetIds(elements: readonly Element[]) {
 	return elements.flatMap((element) => (element.type === "image" && element.assetId ? [element.assetId] : []));
 }
 
-function applyProject(project: Project) {
+function applyProject(project: StoredEditorProject) {
 	const canvas = createInitialCanvasState();
+	const editorData = copyProjectEditorData(project.editorData);
 
 	canvasState.set({
 		...canvas,
@@ -35,6 +38,8 @@ function applyProject(project: Project) {
 			elements: project.elements.map((element) =>
 				clampElementToCanvas(normalizeElement(element), project.canvas)
 			),
+			elementNameGrid: editorData.elementNameGrid,
+			isElementNameImportOpen: project.isElementNameImportOpen,
 			// TODO: This single one needs to go away at a later time, this is code smell
 			selectedElementId: null,
 			selectedElementIds: [],

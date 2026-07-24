@@ -16,7 +16,10 @@ function image(overrides: Partial<ImageElement> = {}): ImageElement {
 		cropX: 20,
 		cropY: -10,
 		cropScale: 200,
-		...overrides
+		...overrides,
+		locked: overrides.locked ?? false,
+		visible: overrides.visible ?? true,
+		bindable: overrides.bindable ?? false
 	};
 }
 

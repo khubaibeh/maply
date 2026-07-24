@@ -1,6 +1,7 @@
 import { Editor } from "editor";
 import { fromStore } from "svelte/store";
 
+import { canSelectOnCanvas } from "./element-selection";
 import { createPointerDrag } from "./pointer-drag.svelte";
 import { clientToSvgPoint, getSvgRoot } from "./svg";
 
@@ -13,6 +14,11 @@ export function createElementMove() {
 
 	function start(event: PointerEvent, id: string) {
 		if (event.button !== 0 || tool.current.activeTool !== "select") return;
+		const element = project.current.elements.find((element) => element.id === id);
+		if (element && !canSelectOnCanvas(element)) {
+			event.stopPropagation();
+			return;
+		}
 		event.stopPropagation();
 		drag.cancel();
 
@@ -32,6 +38,7 @@ export function createElementMove() {
 		const svg = getSvgRoot(event.target);
 		if (!svg) return;
 		const toggleId = additive && wasSelected ? id : null;
+		const collapseId = !additive && wasSelected && selectedIds.length > 1 ? id : null;
 		const ids = wasSelected && selectedIds.length > 1 ? selectedIds : [id];
 
 		drag.start(event, {
@@ -44,7 +51,9 @@ export function createElementMove() {
 			},
 			onEnd: ({ cancelled, didMove }) => {
 				state.isDragging = false;
-				if (!cancelled && !didMove && toggleId) Editor.selection.select(toggleId, true);
+				if (cancelled || didMove) return;
+				if (toggleId) Editor.selection.select(toggleId, true);
+				else if (collapseId) Editor.selection.select(collapseId);
 			}
 		});
 	}

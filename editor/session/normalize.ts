@@ -14,7 +14,13 @@ function textHeight(text: string, fontSize: number): number {
 export function normalizeElement(element: Element): Element {
 	const normalized = {
 		...element,
-		name: typeof element.name === "string" ? element.name : defaultElementName(element.type)
+		name: typeof element.name === "string" ? element.name : defaultElementName(element.type),
+		locked: element.locked === true,
+		visible: element.visible !== false,
+		bindable:
+			typeof element.bindable === "boolean"
+				? element.bindable
+				: element.type !== "text" && element.type !== "image"
 	} as Element;
 
 	if (normalized.type === "path") {

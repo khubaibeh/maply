@@ -1,3 +1,4 @@
+import { createElementNameGrid } from "@maply/model";
 import type { Element } from "@maply/model/types";
 import { writable } from "svelte/store";
 
@@ -8,6 +9,8 @@ const initialProjectState: ProjectState = {
 	id: "prod",
 	name: "Untitled",
 	elements: [],
+	elementNameGrid: createElementNameGrid(),
+	isElementNameImportOpen: true,
 	initialized: false,
 	selectedElementId: null,
 	selectedElementIds: [],

@@ -1,15 +1,17 @@
 import { clientToSvgPoint } from "@components/canvas/interaction/svg";
 import { canvasCursor } from "@components/core/cursors";
+import { importNamesOverlayOpen } from "@components/elements-panel/import-names-overlay";
 import { isPointInsideCanvas } from "@maply/model";
 import type { ImageElement, Point } from "@maply/model/types";
 import { Editor } from "editor";
 import { onMount } from "svelte";
-import { fromStore } from "svelte/store";
+import { fromStore, get } from "svelte/store";
 
 import { panFromDrag, zoomAt } from "./camera";
 import { createCanvasContextMenu } from "./context-menu.svelte";
 import { isDrawingTool } from "./drawing";
 import { createDrawingSession } from "./drawing-session.svelte";
+import { createMarqueeSelection } from "./marquee-selection.svelte";
 import { createPathSession } from "./path-session.svelte";
 
 const VERTEX_DOT_SCREEN_PX = 3;
@@ -22,6 +24,7 @@ export function createCanvasAreaState() {
 	const tool = fromStore(Editor.state.tool);
 	const contextMenu = createCanvasContextMenu();
 	const drawing = createDrawingSession();
+	const marquee = createMarqueeSelection();
 	const path = createPathSession();
 
 	const state = $state({
@@ -144,6 +147,7 @@ export function createCanvasAreaState() {
 		}
 
 		function startPan(event: MouseEvent) {
+			if (get(importNamesOverlayOpen)) return;
 			const canPan = event.button === 1 || (event.button === 0 && isHandActive);
 			if (!canPan) return;
 
@@ -187,6 +191,15 @@ export function createCanvasAreaState() {
 		}
 
 		function handleKeyDown(event: KeyboardEvent) {
+			// Don't let canvas key handling run while the Element Names overlay is open.
+			if (get(importNamesOverlayOpen)) return;
+
+			if (event.key === "Escape" && marquee.state.active) {
+				event.preventDefault();
+				marquee.cancel();
+				return;
+			}
+
 			if (event.key === "Escape" && drawing.state.session) {
 				event.preventDefault();
 				drawing.cancel();
@@ -263,10 +276,31 @@ export function createCanvasAreaState() {
 	}
 
 	function handleSvgPointerDown(event: PointerEvent) {
+		if (get(importNamesOverlayOpen)) return;
 		if (event.button !== 0) return;
 		if (isHandActive) return;
 		if (tool.current.activeTool === "select") {
-			Editor.selection.select(null);
+			if (!state.svgRef) return;
+			const point = projectPoint(event.clientX, event.clientY);
+			if (
+				!point ||
+				!isPointInsideCanvas(point, {
+					x: canvas.current.x,
+					y: canvas.current.y,
+					width: canvas.current.width,
+					height: canvas.current.height,
+					color: canvas.current.color
+				})
+			) {
+				Editor.selection.select(null);
+				return;
+			}
+			if (!marquee.start(event, state.svgRef)) {
+				Editor.selection.select(null);
+				return;
+			}
+			event.preventDefault();
+			event.stopPropagation();
 			return;
 		}
 
@@ -303,12 +337,14 @@ export function createCanvasAreaState() {
 	}
 
 	function handleContextMenu(event: MouseEvent) {
+		if (get(importNamesOverlayOpen)) return;
 		contextMenu.handle(event, projectPoint(event.clientX, event.clientY));
 	}
 
 	return {
 		state,
 		contextMenu,
+		marquee,
 		path,
 		selectedImage: () => selectedImage,
 		cropEditing: () => cropEditing,

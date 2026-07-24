@@ -11,6 +11,9 @@ const image: ImageElement = {
 	id: "image",
 	name: "Image",
 	type: "image",
+	locked: false,
+	visible: true,
+	bindable: false,
 	x: 10,
 	y: 20,
 	width: 200,
@@ -38,7 +41,23 @@ const asset: StoredImageAsset = {
 
 function setFixture() {
 	canvasState.set({ width: 800, height: 600, color: "#fff", x: 0, y: 0, camera: { x: 0, y: 0, zoom: 1 } });
-	updateProjectState((state) => ({ ...state, id: "prod", name: "Export", elements: [image] }), "rescan");
+	updateProjectState(
+		(state) => ({
+			...state,
+			id: "prod",
+			name: "Export",
+			elements: [image],
+			elementNameGrid: {
+				headers: ["Name", "State"],
+				rows: [
+					["image", "GRID_SENTINEL_VALUE"],
+					["", ""]
+				]
+			},
+			isElementNameImportOpen: false
+		}),
+		"rescan"
+	);
 	imageAssetState.set({ asset });
 }
 
@@ -53,6 +72,8 @@ describe("project export", () => {
 		expect(serialized.ok).toBe(true);
 		if (!serialized.ok) return;
 		expect(serialized.value).toContain('"imageWidth": 400');
+		expect(serialized.value).toContain("GRID_SENTINEL_VALUE");
+		expect(serialized.value).not.toContain("isElementNameImportOpen");
 	});
 
 	it("exports SVG with explicit image geometry", async () => {
@@ -61,5 +82,6 @@ describe("project export", () => {
 		expect(svg.ok).toBe(true);
 		if (!svg.ok) return;
 		expect(svg.value).toContain('x="-100" y="-50" width="400" height="200"');
+		expect(svg.value).not.toContain("GRID_SENTINEL_VALUE");
 	});
 });

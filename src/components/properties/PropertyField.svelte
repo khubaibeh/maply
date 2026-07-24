@@ -8,7 +8,7 @@
 		type?: "text" | "number";
 		min?: number;
 		step?: number;
-		onChange: (value: string) => void;
+		onChange: (value: string) => boolean | void;
 	};
 
 	let { id, label, value, type = "number", min, step, onChange }: Props = $props();
@@ -22,7 +22,10 @@
 		{min}
 		{step}
 		{value}
-		onchange={(event) => onChange((event.currentTarget as HTMLInputElement).value)}
+		onchange={(event) => {
+			const input = event.currentTarget as HTMLInputElement;
+			if (onChange(input.value) === false) input.value = String(value);
+		}}
 		class="no-spinner h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0"
 	/>
 </div>

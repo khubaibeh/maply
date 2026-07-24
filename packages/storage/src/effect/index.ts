@@ -3,19 +3,19 @@ export { IndexedDb, type IndexedDbStoreName } from "../indexed-db/service";
 export { ProjectRepository } from "../project/repository";
 export { StorageLayer, storageRuntime } from "./runtime";
 
-import type { Project, StoredImageAsset } from "@maply/model/types";
+import type { StoredImageAsset } from "@maply/model/types";
 import { Effect } from "effect";
 
-import { ProjectRepository, type ResetProjectOptions } from "../project/repository";
+import { ProjectRepository, type ResetProjectOptions, type StoredEditorProject } from "../project/repository";
 
 export type { ResetProjectOptions } from "../project/repository";
 
 export const project = {
 	fetch: (id: string) => Effect.flatMap(ProjectRepository, (repo) => repo.fetch(id)),
 
-	save: (value: Project) => Effect.flatMap(ProjectRepository, (repo) => repo.save(value)),
+	save: (value: StoredEditorProject) => Effect.flatMap(ProjectRepository, (repo) => repo.save(value)),
 
-	replace: (value: Project, imageAssets: readonly StoredImageAsset[]) =>
+	replace: (value: StoredEditorProject, imageAssets: readonly StoredImageAsset[]) =>
 		Effect.flatMap(ProjectRepository, (repo) => repo.replace(value, imageAssets)),
 
 	reset: (options?: ResetProjectOptions) => Effect.flatMap(ProjectRepository, (repo) => repo.reset(options))

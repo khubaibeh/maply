@@ -3,13 +3,15 @@
 	import { getArrowDelta, getShortcutTool, isEditingText } from "@components/core/shortcuts";
 	import Toolbar from "@components/core/Toolbar.svelte";
 	import Topbar from "@components/core/Topbar.svelte";
+	import { importNamesOverlayOpen } from "@components/elements-panel/import-names-overlay";
 	import LeftSidebar from "@components/LeftSidebar.svelte";
 	import ProjectMenuOverlay from "@components/project-menu/ProjectMenuOverlay.svelte";
 	import RightSidebar from "@components/RightSidebar.svelte";
 	import { Editor } from "editor";
 	import { onMount } from "svelte";
+	import { get } from "svelte/store";
 
-	const LEFT_SIDEBAR_WIDTH = 240;
+	const LEFT_SIDEBAR_WIDTH = 324;
 	const RIGHT_SIDEBAR_WIDTH = 285;
 
 	const project = Editor.state.project;
@@ -21,6 +23,9 @@
 	onMount(() => {
 		function handleKeyDown(event: KeyboardEvent) {
 			if (event.defaultPrevented) return;
+			// The Element Names overlay is a modal editor: don't let canvas shortcuts
+			// (select-all, delete, copy/paste, tool switches…) act on the canvas underneath.
+			if (get(importNamesOverlayOpen)) return;
 
 			if (!isEditingText(event) && !event.ctrlKey && !event.metaKey && !event.altKey) {
 				const shortcutTool = getShortcutTool(event.key);
@@ -41,12 +46,13 @@
 			}
 
 			if (!isEditingText(event)) {
-				const selectedId = $project.selectedElementIds.length === 1 ? $project.selectedElementId : null;
+				const selectedIds = $project.selectedElementIds;
 				const delta = getArrowDelta(event.key, event.shiftKey ? 10 : 1);
 
-				if (selectedId && delta) {
+				if (selectedIds.length > 0 && delta) {
 					event.preventDefault();
-					Editor.element.translate(selectedId, delta.dx, delta.dy);
+					if (selectedIds.length === 1) Editor.element.translate(selectedIds[0], delta.dx, delta.dy);
+					else Editor.element.translateAll(selectedIds, delta.dx, delta.dy);
 					return;
 				}
 			}

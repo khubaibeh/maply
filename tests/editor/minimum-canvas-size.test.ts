@@ -1,3 +1,4 @@
+import { createElementNameGrid } from "@maply/model";
 import type { RectElement } from "@maply/model/types";
 import { minimumCanvasSizeState, projectState, setProjectState, updateProjectState } from "editor/state/document";
 import { get } from "svelte/store";
@@ -8,6 +9,9 @@ function rect(id: string, width: number, height: number): RectElement {
 		id,
 		name: id,
 		type: "rect",
+		locked: false,
+		visible: true,
+		bindable: true,
 		x: 0,
 		y: 0,
 		width,
@@ -24,6 +28,8 @@ function reset(elements: RectElement[]) {
 			id: "prod",
 			name: "Test",
 			elements,
+			elementNameGrid: createElementNameGrid(),
+			isElementNameImportOpen: true,
 			initialized: true,
 			selectedElementId: null,
 			selectedElementIds: [],

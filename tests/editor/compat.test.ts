@@ -17,6 +17,9 @@ describe("legacy element compatibility", () => {
 			id: "path",
 			name: "Path",
 			type: "path",
+			locked: false,
+			visible: true,
+			bindable: true,
 			x: 10,
 			y: 10,
 			d: "M0,0 C0,100 100,100 100,0",
@@ -64,6 +67,9 @@ describe("legacy element compatibility", () => {
 			id: "text",
 			name: "Text",
 			type: "text",
+			locked: false,
+			visible: true,
+			bindable: false,
 			x: 100,
 			y: 100,
 			width: 200,
@@ -82,6 +88,9 @@ describe("legacy element compatibility", () => {
 			id: "image",
 			name: "Image",
 			type: "image",
+			locked: false,
+			visible: true,
+			bindable: false,
 			x: 0,
 			y: 0,
 			width: 100,
@@ -92,7 +101,15 @@ describe("legacy element compatibility", () => {
 			cropScale: 50
 		} as unknown as Element;
 
-		expect(normalizeElement(image)).toMatchObject({ assetId: null, cropX: 100, cropY: 0, cropScale: 100 });
+		expect(normalizeElement(image)).toMatchObject({
+			assetId: null,
+			cropX: 100,
+			cropY: 0,
+			cropScale: 100,
+			locked: false,
+			visible: true,
+			bindable: false
+		});
 	});
 
 	it("preserves image transform and enforces minimum frame size", () => {
@@ -100,6 +117,9 @@ describe("legacy element compatibility", () => {
 			id: "image",
 			name: "Image",
 			type: "image",
+			locked: false,
+			visible: true,
+			bindable: false,
 			x: 100,
 			y: 100,
 			width: 200,
@@ -167,6 +187,9 @@ describe("legacy element compatibility", () => {
 			id: "rect",
 			name: "company-logo",
 			type: "rect",
+			locked: false,
+			visible: true,
+			bindable: true,
 			x: 10,
 			y: 10,
 			width: 20,
@@ -243,6 +266,9 @@ function pathElement(d: string): Element {
 		id: "path",
 		name: "Path",
 		type: "path",
+		locked: false,
+		visible: true,
+		bindable: true,
 		x: 0,
 		y: 0,
 		d,
@@ -254,7 +280,21 @@ function pathElement(d: string): Element {
 }
 
 function rectElement(id: string, name: string, x: number, y: number): Element {
-	return { id, name, type: "rect", x, y, width: 20, height: 20, fill: "#000", stroke: "#000", strokeWidth: 0 };
+	return {
+		id,
+		name,
+		type: "rect",
+		locked: false,
+		visible: true,
+		bindable: true,
+		x,
+		y,
+		width: 20,
+		height: 20,
+		fill: "#000",
+		stroke: "#000",
+		strokeWidth: 0
+	};
 }
 
 function cropImage(overrides: Partial<ImageElement> = {}): ImageElement {
@@ -270,7 +310,10 @@ function cropImage(overrides: Partial<ImageElement> = {}): ImageElement {
 		cropX: 20,
 		cropY: -10,
 		cropScale: 200,
-		...overrides
+		...overrides,
+		locked: overrides.locked ?? false,
+		visible: overrides.visible ?? true,
+		bindable: overrides.bindable ?? false
 	};
 }
 

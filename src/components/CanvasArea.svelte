@@ -5,8 +5,11 @@
 	import ContextMenuContent from "@components/canvas/ContextMenuContent.svelte";
 	import DraftOverlay from "@components/canvas/DraftOverlay.svelte";
 	import ImageCropToolbar from "@components/canvas/ImageCropToolbar.svelte";
+	import MarqueeSelectionOverlay from "@components/canvas/MarqueeSelectionOverlay.svelte";
+	import MarqueeSelectionPreview from "@components/canvas/MarqueeSelectionPreview.svelte";
 	import { createCanvasAreaState } from "@components/core/canvas-area/area.state.svelte";
 	import { canvasCursor } from "@components/core/cursors";
+	import { importNamesOverlayOpen } from "@components/elements-panel/import-names-overlay";
 	import { Editor } from "editor";
 
 	const canvasArea = createCanvasAreaState();
@@ -17,6 +20,7 @@
 	<ContextMenu.Trigger class="contents">
 		<div
 			bind:this={canvasArea.state.container}
+			class:pointer-events-none={$importNamesOverlayOpen}
 			class="canvas-viewport bg-muted relative min-h-0 flex-1 overflow-hidden outline-none"
 			style:cursor={canvasArea.toolCursor() ?? canvasArea.cursorClass()}
 			role="application"
@@ -40,6 +44,8 @@
 						camera={canvasArea.camera()}
 					/>
 					<Artboard />
+					<MarqueeSelectionPreview elements={canvasArea.marquee.state.candidates} />
+					<MarqueeSelectionOverlay box={canvasArea.marquee.state.box} />
 					<DraftOverlay
 						shapePreview={canvasArea.shapePreview()}
 						pathSession={canvasArea.path.state.session}
@@ -67,8 +73,10 @@
 			target={canvasArea.contextMenu.state.target}
 			hasClipboardElement={canvasArea.contextMenu.hasClipboardElement()}
 			hasElements={$project.elements.length > 0}
-			contextMenuElementIsFrontmost={canvasArea.contextMenu.isFrontmost()}
-			contextMenuElementIsBackmost={canvasArea.contextMenu.isBackmost()}
+			canBringToFront={canvasArea.contextMenu.canBringToFront()}
+			canBringForward={canvasArea.contextMenu.canBringForward()}
+			canSendBackward={canvasArea.contextMenu.canSendBackward()}
+			canSendToBack={canvasArea.contextMenu.canSendToBack()}
 			onCopy={canvasArea.contextMenu.copy}
 			onBringToFront={canvasArea.contextMenu.bringToFront}
 			onBringForward={canvasArea.contextMenu.bringForward}

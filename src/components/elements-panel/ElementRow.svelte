@@ -1,12 +1,20 @@
 <script lang="ts">
+	import { Button } from "$lib/components/ui/button";
 	import * as ContextMenu from "$lib/components/ui/context-menu";
 	import { Input } from "$lib/components/ui/input";
 	import ElementNameValidation from "@components/core/ElementNameValidation.svelte";
+	import { defaultBindable } from "@maply/model";
 	import type { Element } from "@maply/model/types";
 	import { Editor } from "editor";
 	import type { ElementNameValidation as NameValidation } from "editor/types";
 	import Circle from "phosphor-svelte/lib/Circle";
+	import EyeIcon from "phosphor-svelte/lib/EyeIcon";
+	import EyeSlashIcon from "phosphor-svelte/lib/EyeSlashIcon";
 	import Image from "phosphor-svelte/lib/Image";
+	import LinkBreakIcon from "phosphor-svelte/lib/LinkBreakIcon";
+	import LinkIcon from "phosphor-svelte/lib/LinkIcon";
+	import LockIcon from "phosphor-svelte/lib/LockIcon";
+	import LockOpenIcon from "phosphor-svelte/lib/LockOpenIcon";
 	import Pencil from "phosphor-svelte/lib/Pencil";
 	import Rectangle from "phosphor-svelte/lib/Rectangle";
 	import TextT from "phosphor-svelte/lib/TextT";
@@ -21,14 +29,11 @@
 		validation?: NameValidation;
 		selected: boolean;
 		active: boolean;
-		frontmost: boolean;
-		backmost: boolean;
 		onReorderStart: (event: PointerEvent, id: string, index: number) => void;
 		onSelect: (event: PointerEvent, id: string) => void;
 	};
 
-	let { element, index, validation, selected, active, frontmost, backmost, onReorderStart, onSelect }: Props =
-		$props();
+	let { element, index, validation, selected, active, onReorderStart, onSelect }: Props = $props();
 	let editing = $state(false);
 	let name = $state("");
 	let input: HTMLInputElement | null = $state(null);
@@ -42,6 +47,14 @@
 		image: Image
 	};
 	const Icon = $derived(icons[element.type]);
+	const isLocked = $derived(element.locked ?? false);
+	const isVisible = $derived(element.visible !== false);
+	const isBindable = $derived(element.bindable ?? defaultBindable(element.type));
+	function stateControlClass(isPersistent: boolean) {
+		return `text-sidebar-foreground/60 hover:text-sidebar-foreground size-6 rounded-md transition-[color,opacity] ${
+			isPersistent ? "opacity-100" : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+		}`;
+	}
 
 	$effect(() => {
 		if (!editing || !input) return;
@@ -55,8 +68,14 @@
 	}
 
 	function save() {
-		Editor.element.rename(element.id, name.trim());
+		const nextName = name.trim();
+		if (nextName) Editor.element.rename(element.id, nextName);
+		else name = element.name;
 		editing = false;
+	}
+
+	function stopPropagation(event: Event) {
+		event.stopPropagation();
 	}
 </script>
 
@@ -70,7 +89,7 @@
 		<div
 			data-element-row
 			data-element-id={element.id}
-			class="group grid w-full grid-cols-[minmax(0,1fr)_auto_auto] items-center rounded-lg {invalid
+			class="group grid w-full grid-cols-[minmax(0,1fr)_auto_auto_auto_auto_auto] items-center rounded-lg {invalid
 				? 'bg-destructive/10 text-destructive hover:bg-destructive/15'
 				: active
 					? 'ring-sidebar-ring/50 bg-sidebar-accent/80 text-sidebar-accent-foreground shadow-sm ring-1'
@@ -97,7 +116,7 @@
 							if (event.key === "Enter") save();
 							if (event.key === "Escape") editing = false;
 						}}
-						class="h-4 min-h-0 min-w-0 flex-1 border-0 bg-transparent p-0 text-xs leading-4 shadow-none transition-none focus-visible:ring-0 focus-visible:ring-offset-0"
+						class="h-4 min-h-0 min-w-0 flex-1 rounded-none! border-0 bg-transparent p-0 text-xs leading-4 shadow-none transition-none focus-visible:ring-0 focus-visible:ring-offset-0"
 						style="font: inherit;"
 					/>
 				{:else}
@@ -111,6 +130,56 @@
 					class={editing ? "mr-1" : ""}
 				/>
 			{/if}
+			<Button
+				variant="ghost"
+				size="icon-xs"
+				class={stateControlClass(isLocked)}
+				aria-label="Lock"
+				title="Lock"
+				aria-pressed={isLocked}
+				onpointerdown={stopPropagation}
+				oncontextmenu={stopPropagation}
+				onclick={(event) => {
+					stopPropagation(event);
+					Editor.element.setLocked(element.id, !isLocked);
+				}}
+			>
+				{#if isLocked}<LockIcon data-icon="inline-start" />{:else}<LockOpenIcon data-icon="inline-start" />{/if}
+			</Button>
+			<Button
+				variant="ghost"
+				size="icon-xs"
+				class={stateControlClass(!isBindable)}
+				aria-label="Bindable"
+				title="Bindable"
+				aria-pressed={isBindable}
+				onpointerdown={stopPropagation}
+				oncontextmenu={stopPropagation}
+				onclick={(event) => {
+					stopPropagation(event);
+					Editor.element.setBindable(element.id, !isBindable);
+				}}
+			>
+				{#if isBindable}<LinkIcon data-icon="inline-start" />{:else}<LinkBreakIcon
+						data-icon="inline-start"
+					/>{/if}
+			</Button>
+			<Button
+				variant="ghost"
+				size="icon-xs"
+				class={stateControlClass(!isVisible)}
+				aria-label="Visible"
+				title="Visible"
+				aria-pressed={isVisible}
+				onpointerdown={stopPropagation}
+				oncontextmenu={stopPropagation}
+				onclick={(event) => {
+					stopPropagation(event);
+					Editor.element.setVisible(element.id, !isVisible);
+				}}
+			>
+				{#if isVisible}<EyeIcon data-icon="inline-start" />{:else}<EyeSlashIcon data-icon="inline-start" />{/if}
+			</Button>
 			<button
 				type="button"
 				class="text-sidebar-foreground/60 hover:text-destructive mr-1 flex size-6 items-center justify-center rounded-md opacity-0 transition-[color,opacity] outline-none group-hover:opacity-100 focus-visible:opacity-100 {editing
@@ -124,5 +193,5 @@
 			>
 		</div>
 	</ContextMenu.Trigger>
-	<ElementRowContextMenu {element} {frontmost} {backmost} close={() => (menuOpen = false)} />
+	<ElementRowContextMenu {element} close={() => (menuOpen = false)} onRename={edit} />
 </ContextMenu.Root>

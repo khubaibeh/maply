@@ -1,7 +1,7 @@
-import type { Project, StoredImageAsset } from "@maply/model/types";
+import type { StoredImageAsset } from "@maply/model/types";
 import { Effect } from "effect";
 
-import type { ResetProjectOptions } from "../project/repository";
+import type { ResetProjectOptions, StoredEditorProject } from "../project/repository";
 import { ProjectRepository } from "../project/repository";
 import { storageRuntime } from "./runtime";
 
@@ -22,7 +22,7 @@ export function fetchProject(id: string) {
 	return handled(Effect.flatMap(ProjectRepository, (repo) => repo.fetch(id)));
 }
 
-export function saveProject(project: Project) {
+export function saveProject(project: StoredEditorProject) {
 	return handled(Effect.flatMap(ProjectRepository, (repo) => repo.save(project)));
 }
 
@@ -34,7 +34,7 @@ export function saveImageAsset(asset: StoredImageAsset) {
 	return handled(Effect.flatMap(ProjectRepository, (repo) => repo.saveImageAsset(asset)));
 }
 
-export function replaceProject(project: Project, imageAssets: readonly StoredImageAsset[]) {
+export function replaceProject(project: StoredEditorProject, imageAssets: readonly StoredImageAsset[]) {
 	return handled(Effect.flatMap(ProjectRepository, (repo) => repo.replace(project, imageAssets)));
 }
 

@@ -6,6 +6,9 @@
 	import ColorPicker from "@components/core/ColorPicker.svelte";
 	import ElementNameValidation from "@components/core/ElementNameValidation.svelte";
 	import ElementProperties from "@components/properties/ElementProperties.svelte";
+	import ElementStateProperties from "@components/properties/ElementStateProperties.svelte";
+	import { canEditSharedProperties, sharedPropertySelectionLimit } from "@components/properties/shared-properties";
+	import SharedProperties from "@components/properties/SharedProperties.svelte";
 	import { Editor } from "editor";
 
 	let { width = 288 }: { width?: number } = $props();
@@ -30,7 +33,12 @@
 	}
 
 	function updateElementName(event: Event, id: string) {
-		const value = (event.target as HTMLInputElement).value.trim();
+		const input = event.target as HTMLInputElement;
+		const value = input.value.trim();
+		if (!value) {
+			input.value = $project.elements.find((element) => element.id === id)?.name ?? "";
+			return;
+		}
 		Editor.element.rename(id, value);
 	}
 
@@ -44,6 +52,9 @@
 			: null
 	);
 	const selectedElementCount = $derived($project.selectedElementIds.length);
+	const selectedElements = $derived(
+		$project.elements.filter((element) => $project.selectedElementIds.includes(element.id))
+	);
 	const elementNameValidations = $derived(Editor.naming.validate($project.elements));
 	const selectedElementNameValidation = $derived(
 		selectedElement ? (elementNameValidations.get(selectedElement.id) ?? null) : null
@@ -54,7 +65,7 @@
 	<div class="px-4 pt-3 pb-2">
 		<span class="text-sidebar-foreground/80 text-sm font-bold">Properties</span>
 	</div>
-	<Separator class="mx-4 w-auto opacity-50" />
+	<Separator class="mx-3 opacity-50 data-[orientation=horizontal]:w-auto" />
 	<ScrollArea class="min-h-0 flex-1 [mask-image:linear-gradient(to_bottom,black_calc(100%-2rem),transparent)]">
 		<div class="flex flex-col gap-4 p-3">
 			<div class="flex flex-col gap-x-2 gap-y-4">
@@ -100,12 +111,19 @@
 					<div class="flex items-center gap-2">
 						<Badge variant="secondary">{selectedElementCount} selected</Badge>
 					</div>
-					<p class="text-sidebar-foreground/75 text-sm leading-6">Multi element support coming soon</p>
+					<ElementStateProperties elements={selectedElements} />
+					{#if canEditSharedProperties(selectedElementCount)}
+						<SharedProperties elements={selectedElements} />
+					{:else}
+						<p class="text-sidebar-foreground/75 text-sm leading-6">
+							Multi element support for selections over {sharedPropertySelectionLimit} elements is coming soon.
+						</p>
+					{/if}
 				</div>
 			{:else if selectedElement}
 				<div class="flex flex-col gap-x-2 gap-y-4">
-					<Separator class="mx-4 my-2 w-auto opacity-50" />
-					<span class="text-sidebar-foreground/30 text-sm font-semibold tracking-wide">Element</span>
+					<Separator class="mx-4 my-2 opacity-50 data-[orientation=horizontal]:w-auto" />
+					<ElementStateProperties elements={[selectedElement]} />
 					<div class="flex flex-col gap-1">
 						<label for="{selectedElement.id}-name" class="text-sidebar-foreground/70 text-xs">Name</label>
 						<Input

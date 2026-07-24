@@ -1,5 +1,12 @@
 import type { Element, ImageElement, RectElement } from "@maply/model/types";
-import { resizeElementByHandle, translateElement, translateElements, updateElement } from "editor/elements/mutate";
+import {
+	resizeElementByHandle,
+	renameElement,
+	translateElement,
+	translateElements,
+	updateElement,
+	updateElements
+} from "editor/elements/mutate";
 import { imageAssetState } from "editor/state/assets";
 import { projectState, updateProjectState } from "editor/state/document";
 import { canvasState } from "editor/state/workspace";
@@ -11,6 +18,9 @@ function rect(id: string, x: number, y: number): RectElement {
 		id,
 		name: id,
 		type: "rect",
+		locked: false,
+		visible: true,
+		bindable: true,
 		x,
 		y,
 		width: 100,
@@ -26,6 +36,9 @@ function image(): ImageElement {
 		id: "image",
 		name: "Image",
 		type: "image",
+		locked: false,
+		visible: true,
+		bindable: false,
 		x: 50,
 		y: 50,
 		width: 200,
@@ -57,6 +70,99 @@ describe("translateElement", () => {
 		expect(get(projectState).elements).toMatchObject([
 			{ id: "a", x: 20, y: 0 },
 			{ id: "b", x: 200, y: 0 }
+		]);
+	});
+
+	it("does not move a locked element", () => {
+		setFixture([{ ...rect("locked", 40, 40), locked: true }]);
+
+		expect(translateElement("locked", 50, 50)).toEqual({ x: 0, y: 0 });
+		expect(get(projectState).elements[0]).toMatchObject({ x: 40, y: 40 });
+	});
+
+	it("moves only unlocked elements in a mixed selection", () => {
+		setFixture([{ ...rect("locked", 0, 0), locked: true }, rect("unlocked", 180, 0)]);
+
+		expect(translateElements(["locked", "unlocked"], 50, 0)).toEqual({ x: 20, y: 0 });
+		expect(get(projectState).elements).toMatchObject([
+			{ id: "locked", x: 0, y: 0 },
+			{ id: "unlocked", x: 200, y: 0 }
+		]);
+	});
+});
+
+describe("updateElements", () => {
+	it("does not write blank names", () => {
+		setFixture([rect("a", 10, 20), rect("b", 30, 40)]);
+
+		updateElements(["a", "b"], { name: "   " });
+		renameElement("a", "");
+
+		expect(get(projectState).elements.map((element) => element.name)).toEqual(["a", "b"]);
+	});
+
+	it("updates multiple elements in one state transition", () => {
+		setFixture([rect("a", 10, 20), rect("b", 30, 40)]);
+
+		updateElements(["a", "b"], { fill: "#fff" });
+
+		expect(get(projectState).elements).toMatchObject([
+			{ id: "a", fill: "#fff" },
+			{ id: "b", fill: "#fff" }
+		]);
+	});
+
+	it("leaves elements outside the target IDs unchanged", () => {
+		const selected = rect("selected", 10, 20);
+		const untouched = rect("untouched", 30, 40);
+		setFixture([selected, untouched]);
+
+		updateElements([selected.id, "missing"], { fill: "#fff" });
+
+		expect(get(projectState).elements).toEqual([{ ...selected, fill: "#fff" }, untouched]);
+	});
+
+	it("clamps each targeted element to the canvas", () => {
+		setFixture([rect("a", 10, 20), rect("b", 30, 40)]);
+
+		updateElements(["a", "b"], { x: 400 });
+
+		expect(get(projectState).elements).toMatchObject([
+			{ id: "a", x: 200 },
+			{ id: "b", x: 200 }
+		]);
+	});
+
+	it("preserves image render geometry when updating image dimensions in a batch", () => {
+		const source = image();
+		const rectangle = rect("rect", 10, 20);
+		setFixture([source, rectangle]);
+		imageAssetState.set({
+			asset: {
+				id: "asset",
+				projectId: "prod",
+				name: "image.png",
+				mimeType: "image/png",
+				dataUrl: "data:image/png;base64,AA==",
+				width: 400,
+				height: 200
+			}
+		});
+		canvasState.set({ width: 500, height: 300, color: "#fff", x: 0, y: 0, camera: { x: 0, y: 0, zoom: 1 } });
+
+		updateElements([source.id, rectangle.id], { width: 400 });
+
+		expect(get(projectState).elements).toMatchObject([
+			{
+				id: source.id,
+				width: 400,
+				cropScale: 200,
+				imageX: -200,
+				imageY: -50,
+				imageWidth: 800,
+				imageHeight: 200
+			},
+			{ id: rectangle.id, width: 400 }
 		]);
 	});
 });

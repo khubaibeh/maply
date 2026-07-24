@@ -8,7 +8,7 @@ import {
 	UnsupportedProjectFileError
 } from "@maply/io/effect";
 import { createProject } from "@maply/io/effect/program";
-import { createDefaultProject } from "@maply/model";
+import { createDefaultProject, createProjectEditorData } from "@maply/model";
 import type { Project, StoredImageAsset } from "@maply/model/types";
 import { Cause, Effect, Exit } from "effect";
 import { describe, expect, it } from "vitest";
@@ -56,19 +56,48 @@ describe("project file IO", () => {
 		const file = run(projectEffect.file.create(project, []));
 
 		expect(file.format).toBe("maply-project");
-		expect(file.version).toBe(1);
+		expect(file.version).toBe(2);
 		expect(file.project).toEqual(project);
 		expect(file.project).not.toBe(project);
+		expect(file.editorData).toEqual(createProjectEditorData());
 	});
 
 	it("stringifies and parses project file packages", () => {
+		const editorData = {
+			elementNameGrid: {
+				headers: ["Name", "State"],
+				rows: [
+					["pump", "running"],
+					["", ""]
+				]
+			}
+		};
 		const text = run(
-			projectEffect.file.serialize(run(projectEffect.file.create(createDefaultProject("project-1"), [])))
+			projectEffect.file.serialize(
+				run(projectEffect.file.create(createDefaultProject("project-1"), [], editorData))
+			)
 		);
 		const file = run(projectEffect.file.parse(text));
 
 		expect(file.project.id).toBe("project-1");
 		expect(file.imageAssets).toEqual([]);
+		expect(file.editorData).toEqual(editorData);
+	});
+
+	it("migrates version 1 files to an empty element-name grid", () => {
+		const file = run(
+			projectEffect.file.parse(
+				JSON.stringify({
+					format: "maply-project",
+					version: 1,
+					project: createDefaultProject("legacy"),
+					imageAssets: []
+				})
+			)
+		);
+
+		expect(file.version).toBe(2);
+		expect(file.editorData).toEqual(createProjectEditorData());
 	});
 
 	it("runs IO effects through the default runtime", async () => {
@@ -117,8 +146,8 @@ describe("project file IO", () => {
 		expect(() => run(projectEffect.file.parse(JSON.stringify({ format: "other", version: 1 })))).toThrow(
 			"Unsupported project file format: other."
 		);
-		expect(() => run(projectEffect.file.parse(JSON.stringify({ format: "maply-project", version: 2 })))).toThrow(
-			"Unsupported project file version: 2."
+		expect(() => run(projectEffect.file.parse(JSON.stringify({ format: "maply-project", version: 3 })))).toThrow(
+			"Unsupported project file version: 3."
 		);
 	});
 
@@ -145,7 +174,7 @@ describe("project file IO", () => {
 
 	it("returns typed unsupported project file failures", () => {
 		const exit = Effect.runSyncExit(
-			projectEffect.file.parse(JSON.stringify({ format: "maply-project", version: 2 }))
+			projectEffect.file.parse(JSON.stringify({ format: "maply-project", version: 3 }))
 		);
 
 		expect(Exit.isFailure(exit)).toBe(true);
@@ -156,8 +185,8 @@ describe("project file IO", () => {
 		expect(reason?.error).toMatchObject({
 			operation: "parse",
 			field: "version",
-			expected: 1,
-			actual: 2
+			expected: 2,
+			actual: 3
 		});
 	});
 

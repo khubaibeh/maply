@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { createElementMove } from "@components/canvas/interaction/element-move.svelte";
+	import { canSelectOnCanvas } from "@components/canvas/interaction/element-selection";
 	import { canvasCursor } from "@components/core/cursors";
 	import { Editor } from "editor";
 
@@ -7,6 +8,7 @@
 	import ElementOutline from "./ElementOutline.svelte";
 	import ElementShapes from "./ElementShapes.svelte";
 	import ImageCropOverlay from "./ImageCropOverlay.svelte";
+	import MultiSelectionOutline from "./MultiSelectionOutline.svelte";
 	import PathElementHandles from "./PathElementHandles.svelte";
 	import PathElementOutline from "./PathElementOutline.svelte";
 
@@ -16,14 +18,21 @@
 	const elementMove = createElementMove();
 
 	const selectedElements = $derived(
-		$project.elements.filter((element) => $project.selectedElementIds.includes(element.id))
+		$project.elements.filter(
+			(element) => element.visible !== false && $project.selectedElementIds.includes(element.id)
+		)
 	);
 	const selectedElement = $derived(selectedElements.length === 1 ? (selectedElements[0] ?? null) : null);
 	const hoveredElement = $derived(
 		$tool.activeTool === "select" &&
 			$project.hoveredElementId &&
 			!$project.selectedElementIds.includes($project.hoveredElementId)
-			? ($project.elements.find((element) => element.id === $project.hoveredElementId) ?? null)
+			? ($project.elements.find(
+					(element) =>
+						element.id === $project.hoveredElementId &&
+						element.visible !== false &&
+						canSelectOnCanvas(element)
+				) ?? null)
 			: null
 	);
 </script>
@@ -43,6 +52,10 @@
 	stroke="var(--border)"
 	filter="url(#canvas-shadow)"
 />
+
+{#if selectedElements.length > 1}
+	<MultiSelectionOutline elements={selectedElements} />
+{/if}
 
 <CanvasResizeHandles />
 

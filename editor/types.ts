@@ -1,13 +1,18 @@
-import type { Camera, Element, StoredImageAsset, Tool } from "@maply/model/types";
+import type { Camera, Element, ElementNameGrid, StoredImageAsset, Tool } from "@maply/model/types";
 
 export type { ElementNameIssue, ElementNameValidation } from "./elements/naming";
 export type { ResizeHandle, ResizeOptions } from "./elements/resize";
+
+/** A layer-order direction for one or more selected elements. */
+export type SelectionOrder = "front" | "forward" | "backward" | "back";
 
 /** The live project data and editor-only selection state. */
 export type ProjectState = {
 	id: string;
 	name: string;
 	elements: Element[];
+	elementNameGrid: ElementNameGrid;
+	isElementNameImportOpen: boolean;
 	initialized: boolean;
 	selectedElementId: string | null;
 	selectedElementIds: string[];

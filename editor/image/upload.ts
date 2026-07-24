@@ -1,5 +1,6 @@
 import { svg, validateMimeType } from "@maply/io";
 import type { PreparedImage } from "@maply/io/types";
+import { copyProjectEditorData } from "@maply/model";
 import type { StoredImageAsset } from "@maply/model/types";
 import { storage } from "@maply/storage";
 import { get } from "svelte/store";
@@ -132,7 +133,9 @@ export async function replaceImageAsset(
 				name: project.name,
 				canvas: { width: canvas.width, height: canvas.height, color: canvas.color, x: canvas.x, y: canvas.y },
 				camera: { ...canvas.camera },
-				elements
+				elements,
+				editorData: copyProjectEditorData({ elementNameGrid: project.elementNameGrid }),
+				isElementNameImportOpen: project.isElementNameImportOpen
 			},
 			referenced
 		);

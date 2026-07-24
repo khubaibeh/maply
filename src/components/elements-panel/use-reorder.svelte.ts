@@ -3,7 +3,7 @@ import { Editor } from "editor";
 import { onDestroy } from "svelte";
 import { fromStore } from "svelte/store";
 
-import { projectInsertionIndex, reorderPreview } from "./reorder";
+import { getSelectionRange, projectInsertionIndex, reorderPreview } from "./reorder";
 
 type ReorderState = {
 	elementId: string;
@@ -144,6 +144,7 @@ export function createElementReorder({ list, viewport }: ReorderOptions) {
 
 	function start(event: PointerEvent, elementId: string, index: number) {
 		if (event.button !== 0 || event.target instanceof HTMLInputElement) return;
+		if (project.current.elements.find((element) => element.id === elementId)?.locked) return;
 		clearPending();
 		pending = {
 			elementId,
@@ -156,19 +157,12 @@ export function createElementReorder({ list, viewport }: ReorderOptions) {
 		window.addEventListener("pointercancel", clearPending);
 	}
 
-	function select(event: PointerEvent, elementId: string) {
+	function select(event: PointerEvent, elementId: string, rows: readonly Element[]) {
 		if (event.button !== 0 || event.target instanceof HTMLInputElement) return;
 		if (event.shiftKey && project.current.selectedElementIds.length > 0) {
-			const rows = [...project.current.elements].reverse();
-			const anchorIndex = rows.findIndex((element) => element.id === project.current.selectedElementIds[0]);
-			const targetIndex = rows.findIndex((element) => element.id === elementId);
-			if (anchorIndex !== -1 && targetIndex !== -1) {
-				const selected = rows.slice(Math.min(anchorIndex, targetIndex), Math.max(anchorIndex, targetIndex) + 1);
-				Editor.selection.selectMany(
-					anchorIndex > targetIndex
-						? selected.reverse().map((element) => element.id)
-						: selected.map((element) => element.id)
-				);
+			const selected = getSelectionRange(rows, project.current.selectedElementIds, elementId);
+			if (selected.length > 0) {
+				Editor.selection.selectMany(selected.map((element) => element.id));
 				return;
 			}
 		}
