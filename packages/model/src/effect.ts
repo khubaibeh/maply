@@ -13,3 +13,4 @@ export {
 	TextElementSchema,
 	ToolSchema
 } from "./project/schema";
+export { ElementNameGridSchema, ProjectEditorDataSchema } from "./project/editor-data";

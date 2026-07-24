@@ -15,6 +15,8 @@ describe("loadEditorSession", () => {
 		await loadEditorSession("prod");
 
 		const state = get(projectState);
+		expect(state.elementNameGrid).toEqual({ headers: ["Name"], rows: [[""]] });
+		expect(state.isElementNameImportOpen).toBe(true);
 		expect(state.elements[0]).toMatchObject({
 			name: "path",
 			x: 0,

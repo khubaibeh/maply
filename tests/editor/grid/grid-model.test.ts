@@ -1,3 +1,4 @@
+import { MAX_ELEMENT_NAME_GRID_CELLS, MAX_ELEMENT_NAME_GRID_COLUMNS, MAX_ELEMENT_NAME_GRID_ROWS } from "@maply/model";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -8,7 +9,8 @@ import {
 	setCell,
 	setGridHeader,
 	normalizeNameRows,
-	growToFit
+	growToFit,
+	GridLimitError
 } from "../../../src/components/elements-panel/grid/grid-model";
 
 describe("grid mutations", () => {
@@ -30,6 +32,15 @@ describe("grid mutations", () => {
 			const result = addColumn(headers, rows);
 			expect(result.rows.length).toBe(3);
 			expect(result.rows.every((row) => row.length === 2)).toBe(true);
+		});
+
+		it("rejects additions that exceed persisted capacity", () => {
+			const headers = Array.from({ length: MAX_ELEMENT_NAME_GRID_COLUMNS }, (_, index) => `column-${index}`);
+			expect(() => addColumn(headers, [["name"]])).toThrow(GridLimitError);
+		});
+
+		it("normalizes empty headers before preserving rectangular rows", () => {
+			expect(addColumn([], [[""]])).toEqual({ headers: ["Name", ""], rows: [["", ""]] });
 		});
 	});
 
@@ -56,6 +67,14 @@ describe("grid mutations", () => {
 			const rows = [["a", "b", "c"]];
 			const result = insertRows(headers, rows, 0, 1);
 			expect(result.rows.every((row) => row.length === 3)).toBe(true);
+		});
+
+		it("rejects inserts that exceed row or cell capacity", () => {
+			const rows = Array.from({ length: MAX_ELEMENT_NAME_GRID_ROWS }, () => [""]);
+			expect(() => insertRows(["Name"], rows, 0, 1)).toThrow(GridLimitError);
+			expect(() => insertRows(["Name", "State"], [["", ""]], 0, MAX_ELEMENT_NAME_GRID_CELLS)).toThrow(
+				GridLimitError
+			);
 		});
 	});
 
@@ -215,6 +234,13 @@ describe("grid mutations", () => {
 			const result = growToFit(headers, rows, { r: 0, c: 0 });
 			expect(result.headers.length).toBe(3);
 			expect(result.rows.length).toBe(1);
+		});
+
+		it("rejects targets beyond the persisted capacity", () => {
+			expect(() => growToFit(["Name"], [[""]], { r: MAX_ELEMENT_NAME_GRID_ROWS, c: 0 })).toThrow(GridLimitError);
+			expect(() => growToFit(["Name"], [[""]], { r: 0, c: MAX_ELEMENT_NAME_GRID_COLUMNS })).toThrow(
+				GridLimitError
+			);
 		});
 	});
 

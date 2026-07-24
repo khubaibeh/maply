@@ -1,10 +1,36 @@
 /** Core grid data types and mutations. Maintains rectangularity invariant. */
 
-export const nameColumnHeader = "Name";
+import {
+	ELEMENT_NAME_HEADER,
+	MAX_ELEMENT_NAME_GRID_CELLS,
+	MAX_ELEMENT_NAME_GRID_COLUMNS,
+	MAX_ELEMENT_NAME_GRID_ROWS
+} from "@maply/model";
+
+export const nameColumnHeader = ELEMENT_NAME_HEADER;
 
 export interface CellAddr {
 	r: number;
 	c: number;
+}
+
+/** Signals that a grid mutation would exceed the supported persisted size. */
+export class GridLimitError extends Error {
+	constructor() {
+		super(
+			`Element-name grids support at most ${MAX_ELEMENT_NAME_GRID_ROWS.toLocaleString()} rows, ${MAX_ELEMENT_NAME_GRID_COLUMNS.toLocaleString()} columns, and ${MAX_ELEMENT_NAME_GRID_CELLS.toLocaleString()} cells.`
+		);
+		this.name = "GridLimitError";
+	}
+}
+
+function ensureGridCapacity(rows: number, columns: number): void {
+	if (
+		rows > MAX_ELEMENT_NAME_GRID_ROWS ||
+		columns > MAX_ELEMENT_NAME_GRID_COLUMNS ||
+		rows * columns > MAX_ELEMENT_NAME_GRID_CELLS
+	)
+		throw new GridLimitError();
 }
 
 /** Ensure every row has exactly `headers.length` cells, padding with "". */
@@ -48,7 +74,9 @@ export function normalizeNameRows(rows: string[][], width: number): string[][] {
 
 /** Add a new column at the end, padding all rows. */
 export function addColumn(headers: string[], rows: string[][]): { headers: string[]; rows: string[][] } {
-	const newHeaders = [...normalizeHeaders(headers), ""];
+	const normalizedHeaders = normalizeHeaders(headers);
+	ensureGridCapacity(rows.length, normalizedHeaders.length + 1);
+	const newHeaders = [...normalizedHeaders, ""];
 	const newRows = rectangularize(rows, newHeaders.length);
 	return { headers: newHeaders, rows: newRows };
 }
@@ -63,6 +91,7 @@ export function insertRows(
 	const normalizedHeaders = normalizeHeaders(headers);
 	const newRows = [...rows];
 	const emptyRow = Array(normalizedHeaders.length).fill("");
+	ensureGridCapacity(newRows.length + count, normalizedHeaders.length);
 	newRows.splice(
 		at,
 		0,
@@ -126,6 +155,7 @@ export function growToFit(
 	target: CellAddr
 ): { headers: string[]; rows: string[][] } {
 	const newHeaders = normalizeHeaders(headers);
+	ensureGridCapacity(Math.max(rows.length, target.r + 1), Math.max(newHeaders.length, target.c + 1));
 	let newRows = [...rows];
 
 	// Grow columns

@@ -1,5 +1,17 @@
 export { createDefaultProject, createSampleProject, defaultProject } from "./project/default";
 export {
+	copyProjectEditorData,
+	copyElementNameGrid,
+	createElementNameGrid,
+	createProjectEditorData,
+	ELEMENT_NAME_HEADER,
+	getElementNameGridIssue,
+	getProjectEditorDataIssue,
+	MAX_ELEMENT_NAME_GRID_CELLS,
+	MAX_ELEMENT_NAME_GRID_COLUMNS,
+	MAX_ELEMENT_NAME_GRID_ROWS
+} from "./project/editor-data";
+export {
 	getImageRenderRect,
 	getLegacyImageRenderRect,
 	hasValidImageRect,

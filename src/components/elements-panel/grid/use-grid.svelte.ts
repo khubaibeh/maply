@@ -1,3 +1,4 @@
+import type { ElementNameGrid } from "@maply/model/types";
 import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
 import { applyMatrix } from "./grid-apply";
@@ -21,7 +22,6 @@ import type { GridSort } from "./grid-sort";
 import { parseClipboard } from "./ingest/clipboard";
 import { serializeGridRange } from "./ingest/clipboard";
 import { parseFile } from "./ingest/file";
-import type { NameGridData } from "./name-grid-state";
 
 export interface HeaderSelection {
 	kind: "row" | "col";
@@ -34,9 +34,9 @@ type GridKeyEvent = Pick<
 >;
 
 /** The grid hook. Owns all `$state` and provides intent methods for the UI. */
-export function createGrid(options: { data?: NameGridData; onChange?: (data: NameGridData) => void } = {}) {
+export function createGrid(options: { data?: ElementNameGrid; onChange?: (data: ElementNameGrid) => void } = {}) {
 	const initialHeaders = normalizeHeaders(options.data?.headers ?? ["Name"]);
-	const initialRows = normalizeNameRows(options.data?.rows ?? [[""]], initialHeaders.length);
+	const initialRows = normalizeNameRows(options.data?.rows.map((row) => [...row]) ?? [[""]], initialHeaders.length);
 
 	// Core state
 	let headers = $state<string[]>(initialHeaders);

@@ -1,11 +1,10 @@
 /** Maximum accepted untrusted import file size. */
 export const MAX_FILE_BYTES = 5 * 1024 * 1024;
-/** Maximum rows accepted from one import. */
-export const MAX_ROWS = 5_000;
-/** Maximum columns accepted from one import. */
-export const MAX_COLUMNS = 50;
-/** Maximum cells accepted from one import. */
-export const MAX_CELLS = 100_000;
+export {
+	MAX_ELEMENT_NAME_GRID_CELLS as MAX_CELLS,
+	MAX_ELEMENT_NAME_GRID_COLUMNS as MAX_COLUMNS,
+	MAX_ELEMENT_NAME_GRID_ROWS as MAX_ROWS
+} from "@maply/model";
 
 /** Warning about data loss or format issues during ingestion. */
 export interface IngestWarning {

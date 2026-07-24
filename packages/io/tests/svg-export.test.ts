@@ -164,6 +164,7 @@ describe("svg recovery import", () => {
 		expect(imported.source).toBe("recovery");
 		expect(imported.warnings).toEqual([]);
 		expect(imported.file.project).toEqual(project);
+		expect(imported.file.editorData).toEqual({ elementNameGrid: { headers: ["Name"], rows: [[""]] } });
 	});
 
 	it("round-trips image assets with crop data", () => {

@@ -1,7 +1,7 @@
 import { Schema } from "effect";
 
 export const ProjectFileOperationSchema = Schema.Literals(["create", "stringify", "parse", "import"]);
-export const ProjectFileSectionSchema = Schema.Literals(["package", "project", "asset"]);
+export const ProjectFileSectionSchema = Schema.Literals(["package", "project", "asset", "editorData"]);
 
 export type ProjectFileOperation = typeof ProjectFileOperationSchema.Type;
 export type ProjectFileSection = typeof ProjectFileSectionSchema.Type;

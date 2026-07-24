@@ -1,3 +1,4 @@
+import { createProjectEditorData } from "@maply/model";
 import type { StoredImageAsset } from "@maply/model/types";
 import { Effect } from "effect";
 
@@ -154,7 +155,14 @@ export function importRecovery(svg: string) {
 		Effect.flatMap((value) =>
 			value === null
 				? Effect.succeed(null)
-				: parse(JSON.stringify({ format: PROJECT_FILE_FORMAT, version: PROJECT_FILE_VERSION, ...value })).pipe(
+				: parse(
+						JSON.stringify({
+							...value,
+							format: PROJECT_FILE_FORMAT,
+							version: PROJECT_FILE_VERSION,
+							editorData: createProjectEditorData()
+						})
+					).pipe(
 						Effect.map((file) => ({ file, source: "recovery" as const, warnings: [] }) satisfies SvgImport)
 					)
 		)

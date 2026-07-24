@@ -1,3 +1,4 @@
+import type { ElementNameGrid } from "@maply/model/types";
 import { describe, expect, it } from "vitest";
 
 import { createGrid } from "../../../src/components/elements-panel/grid/use-grid.svelte";
@@ -26,7 +27,7 @@ describe("grid defaults", () => {
 	});
 
 	it("hydrates and persists grid data", () => {
-		const changes: { headers: string[]; rows: string[][] }[] = [];
+		const changes: ElementNameGrid[] = [];
 		const grid = createGrid({
 			data: { headers: ["Name"], rows: [["Alpha"], [""]] },
 			onChange: (data) => changes.push(data)

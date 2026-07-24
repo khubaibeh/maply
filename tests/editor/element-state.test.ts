@@ -1,3 +1,4 @@
+import { createElementNameGrid } from "@maply/model";
 import type { Element, ImageElement, RectElement } from "@maply/model/types";
 import { setBindable, setLocked, setVisible } from "editor/elements/state";
 import { projectState, setProjectState } from "editor/state/document";
@@ -47,6 +48,8 @@ function setFixture(elements: Element[], selectedElementIds: string[] = []) {
 			id: "prod",
 			name: "Test",
 			elements,
+			elementNameGrid: createElementNameGrid(),
+			isElementNameImportOpen: true,
 			initialized: true,
 			selectedElementIds,
 			selectedElementId: selectedElementIds.at(-1) ?? null,

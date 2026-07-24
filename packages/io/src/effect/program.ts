@@ -1,4 +1,4 @@
-import type { Project, StoredImageAsset } from "@maply/model/types";
+import type { Project, ProjectEditorData, StoredImageAsset } from "@maply/model/types";
 import { Cause, Effect, Exit } from "effect";
 
 import { isSvgMimeType, svgToDataUrl, validateImageMimeType, validateSvgMarkup } from "../image/prepare";
@@ -60,8 +60,12 @@ export function prepareSvg(markup: string): SvgPrepareResult {
 	return { ok: true, value: { sanitized, dataUrl: svgToDataUrl(sanitized) } };
 }
 
-export function createProject(project: Project, imageAssets: readonly StoredImageAsset[]) {
-	return handled(create(project, imageAssets));
+export function createProject(
+	project: Project,
+	imageAssets: readonly StoredImageAsset[],
+	editorData?: ProjectEditorData
+) {
+	return handled(create(project, imageAssets, editorData));
 }
 
 export function serializeProject(projectFile: ProjectFilePackage) {

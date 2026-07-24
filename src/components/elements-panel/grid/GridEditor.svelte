@@ -59,6 +59,18 @@
 		}
 	}
 
+	function reportGridError(error: unknown) {
+		onError?.(error instanceof Error ? error.message : "Could not update the grid.");
+	}
+
+	function runGridAction(action: () => void) {
+		try {
+			action();
+		} catch (error) {
+			reportGridError(error);
+		}
+	}
+
 	function handlePaste(event: ClipboardEvent) {
 		const target = event.target;
 		if (
@@ -70,11 +82,7 @@
 		event.preventDefault();
 		const text = event.clipboardData?.getData("text/plain");
 		if (text) {
-			try {
-				grid.handlePaste(text);
-			} catch (error) {
-				onError?.(error instanceof Error ? error.message : "Could not paste the clipboard data.");
-			}
+			runGridAction(() => grid.handlePaste(text));
 		}
 	}
 
@@ -161,7 +169,7 @@
 			<!-- Add-column button, beside the column headers -->
 			<button
 				type="button"
-				onclick={() => grid.addNewColumn()}
+				onclick={() => runGridAction(() => grid.addNewColumn())}
 				class="border-border bg-sidebar/50 text-muted-foreground hover:bg-sidebar/70 hover:text-foreground flex w-9 shrink-0 items-center justify-center border-b-2 transition-colors"
 				aria-label="Add column"
 			>
@@ -223,7 +231,7 @@
 							<ContextMenu.Separator />
 							<ContextMenu.Item
 								class="gap-2 rounded-md px-2 py-1 text-xs [&_svg:not([class*='size-'])]:size-3.5"
-								onclick={() => grid.insertRowAbove(rowIndex)}
+								onclick={() => runGridAction(() => grid.insertRowAbove(rowIndex))}
 							>
 								<PlusIcon />
 								New row above
@@ -252,7 +260,7 @@
 							</ContextMenu.Item>
 							<ContextMenu.Item
 								class="gap-2 rounded-md px-2 py-1 text-xs [&_svg:not([class*='size-'])]:size-3.5"
-								onclick={() => grid.pasteRowsAbove(rowIndex)}
+								onclick={() => void grid.pasteRowsAbove(rowIndex).catch(reportGridError)}
 							>
 								<ClipboardIcon />
 								Paste above

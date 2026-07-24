@@ -36,6 +36,8 @@ describe("@maply/storage", () => {
 		const project = await value(storage.project.fetch("prod"));
 		expect(project.name).toBe("Version 3 project");
 		expect(project).not.toHaveProperty("importExportState");
+		expect(project.editorData).toEqual({ elementNameGrid: { headers: ["Name"], rows: [[""]] } });
+		expect(project.isElementNameImportOpen).toBe(true);
 		expect(await value(storage.imageAsset.fetch(["legacy-asset"]))).toEqual([asset("legacy-asset")]);
 
 		const db = await openDatabase();
@@ -51,11 +53,58 @@ describe("@maply/storage", () => {
 
 	it("persists projects through the handled API", async () => {
 		const project = await value(storage.project.fetch("prod"));
-		const saved = { ...project, name: "Persisted project" };
+		const saved = {
+			...project,
+			name: "Persisted project",
+			editorData: {
+				elementNameGrid: {
+					headers: ["Name", "State"],
+					rows: [
+						["pump", "on"],
+						["", ""]
+					]
+				}
+			},
+			isElementNameImportOpen: false
+		};
 
 		await value(storage.project.save(saved));
 
-		expect(await value(storage.project.fetch("prod"))).toMatchObject({ name: "Persisted project" });
+		expect(await value(storage.project.fetch("prod"))).toMatchObject({
+			name: "Persisted project",
+			editorData: saved.editorData,
+			isElementNameImportOpen: false
+		});
+	});
+
+	it("rejects malformed stored editor data without replacing it", async () => {
+		const project = await value(storage.project.fetch("prod"));
+		const db = await openDatabase();
+		const transaction = db.transaction("projects", "readwrite");
+		transaction.objectStore("projects").put({
+			...project,
+			editorData: { elementNameGrid: { headers: ["Other"], rows: [[""]] } }
+		});
+		await new Promise<void>((resolve, reject) => {
+			transaction.oncomplete = () => resolve();
+			transaction.onerror = () => reject(transaction.error);
+		});
+		db.close();
+
+		const result = await storage.project.fetch("prod");
+		expect(result.ok).toBe(false);
+		if (!result.ok) expect(result.error.message).toBe("Stored element-name grid is invalid.");
+
+		const check = await openDatabase();
+		const read = check.transaction("projects", "readonly").objectStore("projects").get("prod");
+		const stored = await new Promise<unknown>((resolve, reject) => {
+			read.onsuccess = () => resolve(read.result);
+			read.onerror = () => reject(read.error);
+		});
+		check.close();
+		expect(stored).toMatchObject({ editorData: { elementNameGrid: { headers: ["Other"] } } });
+
+		await value(storage.project.reset({ elements: "blank" }));
 	});
 
 	it("replaces existing project image assets", async () => {

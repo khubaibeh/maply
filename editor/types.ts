@@ -1,4 +1,4 @@
-import type { Camera, Element, StoredImageAsset, Tool } from "@maply/model/types";
+import type { Camera, Element, ElementNameGrid, StoredImageAsset, Tool } from "@maply/model/types";
 
 export type { ElementNameIssue, ElementNameValidation } from "./elements/naming";
 export type { ResizeHandle, ResizeOptions } from "./elements/resize";
@@ -11,6 +11,8 @@ export type ProjectState = {
 	id: string;
 	name: string;
 	elements: Element[];
+	elementNameGrid: ElementNameGrid;
+	isElementNameImportOpen: boolean;
 	initialized: boolean;
 	selectedElementId: string | null;
 	selectedElementIds: string[];

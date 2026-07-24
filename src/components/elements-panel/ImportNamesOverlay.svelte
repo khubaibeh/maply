@@ -16,7 +16,6 @@
 	import GridEditor from "./grid/GridEditor.svelte";
 	import GridImportDropzone from "./grid/GridImportDropzone.svelte";
 	import type { IngestWarning } from "./grid/ingest/types";
-	import { loadNameGrid, saveNameGrid } from "./grid/name-grid-state";
 	import { createGrid } from "./grid/use-grid.svelte";
 
 	interface Props {
@@ -26,12 +25,12 @@
 	let { onClose }: Props = $props();
 	const project = Editor.state.project;
 	const grid = createGrid({
-		data: loadNameGrid($project.id),
-		onChange: (data) => saveNameGrid($project.id, data)
+		data: $project.elementNameGrid,
+		onChange: Editor.elementNameGrid.replace
 	});
 	let warnings = $state<IngestWarning[]>([]);
 	let gridError = $state<string | null>(null);
-	let importOpen = $state(true);
+	let importOpen = $state($project.isElementNameImportOpen);
 	const rowElements = $derived(elementsByNameRow(grid.rows, $project.elements));
 	const onlyNameColumnSelected = $derived(
 		grid.headerSel?.kind === "col" && grid.headerSel.indices.size === 1 && grid.headerSel.indices.has(0)
@@ -90,7 +89,10 @@
 					}
 				}}
 			>
-				<Collapsible.Root bind:open={importOpen}>
+				<Collapsible.Root
+					bind:open={importOpen}
+					onOpenChange={(isOpen) => Editor.elementNameGrid.setImportOpen(isOpen)}
+				>
 					<Collapsible.Trigger
 						class="text-foreground hover:text-muted-foreground flex w-full cursor-pointer items-center justify-between text-sm font-medium"
 					>

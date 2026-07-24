@@ -14,3 +14,4 @@ export type {
 	Tool
 } from "./project/schema";
 export type { ImageRect } from "./project/geometry";
+export type { ElementNameGrid, ProjectEditorData } from "./project/editor-data";

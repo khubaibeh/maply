@@ -25,6 +25,7 @@ import {
 	updatePathVertex,
 	renameElement
 } from "./elements/mutate";
+import { replaceElementNameGrid, setElementNameImportOpen } from "./elements/name-grid";
 import { autofixElementName, validateElementNames } from "./elements/naming";
 import { snapPathSegment, toPathPoints } from "./elements/path";
 import { setBindable, setLocked, setVisible } from "./elements/state";
@@ -124,6 +125,7 @@ export const Editor = {
 	selection: { select, selectAll, selectMany, setHover, toggleCrop },
 
 	naming: { validate: validateElementNames, autofix: autofixElementName },
+	elementNameGrid: { replace: replaceElementNameGrid, setImportOpen: setElementNameImportOpen },
 
 	fill: { set: setFill },
 
