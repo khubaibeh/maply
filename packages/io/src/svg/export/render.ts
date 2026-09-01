@@ -1,8 +1,7 @@
-import { defaultBindable, getImageRenderRect } from "@maply/model";
+import { defaultBindable, getImageRenderRect, getPathRenderTransform } from "@maply/model";
 import type { Element, ImageElement, Project, StoredImageAsset, TextElement } from "@maply/model/types";
 
 import { TEXT_CHARACTER_WIDTH_RATIO, TEXT_LINE_HEIGHT_RATIO } from "../../common";
-import { pathPoints } from "../import/common";
 import type { SvgOptions } from "../types";
 
 const XMLNS = "http://www.w3.org/2000/svg";
@@ -30,12 +29,6 @@ function escapeXml(value: string) {
 /* Escapes `]]>` inside CDATA sections by splitting into adjacent CDATA blocks. */
 function escapeCdata(value: string) {
 	return value.replace(/]]>/g, "]]<![CDATA[");
-}
-
-function pathBounds(d: string) {
-	const points = pathPoints(d);
-	if (points.length === 0) return { x: 0, y: 0 };
-	return { x: Math.min(...points.map((point) => point.x)), y: Math.min(...points.map((point) => point.y)) };
 }
 
 /**
@@ -156,10 +149,9 @@ function renderElement(
 			].join(" ");
 
 		case "path": {
-			const bounds = pathBounds(element.d);
-			const strokePad = Math.ceil(element.strokeWidth / 2);
+			const transform = getPathRenderTransform(element);
 			return [
-				`<path${attributes} transform="translate(${element.x - bounds.x + strokePad + dx}, ${element.y - bounds.y + strokePad + dy})"`,
+				`<path${attributes} transform="translate(${transform.x + dx}, ${transform.y + dy})"`,
 				` d="${escapeXml(element.d)}" fill="${escapeXml(element.fill)}"`,
 				` stroke="${escapeXml(element.stroke)}" stroke-width="${element.strokeWidth}" />`
 			].join(" ");

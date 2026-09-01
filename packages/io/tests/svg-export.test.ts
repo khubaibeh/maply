@@ -146,6 +146,31 @@ describe("svg export", () => {
 		]);
 	});
 
+	it("renders closed paths at the same visual position stored by the editor", () => {
+		const project: Project = {
+			...createDefaultProject("prod"),
+			elements: [
+				{
+					id: "path-1",
+					name: "Roof",
+					type: "path",
+					x: 100,
+					y: 200,
+					d: "M100,200 L150,200 L150,250 Z",
+					fill: "#e5e5e5",
+					stroke: "none",
+					strokeWidth: 0,
+					closed: true
+				}
+			]
+		};
+
+		const svg = Effect.runSync(svgEffect.export(project, []));
+
+		expect(svg).toContain('transform="translate(0, 0)"');
+		expect(svg).not.toContain('transform="translate(100, 200)"');
+	});
+
 	it("returns handled root export results", async () => {
 		const result = await svgIo.export(createDefaultProject("prod"), []);
 
