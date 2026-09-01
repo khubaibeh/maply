@@ -14,6 +14,8 @@ export {
 export {
 	getImageRenderRect,
 	getLegacyImageRenderRect,
+	getPathRenderTransform,
+	getSvgPathBounds,
 	hasValidImageRect,
 	isPointInsideCanvas
 } from "./project/geometry";
