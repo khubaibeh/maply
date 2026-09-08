@@ -1,5 +1,7 @@
-import type { Element, ImageElement, RectElement } from "@maply/model/types";
+import type { Element, ImageElement, PathElement, RectElement } from "@maply/model/types";
 import {
+	insertPathVertex,
+	removePathVertex,
 	resizeElementByHandle,
 	renameElement,
 	translateElement,
@@ -50,6 +52,25 @@ function image(): ImageElement {
 	};
 }
 
+function path(overrides: Partial<PathElement> = {}): PathElement {
+	return {
+		id: "path",
+		name: "Path",
+		type: "path",
+		locked: false,
+		visible: true,
+		bindable: true,
+		x: 50,
+		y: 50,
+		d: "M0,0 L100,0 L100,100",
+		fill: "none",
+		stroke: "#000",
+		strokeWidth: 0,
+		closed: false,
+		...overrides
+	};
+}
+
 function setFixture(elements: Element[]) {
 	canvasState.set({ width: 300, height: 300, color: "#fff", x: 0, y: 0, camera: { x: 0, y: 0, zoom: 1 } });
 	updateProjectState((state) => ({ ...state, elements }), "rescan");
@@ -88,6 +109,57 @@ describe("translateElement", () => {
 			{ id: "locked", x: 0, y: 0 },
 			{ id: "unlocked", x: 200, y: 0 }
 		]);
+	});
+});
+
+describe("path vertex mutations", () => {
+	it("inserts a vertex after the nearest segment", () => {
+		setFixture([path()]);
+
+		insertPathVertex("path", { x: 100, y: 40 });
+
+		expect(get(projectState).elements[0]).toMatchObject({
+			d: "M0,0 L100,0 L100,40 L100,100",
+			x: 50,
+			y: 50
+		});
+	});
+
+	it("inserts into the closing segment of a closed path", () => {
+		setFixture([path({ d: "M0,0 L100,0 L100,100", closed: true })]);
+
+		insertPathVertex("path", { x: 20, y: 20 });
+
+		expect(get(projectState).elements[0]).toMatchObject({ d: "M0,0 L100,0 L100,100 L20,20 Z" });
+	});
+
+	it("removes a vertex while preserving the remaining path position", () => {
+		setFixture([path({ d: "M10,10 L20,20 L30,10" })]);
+
+		removePathVertex("path", 0);
+
+		expect(get(projectState).elements[0]).toMatchObject({ d: "M20,20 L30,10", x: 60, y: 50 });
+	});
+
+	it("does not remove the minimum required vertices", () => {
+		const open = path({ d: "M0,0 L100,0" });
+		const closed = path({ id: "closed", d: "M0,0 L100,0 L100,100 Z", closed: true });
+		setFixture([open, closed]);
+
+		removePathVertex(open.id, 0);
+		removePathVertex(closed.id, 0);
+
+		expect(get(projectState).elements).toEqual([open, closed]);
+	});
+
+	it("does not change locked paths", () => {
+		const locked = path({ locked: true });
+		setFixture([locked]);
+
+		insertPathVertex(locked.id, { x: 100, y: 40 });
+		removePathVertex(locked.id, 1);
+
+		expect(get(projectState).elements).toEqual([locked]);
 	});
 });
 

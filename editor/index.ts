@@ -17,6 +17,8 @@ import {
 	updateElement,
 	updateElements,
 	updatePathVertex,
+	insertPathVertex,
+	removePathVertex,
 	renameElement
 } from "./elements/mutate";
 import { replaceElementNameGrid, setElementNameImportOpen } from "./elements/name-grid";
@@ -113,6 +115,8 @@ export const Editor = {
 		setVisible,
 		rename: renameElement,
 		updatePathVertex,
+		insertPathVertex,
+		removePathVertex,
 		clampAll: clampElementsToCanvas
 	},
 
