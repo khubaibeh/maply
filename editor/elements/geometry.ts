@@ -1,6 +1,6 @@
-import { getSvgPathBounds } from "@maply/model";
-import type { Canvas, Element, Point } from "@maply/model/types";
+import type { Canvas, Element, PathElement, Point } from "@maply/model/types";
 
+import { getSvgPathBounds } from "./path";
 import { getTextBounds } from "./text";
 
 const minShapeSize = 5;
@@ -102,6 +102,17 @@ export function getMinimumCanvasSize(elements: readonly Element[]) {
 	}
 
 	return { width, height };
+}
+
+/** Translates a path's stored visual box to its rendered SVG data origin. */
+export function getPathRenderTransform(element: PathElement): Point {
+	const bounds = getSvgPathBounds(element.d);
+	const strokePadding = Math.ceil(element.strokeWidth / 2);
+
+	return {
+		x: Math.round(element.x - bounds.x + strokePadding),
+		y: Math.round(element.y - bounds.y + strokePadding)
+	};
 }
 
 function getClampDelta(position: number, size: number, canvasPosition: number, canvasSize: number) {
