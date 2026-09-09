@@ -1,4 +1,4 @@
-import { canSelectOnCanvas } from "@components/canvas/interaction/element-selection";
+import { canSelectOnCanvas, canvasElementPointerAction } from "@components/canvas/interaction/element-selection";
 import { describe, expect, it } from "vitest";
 
 import { measureDrag } from "../../src/components/canvas/interaction/drag";
@@ -28,5 +28,10 @@ describe("canvas interaction", () => {
 	it("excludes locked elements from canvas selection interactions", () => {
 		expect(canSelectOnCanvas({ locked: true })).toBe(false);
 		expect(canSelectOnCanvas({ locked: false })).toBe(true);
+	});
+
+	it("clears the current selection when a locked canvas element is clicked", () => {
+		expect(canvasElementPointerAction({ locked: true })).toBe("clear-selection");
+		expect(canvasElementPointerAction({ locked: false })).toBe("interact");
 	});
 });

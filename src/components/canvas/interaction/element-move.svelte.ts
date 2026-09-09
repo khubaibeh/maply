@@ -1,7 +1,7 @@
 import { Editor } from "editor";
 import { fromStore } from "svelte/store";
 
-import { canSelectOnCanvas } from "./element-selection";
+import { canvasElementPointerAction } from "./element-selection";
 import { createPointerDrag } from "./pointer-drag.svelte";
 import { clientToSvgPoint, getSvgRoot } from "./svg";
 
@@ -15,8 +15,9 @@ export function createElementMove() {
 	function start(event: PointerEvent, id: string) {
 		if (event.button !== 0 || tool.current.activeTool !== "select") return;
 		const element = project.current.elements.find((element) => element.id === id);
-		if (element && !canSelectOnCanvas(element)) {
+		if (element && canvasElementPointerAction(element) === "clear-selection") {
 			event.stopPropagation();
+			Editor.selection.select(null);
 			return;
 		}
 		event.stopPropagation();
