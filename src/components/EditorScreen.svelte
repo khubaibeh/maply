@@ -1,6 +1,7 @@
 <script lang="ts">
 	import CanvasArea from "@components/CanvasArea.svelte";
 	import { getArrowDelta, getShortcutTool, isEditingText } from "@components/core/shortcuts";
+	import { toast } from "@components/core/toast";
 	import Toolbar from "@components/core/Toolbar.svelte";
 	import Topbar from "@components/core/Topbar.svelte";
 	import { importNamesOverlayOpen } from "@components/elements-panel/import-names-overlay";
@@ -15,6 +16,32 @@
 	const RIGHT_SIDEBAR_WIDTH = 285;
 
 	const project = Editor.state.project;
+	let imageInput = $state<HTMLInputElement>();
+
+	function openImagePicker() {
+		if (!imageInput) return;
+		imageInput.value = "";
+		imageInput.click();
+	}
+
+	async function addSelectedImage(event: Event) {
+		const input = event.currentTarget;
+		if (!(input instanceof HTMLInputElement)) return;
+		const file = input.files?.[0];
+		if (!file) return;
+
+		const result = await Editor.image.addFromFile(file);
+		if (result.ok) {
+			Editor.actions.tool.set("select");
+			return;
+		}
+
+		toast.error(
+			result.error.type === "UnsupportedFormat"
+				? "Choose a PNG, JPEG, or SVG image."
+				: "The image could not be added. Try another file."
+		);
+	}
 
 	function getSelectedElements() {
 		return $project.elements.filter((element) => $project.selectedElementIds.includes(element.id));
@@ -31,7 +58,8 @@
 				const shortcutTool = getShortcutTool(event.key);
 				if (shortcutTool) {
 					event.preventDefault();
-					Editor.actions.tool.set(shortcutTool);
+					if (shortcutTool === "image") openImagePicker();
+					else Editor.actions.tool.set(shortcutTool);
 					return;
 				}
 			}
@@ -101,6 +129,13 @@
 </script>
 
 <div class="bg-background text-foreground flex h-screen w-screen flex-col gap-4 overflow-hidden p-4">
+	<input
+		bind:this={imageInput}
+		type="file"
+		accept="image/png,image/jpeg,image/svg+xml,.png,.jpg,.jpeg,.svg"
+		hidden
+		onchange={addSelectedImage}
+	/>
 	<div>
 		<Topbar />
 	</div>
@@ -112,7 +147,7 @@
 			<main class="relative flex h-full min-w-0 flex-1 flex-col overflow-hidden">
 				<ProjectMenuOverlay class="top-4 left-4" />
 				<CanvasArea />
-				<Toolbar class="absolute inset-x-0 bottom-4 z-10 mx-auto w-fit" />
+				<Toolbar class="absolute inset-x-0 bottom-4 z-10 mx-auto w-fit" onImageSelect={openImagePicker} />
 			</main>
 		</div>
 

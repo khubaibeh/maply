@@ -12,7 +12,7 @@
 	import Rectangle from "phosphor-svelte/lib/Rectangle";
 	import TextT from "phosphor-svelte/lib/TextT";
 
-	let { class: className = "" }: { class?: string } = $props();
+	let { class: className = "", onImageSelect }: { class?: string; onImageSelect: () => void } = $props();
 
 	const tools = [
 		{ id: "select", label: "Select", shortcut: "V", icon: Cursor },
@@ -27,7 +27,8 @@
 
 	function selectTool(nextTool: Tool) {
 		if ($toolState.isSpacePressed) return;
-		Editor.actions.tool.set(nextTool);
+		if (nextTool === "image") onImageSelect();
+		else Editor.actions.tool.set(nextTool);
 		(document.activeElement as HTMLElement | null)?.blur();
 	}
 </script>

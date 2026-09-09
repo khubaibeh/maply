@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { canSelectOnCanvas } from "@components/canvas/interaction/element-selection";
+	import { clientToSvgPoint, getSvgRoot } from "@components/canvas/interaction/svg";
 	import CircleShape from "@components/canvas/shapes/CircleShape.svelte";
 	import ImageShape from "@components/canvas/shapes/ImageShape.svelte";
 	import PathShape from "@components/canvas/shapes/PathShape.svelte";
@@ -21,6 +22,24 @@
 	function clearHover(id: string) {
 		if ($project.hoveredElementId === id) Editor.selection.setHover(null);
 	}
+
+	function insertPathVertex(
+		event: MouseEvent,
+		element: Extract<(typeof $project.elements)[number], { type: "path" }>
+	) {
+		if ($tool.activeTool !== "select" || element.locked) return;
+		const svg = getSvgRoot(event.target);
+		const position = svg ? clientToSvgPoint(svg, event.clientX, event.clientY) : null;
+		if (!position) return;
+
+		event.preventDefault();
+		event.stopPropagation();
+		const transform = Editor.geometry.pathRenderTransform(element);
+		Editor.element.insertPathVertex(element.id, {
+			x: position.x - transform.x,
+			y: position.y - transform.y
+		});
+	}
 </script>
 
 <g class="canvas-elements">
@@ -34,6 +53,7 @@
 				aria-label="Select {element.name}"
 				class="canvas-element outline-none"
 				onpointerdown={(event) => onElementPointerDown(event, element.id)}
+				ondblclick={element.type === "path" ? (event) => insertPathVertex(event, element) : undefined}
 				onpointerenter={() => hover(element.id, element.locked ?? false)}
 				onpointerleave={() => clearHover(element.id)}
 			>

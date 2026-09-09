@@ -121,7 +121,7 @@
 		const svg = getSvgRoot(event.target);
 		if (!svg) return;
 		const bounds = Editor.geometry.elementBounds(element);
-		const lockAspectRatio = event.shiftKey;
+		const lockAspectRatio = element.type === "image" || event.shiftKey;
 		const aspectRatio = bounds.height > 0 ? bounds.width / bounds.height : undefined;
 		const source = { ...element };
 		resize.start(event, {

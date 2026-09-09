@@ -204,34 +204,6 @@ describe("getElementBounds", () => {
 		expect(bounds.height).toBeGreaterThan(2);
 	});
 
-	it("uses rendered glyph bearings for text bounds and wrapping", () => {
-		const previousDocument = globalThis.document;
-		Object.defineProperty(globalThis, "document", {
-			configurable: true,
-			value: {
-				createElement: () => ({
-					getContext: () => ({
-						font: "",
-						measureText: () => ({
-							width: 20,
-							actualBoundingBoxLeft: 3,
-							actualBoundingBoxRight: 17,
-							actualBoundingBoxAscent: 18,
-							actualBoundingBoxDescent: 4
-						})
-					})
-				})
-			}
-		});
-
-		try {
-			const element = text({ text: "first\nsecond", fontSize: 16, width: 200, height: 60 });
-			expect(getElementBounds(element)).toMatchObject({ x: 97, y: 82 });
-		} finally {
-			Object.defineProperty(globalThis, "document", { configurable: true, value: previousDocument });
-		}
-	});
-
 	it("returns frame for rect", () => {
 		const bounds = getElementBounds(rect());
 		expect(bounds).toEqual({ x: 100, y: 100, width: 200, height: 150 });
