@@ -46,6 +46,12 @@
 			}
 		});
 	}
+
+	function removeHandle(event: MouseEvent, index: number) {
+		event.preventDefault();
+		event.stopPropagation();
+		Editor.element.removePathVertex(element.id, index);
+	}
 </script>
 
 {#if points.length > 0}
@@ -61,9 +67,10 @@
 				stroke-width="2"
 				role="button"
 				tabindex="-1"
-				aria-label="Edit path vertex"
+				aria-label="Edit or remove path vertex"
 				style:cursor={canvasCursor.default}
 				onpointerdown={(event) => startHandleDrag(event, index)}
+				ondblclick={(event) => removeHandle(event, index)}
 			/>
 		{/each}
 	</g>

@@ -53,14 +53,14 @@
 	filter="url(#canvas-shadow)"
 />
 
-{#if selectedElements.length > 1}
-	<MultiSelectionOutline elements={selectedElements} />
-{/if}
-
 <CanvasResizeHandles />
 
 <g style:cursor={elementMove.state.isDragging ? canvasCursor.allScroll : undefined}>
 	<ElementShapes onElementPointerDown={elementMove.start} />
+
+	{#if selectedElements.length > 1}
+		<MultiSelectionOutline elements={selectedElements} />
+	{/if}
 
 	{#if hoveredElement && hoveredElement.type !== "path"}
 		<ElementOutline element={hoveredElement} interactive={false} />

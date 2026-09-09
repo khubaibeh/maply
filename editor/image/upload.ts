@@ -5,11 +5,13 @@ import type { StoredImageAsset } from "@maply/model/types";
 import { storage } from "@maply/storage";
 import { get } from "svelte/store";
 
+import { imageFromSize } from "../elements/create";
 import { createElementId } from "../elements/naming";
 import { imageAssetState } from "../state/assets";
 import { projectState, setProjectState } from "../state/document";
 import { acquireMutex } from "../state/mutex";
 import { canvasState } from "../state/workspace";
+import type { ImageAssetState, ProjectState } from "../types";
 import { fitImageRect, withImageRect } from "./crop";
 
 export type ImageFromFileError =
@@ -35,29 +37,9 @@ export type ImageFromFileResult = { ok: true; value: PreparedImage } | { ok: fal
  * - `AttachmentFailed` — asset persistence or state update failed
  */
 export async function imageFromFile(id: string, file: File): Promise<ImageFromFileResult> {
-	const mimeResult = validateMimeType(file.type);
-
-	if (!mimeResult.ok) {
-		return { ok: false, error: { type: "UnsupportedFormat", mimeType: file.type } };
-	}
-
-	const { mimeType, isSvg } = mimeResult.value;
-
-	let prepared: PreparedImage;
-
-	try {
-		prepared = await prepareImage(file, mimeType, isSvg);
-	} catch (cause) {
-		if (cause instanceof SvgValidationError) {
-			return { ok: false, error: { type: "InvalidSvg", message: cause.message } };
-		}
-
-		if (cause instanceof DimensionError) {
-			return { ok: false, error: { type: "DimensionFailed", cause } };
-		}
-
-		return { ok: false, error: { type: "ReadFailed", cause } };
-	}
+	const preparedResult = await prepareImageFile(file);
+	if (!preparedResult.ok) return preparedResult;
+	const prepared = preparedResult.value;
 
 	const project = get(projectState);
 
@@ -73,6 +55,50 @@ export async function imageFromFile(id: string, file: File): Promise<ImageFromFi
 	}
 
 	return { ok: true, value: prepared };
+}
+
+/** Reads an image file and atomically adds it as a centered, canvas-fitted element. */
+export async function addImageFromFile(file: File): Promise<ImageFromFileResult> {
+	const preparedResult = await prepareImageFile(file);
+	if (!preparedResult.ok) return preparedResult;
+	const prepared = preparedResult.value;
+	const release = await acquireMutex();
+
+	try {
+		const project = get(projectState);
+		const canvas = get(canvasState);
+		const frame = imageFromSize(prepared.width, prepared.height, canvas, project.elements);
+		const asset: StoredImageAsset = {
+			id: createElementId(),
+			projectId: project.id,
+			...prepared
+		};
+		const image = withImageRect({ ...frame, assetId: asset.id }, fitImageRect(frame, asset.width, asset.height));
+		const elements = [...project.elements, image];
+		const nextAssets = { ...get(imageAssetState), [asset.id]: asset };
+		const persisted = await persistImageMutation(project, elements, nextAssets);
+
+		if (!persisted.ok) {
+			return { ok: false, error: { type: "AttachmentFailed", cause: persisted.error } };
+		}
+
+		setProjectState(
+			{
+				...project,
+				elements,
+				selectedElementId: image.id,
+				selectedElementIds: [image.id],
+				hoveredElementId: null,
+				cropEditingElementId: null
+			},
+			{ added: [image] }
+		);
+		imageAssetState.set(Object.fromEntries(persisted.assets.map((entry) => [entry.id, entry])));
+
+		return { ok: true, value: prepared };
+	} finally {
+		release();
+	}
 }
 
 /**
@@ -116,41 +142,63 @@ export async function replaceImageAsset(
 			);
 		});
 		const nextAssets = { ...get(imageAssetState), [nextAsset.id]: nextAsset };
-		const referenced: StoredImageAsset[] = [];
-
-		for (const element of elements) {
-			if (element.type !== "image" || !element.assetId) continue;
-
-			const entry = nextAssets[element.assetId];
-			if (!entry) return { ok: false, error: new Error(`Missing image asset: ${element.assetId}`) };
-
-			if (!referenced.some((candidate) => candidate.id === entry.id)) referenced.push(entry);
-		}
-		const canvas = get(canvasState);
-		const replaced = await storage.project.replace(
-			{
-				id: project.id,
-				name: project.name,
-				canvas: { width: canvas.width, height: canvas.height, color: canvas.color, x: canvas.x, y: canvas.y },
-				camera: { ...canvas.camera },
-				elements,
-				editorData: copyProjectEditorData({ elementNameGrid: project.elementNameGrid }),
-				isElementNameImportOpen: project.isElementNameImportOpen
-			},
-			referenced
-		);
-
-		if (!replaced.ok) {
-			return { ok: false, error: replaced.error };
-		}
+		const persisted = await persistImageMutation(project, elements, nextAssets);
+		if (!persisted.ok) return persisted;
 
 		setProjectState({ ...project, elements }, "preserve");
-		imageAssetState.set(Object.fromEntries(referenced.map((entry) => [entry.id, entry])));
+		imageAssetState.set(Object.fromEntries(persisted.assets.map((entry) => [entry.id, entry])));
 
 		return { ok: true };
 	} finally {
 		release();
 	}
+}
+
+async function prepareImageFile(file: File): Promise<ImageFromFileResult> {
+	const mimeResult = validateMimeType(file.type);
+	if (!mimeResult.ok) return { ok: false, error: { type: "UnsupportedFormat", mimeType: file.type } };
+
+	try {
+		return { ok: true, value: await prepareImage(file, mimeResult.value.mimeType, mimeResult.value.isSvg) };
+	} catch (cause) {
+		if (cause instanceof SvgValidationError) {
+			return { ok: false, error: { type: "InvalidSvg", message: cause.message } };
+		}
+		if (cause instanceof DimensionError) {
+			return { ok: false, error: { type: "DimensionFailed", cause } };
+		}
+		return { ok: false, error: { type: "ReadFailed", cause } };
+	}
+}
+
+async function persistImageMutation(
+	project: ProjectState,
+	elements: ProjectState["elements"],
+	assets: ImageAssetState
+): Promise<{ ok: true; assets: StoredImageAsset[] } | { ok: false; error: unknown }> {
+	const referenced: StoredImageAsset[] = [];
+	for (const element of elements) {
+		if (element.type !== "image" || !element.assetId) continue;
+		const entry = assets[element.assetId];
+		if (!entry) return { ok: false, error: new Error(`Missing image asset: ${element.assetId}`) };
+		if (!referenced.some((candidate) => candidate.id === entry.id)) referenced.push(entry);
+	}
+
+	const canvas = get(canvasState);
+	const replaced = await storage.project.replace(
+		{
+			id: project.id,
+			name: project.name,
+			canvas: { width: canvas.width, height: canvas.height, color: canvas.color, x: canvas.x, y: canvas.y },
+			camera: { ...canvas.camera },
+			elements,
+			editorData: copyProjectEditorData({ elementNameGrid: project.elementNameGrid }),
+			isElementNameImportOpen: project.isElementNameImportOpen
+		},
+		referenced
+	);
+
+	return replaced.ok ? { ok: true, assets: referenced } : replaced;
 }
 
 class SvgValidationError extends Error {}
@@ -213,7 +261,15 @@ function loadImageDimensions(dataUrl: string): Promise<{ width: number; height: 
 	return new Promise((resolve, reject) => {
 		const img = new Image();
 
-		img.onload = () => resolve({ width: img.naturalWidth || img.width, height: img.naturalHeight || img.height });
+		img.onload = () => {
+			const width = img.naturalWidth || img.width;
+			const height = img.naturalHeight || img.height;
+			if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+				reject(new DimensionError("Image dimensions must be positive finite numbers."));
+				return;
+			}
+			resolve({ width, height });
+		};
 		img.onerror = () => reject(new DimensionError("Failed to read image dimensions."));
 
 		img.src = dataUrl;

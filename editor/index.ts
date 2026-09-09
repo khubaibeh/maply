@@ -23,6 +23,8 @@ import {
 	updateElement,
 	updateElements,
 	updatePathVertex,
+	insertPathVertex,
+	removePathVertex,
 	renameElement
 } from "./elements/mutate";
 import { replaceElementNameGrid, setElementNameImportOpen } from "./elements/name-grid";
@@ -36,7 +38,7 @@ import {
 	getWrappedTextMetrics
 } from "./elements/text";
 import { resetImageCrop, resizeImageCropFrame, setImageCropScale, translateImageCrop } from "./image/commands";
-import { imageFromFile, replaceImageAsset } from "./image/upload";
+import { addImageFromFile, imageFromFile, replaceImageAsset } from "./image/upload";
 import { create, rename } from "./project/commands";
 import { exportProject } from "./project/export";
 import { importProject } from "./project/import";
@@ -119,6 +121,8 @@ export const Editor = {
 		setVisible,
 		rename: renameElement,
 		updatePathVertex,
+		insertPathVertex,
+		removePathVertex,
 		clampAll: clampElementsToCanvas
 	},
 
@@ -150,6 +154,7 @@ export const Editor = {
 	clipboard: { copy, get: getClipboard, paste },
 
 	image: {
+		addFromFile: addImageFromFile,
 		translateCrop: translateImageCrop,
 		setCropScale: setImageCropScale,
 		resetCrop: resetImageCrop,

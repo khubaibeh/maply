@@ -1,5 +1,5 @@
 import { getImageRenderRect, getLegacyImageRenderRect } from "@maply/model";
-import type { Element } from "@maply/model/types";
+import type { Canvas, Element } from "@maply/model/types";
 import { get } from "svelte/store";
 
 import { clampCropScale, resizeImageRect, scaleImageRect, withImageRect } from "../image/crop";
@@ -332,7 +332,7 @@ export function updatePathVertex(id: string, index: number, point: { x: number; 
 	const nextState = {
 		...state,
 		elements: state.elements.map((element) => {
-			if (element.id !== id || element.type !== "path") return element;
+			if (element.id !== id || element.type !== "path" || element.locked) return element;
 
 			const points = toPathPoints(element.d);
 			if (index < 0 || index >= points.length) return element;
@@ -358,4 +358,125 @@ export function updatePathVertex(id: string, index: number, point: { x: number; 
 	const hint = beforeChange && afterChange ? { changed: { before: beforeChange, after: afterChange } } : "preserve";
 
 	setProjectState(nextState, hint);
+}
+
+/** Inserts a vertex after the path segment closest to the supplied path-local point. */
+export function insertPathVertex(id: string, point: { x: number; y: number }): void {
+	const state = get(projectState);
+	const canvas = get(canvasState);
+	let beforeChange: Element | null = null;
+	let afterChange: Element | null = null;
+
+	const nextState = {
+		...state,
+		elements: state.elements.map((element) => {
+			if (element.id !== id || element.type !== "path" || element.locked) return element;
+
+			const points = toPathPoints(element.d);
+			const insertionIndex = getPathVertexInsertionIndex(points, element.closed, point);
+			if (insertionIndex === null) return element;
+
+			const nextPoints = [...points];
+			nextPoints.splice(insertionIndex, 0, point);
+			const next = rewritePathPoints(element, nextPoints, canvas);
+			beforeChange = element;
+			afterChange = next;
+			return next;
+		})
+	};
+
+	setProjectState(
+		nextState,
+		beforeChange && afterChange ? { changed: { before: beforeChange, after: afterChange } } : "preserve"
+	);
+}
+
+/** Removes one vertex when doing so leaves the path with a valid number of vertices. */
+export function removePathVertex(id: string, index: number): void {
+	const state = get(projectState);
+	const canvas = get(canvasState);
+	let beforeChange: Element | null = null;
+	let afterChange: Element | null = null;
+
+	const nextState = {
+		...state,
+		elements: state.elements.map((element) => {
+			if (element.id !== id || element.type !== "path" || element.locked) return element;
+
+			const points = toPathPoints(element.d);
+			const minimumVertexCount = element.closed ? 3 : 2;
+			if (index < 0 || index >= points.length || points.length <= minimumVertexCount) return element;
+
+			const nextPoints = points.filter((_, pointIndex) => pointIndex !== index);
+			const next = rewritePathPoints(element, nextPoints, canvas);
+			beforeChange = element;
+			afterChange = next;
+			return next;
+		})
+	};
+
+	setProjectState(
+		nextState,
+		beforeChange && afterChange ? { changed: { before: beforeChange, after: afterChange } } : "preserve"
+	);
+}
+
+function rewritePathPoints(
+	element: Extract<Element, { type: "path" }>,
+	points: readonly { x: number; y: number }[],
+	canvas: Canvas
+) {
+	const oldBounds = getPointBounds(toPathPoints(element.d));
+	const newBounds = getPointBounds(points);
+
+	return clampElementToCanvas(
+		{
+			...element,
+			d: toPath(points, element.closed),
+			x: Math.round(element.x + (newBounds.x - oldBounds.x)),
+			y: Math.round(element.y + (newBounds.y - oldBounds.y))
+		},
+		canvas
+	);
+}
+
+function getPathVertexInsertionIndex(
+	points: readonly { x: number; y: number }[],
+	closed: boolean,
+	point: { x: number; y: number }
+) {
+	const segmentCount = closed ? points.length : points.length - 1;
+	if (segmentCount <= 0) return null;
+
+	let closestIndex = 0;
+	let closestDistance = Infinity;
+	for (let index = 0; index < segmentCount; index += 1) {
+		const start = points[index];
+		const end = points[(index + 1) % points.length];
+		if (!start || !end) continue;
+
+		const distance = squaredDistanceToSegment(point, start, end);
+		if (distance < closestDistance) {
+			closestIndex = index;
+			closestDistance = distance;
+		}
+	}
+
+	return closestIndex + 1;
+}
+
+function squaredDistanceToSegment(
+	point: { x: number; y: number },
+	start: { x: number; y: number },
+	end: { x: number; y: number }
+) {
+	const dx = end.x - start.x;
+	const dy = end.y - start.y;
+	const lengthSquared = dx * dx + dy * dy;
+	if (lengthSquared === 0) return (point.x - start.x) ** 2 + (point.y - start.y) ** 2;
+
+	const projection = Math.max(0, Math.min(1, ((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSquared));
+	const x = start.x + projection * dx;
+	const y = start.y + projection * dy;
+	return (point.x - x) ** 2 + (point.y - y) ** 2;
 }

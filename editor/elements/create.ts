@@ -1,5 +1,6 @@
 import type {
 	CircleElement,
+	Canvas,
 	Element,
 	ImageElement,
 	PathElement,
@@ -106,6 +107,38 @@ export function imageFromDrag(start: Point, end: Point, elements: readonly Eleme
 		y: Math.round(box.y),
 		width: Math.round(box.width),
 		height: Math.round(box.height),
+		assetId: null,
+		href: "",
+		cropX: 0,
+		cropY: 0,
+		cropScale: 100
+	};
+}
+
+/** Creates a centered image frame at natural size, scaled down uniformly only when needed to fit the canvas. */
+export function imageFromSize(
+	width: number,
+	height: number,
+	canvas: Canvas,
+	elements: readonly Element[]
+): ImageElement {
+	const naturalWidth = Math.max(1, width);
+	const naturalHeight = Math.max(1, height);
+	const scale = Math.min(1, canvas.width / naturalWidth, canvas.height / naturalHeight);
+	const frameWidth = Math.max(1, Math.round(naturalWidth * scale));
+	const frameHeight = Math.max(1, Math.round(naturalHeight * scale));
+
+	return {
+		id: createElementId(),
+		name: nextElementName("image", elements),
+		type: "image",
+		locked: false,
+		visible: true,
+		bindable: false,
+		x: Math.round(canvas.x + (canvas.width - frameWidth) / 2),
+		y: Math.round(canvas.y + (canvas.height - frameHeight) / 2),
+		width: frameWidth,
+		height: frameHeight,
 		assetId: null,
 		href: "",
 		cropX: 0,
