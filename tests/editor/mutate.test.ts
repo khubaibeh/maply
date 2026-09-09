@@ -240,7 +240,7 @@ describe("updateElements", () => {
 });
 
 describe("resizeElementByHandle", () => {
-	it("preserves image crop values when resizing its frame", () => {
+	it("preserves the image aspect ratio and crop values without Shift", () => {
 		const source = image();
 		setFixture([source]);
 		imageAssetState.set({
@@ -260,11 +260,11 @@ describe("resizeElementByHandle", () => {
 
 		const resized = get(projectState).elements[0] as ImageElement;
 
-		expect(resized.width).toBe(280);
+		expect(resized).toMatchObject({ x: 50, y: 30, width: 280, height: 140 });
 		expect(resized.cropX).toBe(source.cropX);
 		expect(resized.cropY).toBe(source.cropY);
 		expect(resized.cropScale).toBe(source.cropScale);
-		expect(resized).toMatchObject({ imageX: -140, imageY: -50, imageWidth: 560, imageHeight: 200 });
+		expect(resized).toMatchObject({ imageX: -140, imageY: -70, imageWidth: 560, imageHeight: 280 });
 	});
 
 	it("uses pointer-down geometry for cumulative live resize", () => {
@@ -288,11 +288,14 @@ describe("resizeElementByHandle", () => {
 		}
 
 		expect(get(projectState).elements[0]).toMatchObject({
-			width: 500,
-			imageX: -250,
-			imageY: -50,
-			imageWidth: 1000,
-			imageHeight: 200
+			x: 50,
+			y: 0,
+			width: 400,
+			height: 200,
+			imageX: -200,
+			imageY: -100,
+			imageWidth: 800,
+			imageHeight: 400
 		});
 	});
 
@@ -410,7 +413,7 @@ describe("resizeElementByHandle", () => {
 		expect(get(projectState).elements[0]).toMatchObject({ cropX: 100, imageX: -200, imageWidth: 400 });
 	});
 
-	it("does not persist image geometry for assetless placeholders", () => {
+	it("keeps assetless placeholders proportional without adding image geometry", () => {
 		const source = { ...image(), assetId: null };
 		setFixture([source]);
 		imageAssetState.set({});
@@ -418,6 +421,12 @@ describe("resizeElementByHandle", () => {
 
 		resizeElementByHandle(source.id, "e", 80, 0);
 
-		expect(get(projectState).elements[0]).toEqual({ ...source, width: 280 });
+		expect(get(projectState).elements[0]).toEqual({
+			...source,
+			x: 50,
+			y: 30,
+			width: 280,
+			height: 140
+		});
 	});
 });

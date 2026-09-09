@@ -28,7 +28,7 @@ export function resizeElement(
 	const bounds = getElementBounds(element);
 
 	let lockedAspectRatio: number | null = null;
-	if (options.lockAspectRatio) {
+	if (element.type === "image" || options.lockAspectRatio) {
 		if (typeof options.aspectRatio === "number" && options.aspectRatio > 0) {
 			lockedAspectRatio = options.aspectRatio;
 		} else if (bounds.height > 0) {
