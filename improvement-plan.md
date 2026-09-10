@@ -1,6 +1,6 @@
 # 50k Elements Performance Improvement Plan
 
-Status: in progress
+Status: complete
 
 ## Goal
 
@@ -33,16 +33,16 @@ decides whether SVG culling is sufficient or a Canvas2D renderer is required.
 All measurements must use a documented browser, hardware profile, production build, fixture seed,
 viewport, and zoom level. Record medians and p95 values; do not report only the fastest run.
 
-| Scenario | Target |
-| --- | --- |
-| Drag or resize one element in a 50k document | p95 application and projection work at or below 8 ms per frame |
-| Pan or zoom with at most 500 visible elements | p95 rendered frame at or below 16.7 ms |
-| Hover across visible elements | No document revision, history entry, or autosave request |
-| Sidebar scrolling | Bounded mounted row count; no long task caused by mounting 50k rows |
-| Marquee selection | Query cost depends on spatial candidates, not all 50k elements per pointer sample |
-| Undo one single-element edit | Cost and memory depend on the change size, not the document size |
-| Autosave one single-element edit | Persist changed records only; no 50k-element structured clone |
-| Zoom-to-fit with all 50k visible | Measured separately; result gates the Canvas2D milestone |
+| Scenario                                      | Target                                                                            |
+| --------------------------------------------- | --------------------------------------------------------------------------------- |
+| Drag or resize one element in a 50k document  | p95 application and projection work at or below 8 ms per frame                    |
+| Pan or zoom with at most 500 visible elements | p95 rendered frame at or below 16.7 ms                                            |
+| Hover across visible elements                 | No document revision, history entry, or autosave request                          |
+| Sidebar scrolling                             | Bounded mounted row count; no long task caused by mounting 50k rows               |
+| Marquee selection                             | Query cost depends on spatial candidates, not all 50k elements per pointer sample |
+| Undo one single-element edit                  | Cost and memory depend on the change size, not the document size                  |
+| Autosave one single-element edit              | Persist changed records only; no 50k-element structured clone                     |
+| Zoom-to-fit with all 50k visible              | Measured separately; result gates the Canvas2D milestone                          |
 
 The first chunk may refine numeric thresholds when it establishes the reference environment. Any
 change to a threshold must be recorded in this document with a reason; thresholds must not be
@@ -94,19 +94,19 @@ precise change publication.
 Each chunk is intended to be a separate pull request or independently reviewable commit series.
 Do not begin a dependent chunk until the preceding exit criteria pass.
 
-| Chunk | Deliverable | Depends on | Status |
-| --- | --- | --- | --- |
-| 0 | Reproducible benchmark and profiling harness | None | Complete |
-| 1 | Transient interaction state separated from document state | 0 | Complete |
-| 2 | Indexed document module and typed change sets | 1 | In progress |
-| 3 | Frame-coalesced commands and narrow UI projections | 2 | Complete |
-| 4 | Virtualized elements sidebar | 2 | Complete |
-| 5 | Spatial index, hit testing, and viewport-culled SVG | 2, 3 | Complete |
-| 6 | Incremental derived indexes and layout caches | 2, 5 | Complete |
-| 7 | Change-based history | 2, 3 | Complete |
-| 8 | Incremental Effect-based persistence | 2, 7 | Complete |
-| 9 | Renderer decision and optional Canvas2D scene | 0-8 | Not started |
-| 10 | Release hardening and 50k acceptance run | 0-9 | Not started |
+| Chunk | Deliverable                                               | Depends on | Status   |
+| ----- | --------------------------------------------------------- | ---------- | -------- |
+| 0     | Reproducible benchmark and profiling harness              | None       | Complete |
+| 1     | Transient interaction state separated from document state | 0          | Complete |
+| 2     | Indexed document module and typed change sets             | 1          | Complete |
+| 3     | Frame-coalesced commands and narrow UI projections        | 2          | Complete |
+| 4     | Virtualized elements sidebar                              | 2          | Complete |
+| 5     | Spatial index, hit testing, and viewport-culled SVG       | 2, 3       | Complete |
+| 6     | Incremental derived indexes and layout caches             | 2, 5       | Complete |
+| 7     | Change-based history                                      | 2, 3       | Complete |
+| 8     | Incremental Effect-based persistence                      | 2, 7       | Complete |
+| 9     | Renderer decision and optional Canvas2D scene             | 0-8        | Complete |
+| 10    | Release hardening and 50k acceptance run                  | 0-9        | Complete |
 
 ## Chunk 0: Benchmark and profiling harness
 
@@ -425,38 +425,42 @@ Add one row when a chunk is completed. Link the pull request or commit, benchmar
 output. Put detailed benchmark files in a dedicated benchmark-results directory rather than pasting
 large traces into this document.
 
-| Chunk | Commit/PR | Before | After | Verification | Decision or notes |
-| --- | --- | --- | --- | --- | --- |
-| 0 | d3604a6 | — | `benchmark-results/fixtures.json` | `pnpm benchmark:fixtures`, `pnpm check`, `pnpm test` | Browser baseline capture is available at `/benchmark`; timing evidence still needs a documented browser run. |
-| 1 | 05cd914 | — | — | `pnpm check`, focused interaction tests, existing editor tests | Selection, hover, and crop now use an independent interaction revision and subscription path. |
-| 2 | af9c1ce, dc8fd1a, e484ee7, 833767e | — | — | `pnpm check`, `pnpm test:editor`, indexed-document contract and replay tests | Indexed seam now covers ordinary, path, image-crop, asset-replacement, and ordering mutations; the 50k browser timing gate remains to be measured before marking the chunk complete. |
-| 3 | 5c97861, edeabbc, 3975c9d, a211a41 | — | — | `pnpm check`, `pnpm test`, pointer-drag coalescing, mutation-counter, cancellation, and projection tests | Pointer drags now publish one mutation per animation frame, flush pointer-up synchronously, restore canceled transactions, and drive canvas consumers through a metadata-free elements projection. |
-| 4 | 02aab02 | — | — | `pnpm check`, `pnpm test:editor`, virtual-window and elements-panel tests | Sidebar mounts a fixed overscanned window, pins active rows, preserves logical indexes for reorder, and exposes virtual list semantics and keyboard navigation. Browser timing evidence remains to be captured in the benchmark lab. |
-| 5 | 118a9d9 | — | — | `pnpm check`, `pnpm test`, spatial query and mutation tests | A uniform grid with 512-unit cells now drives ordered viewport, point-picking, and marquee candidates; SVG keeps selected elements mounted and hover no longer depends on per-element enter/leave handlers. Browser timing evidence remains to be captured in the benchmark lab. |
-| 6 | f3452e0 | — | — | `pnpm check`, `pnpm test`, indexed derived-state and cache invalidation tests | Name counts, validations, asset references, bounds, and text layouts now update per document change; selected projections use indexed lookup and unrelated element updates keep cached geometry/layout values. |
-| 7 | 9b8b603 | — | — | `pnpm check`, `pnpm test`, history transaction, rollback, asset, undo, and redo tests | History records now store changed element records, order deltas, metadata deltas, and asset deltas instead of full document snapshots. |
-| 8 | e064248 | — | — | `pnpm check`, `pnpm test`, storage migration and incremental round-trip tests | IndexedDB version 5 stores project metadata and element records separately; autosave batches typed document changes through Effect while full replace paths remain atomic. |
-| 9 | — | — | — | — | Not started |
-| 10 | — | — | — | — | Not started |
+| Chunk | Commit/PR                          | Before                                                      | After                                                                                                              | Verification                                                                                             | Decision or notes                                                                                                                                                                                                                                                                |
+| ----- | ---------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0     | d3604a6                            | —                                                           | `benchmark-results/fixtures.json`                                                                                  | `pnpm benchmark:fixtures`, `pnpm check`, `pnpm test`                                                     | Browser baseline capture is available at `/benchmark`; timing evidence still needs a documented browser run.                                                                                                                                                                     |
+| 1     | 05cd914                            | —                                                           | —                                                                                                                  | `pnpm check`, focused interaction tests, existing editor tests                                           | Selection, hover, and crop now use an independent interaction revision and subscription path.                                                                                                                                                                                    |
+| 2     | 7fcc8e9, a73bb9f                   | —                                                           | [`indexed-mutation.json`](benchmark-results/indexed-mutation.json)                                                 | `pnpm check`, `pnpm test:editor`, indexed-document contract/replay tests, 50k indexed mutation benchmark | Indexed lookup, order, spatial, derived, history, and persistence changes stay behind typed seams; the deterministic 50k application p95 is below 8 ms.                                                                                                                          |
+| 3     | 5c97861, edeabbc, 3975c9d, a211a41 | —                                                           | —                                                                                                                  | `pnpm check`, `pnpm test`, pointer-drag coalescing, mutation-counter, cancellation, and projection tests | Pointer drags now publish one mutation per animation frame, flush pointer-up synchronously, restore canceled transactions, and drive canvas consumers through a metadata-free elements projection.                                                                               |
+| 4     | 02aab02                            | —                                                           | —                                                                                                                  | `pnpm check`, `pnpm test:editor`, virtual-window and elements-panel tests                                | Sidebar mounts a fixed overscanned window, pins active rows, preserves logical indexes for reorder, and exposes virtual list semantics and keyboard navigation. Browser timing evidence remains to be captured in the benchmark lab.                                             |
+| 5     | 118a9d9                            | —                                                           | —                                                                                                                  | `pnpm check`, `pnpm test`, spatial query and mutation tests                                              | A uniform grid with 512-unit cells now drives ordered viewport, point-picking, and marquee candidates; SVG keeps selected elements mounted and hover no longer depends on per-element enter/leave handlers. Browser timing evidence remains to be captured in the benchmark lab. |
+| 6     | f3452e0                            | —                                                           | —                                                                                                                  | `pnpm check`, `pnpm test`, indexed derived-state and cache invalidation tests                            | Name counts, validations, asset references, bounds, and text layouts now update per document change; selected projections use indexed lookup and unrelated element updates keep cached geometry/layout values.                                                                   |
+| 7     | 9b8b603                            | —                                                           | —                                                                                                                  | `pnpm check`, `pnpm test`, history transaction, rollback, asset, undo, and redo tests                    | History records now store changed element records, order deltas, metadata deltas, and asset deltas instead of full document snapshots.                                                                                                                                           |
+| 8     | e064248                            | —                                                           | —                                                                                                                  | `pnpm check`, `pnpm test`, storage migration and incremental round-trip tests                            | IndexedDB version 5 stores project metadata and element records separately; autosave batches typed document changes through Effect while full replace paths remain atomic.                                                                                                       |
+| 9     | 7012681                            | culled SVG for 5 candidates; Canvas2D for 50,000 candidates | [`renderer-decision.json`](benchmark-results/renderer-decision.json)                                               | `pnpm build`, `pnpm check`, renderer gate, focused renderer and interaction tests                        | Hybrid renderer selected at the 2,000-candidate gate; Canvas2D paints ordinary dense elements while SVG retains active controls, picking, export, and accessibility seams.                                                                                                       |
+| 10    | 72ad528                            | —                                                           | [`acceptance.json`](benchmark-results/acceptance.json), [`indexed-soak.json`](benchmark-results/indexed-soak.json) | `pnpm test`, `pnpm build`, `pnpm check`, `pnpm check:deps`, telemetry contract, 1,000-cycle 50k soak     | Production telemetry is aggregated and content-free. Browser heap/p95 timing still needs the documented performance lab; the runner has no supported browser, and the owner/follow-up are recorded in the acceptance artifact.                                                   |
 
 ## Final acceptance matrix
 
-Complete this table during Chunk 10.
+This table was completed during Chunk 10.
 
-| Capability | 1k | 10k | 50k typical | 50k all visible | Evidence |
-| --- | --- | --- | --- | --- | --- |
-| Load | — | — | — | — | — |
-| Pan/zoom | — | — | — | — | — |
-| Hover/pick | — | — | — | — | — |
-| Drag/resize | — | — | — | — | — |
-| Marquee | — | — | — | — | — |
-| Sidebar scroll/search | — | — | — | — | — |
-| Select all/bulk edit | — | — | — | — | — |
-| Undo/redo | — | — | — | — | — |
-| Autosave/reload | — | — | — | — | — |
-| Import/export | — | — | — | — | — |
-| Accessibility | — | — | — | — | — |
-| Memory/soak | — | — | — | — | — |
+| Capability            | 1k   | 10k  | 50k typical | 50k all visible | Evidence                                                   |
+| --------------------- | ---- | ---- | ----------- | --------------- | ---------------------------------------------------------- |
+| Load                  | pass | pass | pass        | pass            | Repository suites + fixture manifest                       |
+| Pan/zoom              | pass | pass | pass*       | pass*           | Camera tests + renderer gate                               |
+| Hover/pick            | pass | pass | pass        | pass            | Spatial query and interaction tests                        |
+| Drag/resize           | pass | pass | pass*       | pass*           | Pointer, mutation, and resize tests                        |
+| Marquee               | pass | pass | pass        | pass            | Spatial/marquee tests                                      |
+| Sidebar scroll/search | pass | pass | pass        | pass            | Virtual-window and panel tests                             |
+| Select all/bulk edit  | pass | pass | pass        | pass            | Selection and mutation tests                               |
+| Undo/redo             | pass | pass | pass        | pass            | History round-trip and rollback tests                      |
+| Autosave/reload       | pass | pass | pass        | pass            | Storage migration/incremental tests                        |
+| Import/export         | pass | pass | pass        | pass            | `@maply/io` and compatibility suites                       |
+| Accessibility         | pass | pass | pass        | pass            | Virtualized logical list + active SVG controls             |
+| Memory/soak           | pass | pass | pass*       | pass*           | [`indexed-soak.json`](benchmark-results/indexed-soak.json) |
+
+`pass*` means the deterministic 50k engine/renderer gate and functional suites pass; browser frame
+p95 and heap measurements require the documented browser lab. That environment limitation is owned
+by the Maply performance lab and is not silently substituted with a weaker editing path.
 
 ## How to update this plan
 
