@@ -429,7 +429,7 @@ large traces into this document.
 | --- | --- | --- | --- | --- | --- |
 | 0 | d3604a6 | — | `benchmark-results/fixtures.json` | `pnpm benchmark:fixtures`, `pnpm check`, `pnpm test` | Browser baseline capture is available at `/benchmark`; timing evidence still needs a documented browser run. |
 | 1 | 05cd914 | — | — | `pnpm check`, focused interaction tests, existing editor tests | Selection, hover, and crop now use an independent interaction revision and subscription path. |
-| 2 | af9c1ce, dc8fd1a | — | — | `pnpm check`, `pnpm test:editor`, indexed-document contract tests | Read-only indexed seam and core element mutation routing are in place; path and remaining cold-boundary commands remain. |
+| 2 | af9c1ce, dc8fd1a, e484ee7 | — | — | `pnpm check`, `pnpm test:editor`, indexed-document contract tests | Read-only indexed seam and ordinary element/path mutation routing are in place; remaining cold-boundary and image-crop commands remain. |
 | 3 | — | — | — | — | Not started |
 | 4 | — | — | — | — | Not started |
 | 5 | — | — | — | — | Not started |
