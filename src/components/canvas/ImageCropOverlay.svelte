@@ -34,6 +34,8 @@
 		handle?: ResizeHandle,
 		source?: ImageElement
 	) {
+		drag.cancel();
+		const historyTransaction = Editor.history.begin();
 		const started = drag.start(event, {
 			project: (pointerEvent) => clientToSvgPoint(svg, pointerEvent.clientX, pointerEvent.clientY),
 			onMove: ({ delta, totalDelta }) => {
@@ -43,11 +45,15 @@
 					Editor.image.resizeFrame(element.id, handle, totalDelta.x, totalDelta.y, undefined, source);
 				}
 			},
-			onEnd: () => {
+			onEnd: ({ cancelled }) => {
 				dragKind = null;
+				if (cancelled) Editor.history.cancel(historyTransaction);
+				else Editor.history.commit(historyTransaction);
 			}
 		});
-		if (started) dragKind = kind;
+		if (started) {
+			dragKind = kind;
+		} else Editor.history.cancel(historyTransaction);
 	}
 
 	function startPan(event: PointerEvent) {

@@ -7,6 +7,7 @@
 	import Crop from "phosphor-svelte/lib/Crop";
 	import Download from "phosphor-svelte/lib/Download";
 	import Image from "phosphor-svelte/lib/Image";
+	import { onDestroy } from "svelte";
 
 	interface Props {
 		element: ImageElement;
@@ -25,6 +26,7 @@
 	const TOOLBAR_ICON_SIZE = 15;
 
 	let fileInputRef: HTMLInputElement | null = $state(null);
+	let cropScaleTransaction = $state<ReturnType<typeof Editor.history.begin> | null>(null);
 	const canvas = Editor.state.canvas;
 	const imageAssets = Editor.state.imageAssets;
 
@@ -64,6 +66,18 @@
 		Editor.image.setCropScale(element.id, value);
 		Editor.selection.select(element.id);
 	}
+
+	function finishCropScale() {
+		Editor.history.commit(cropScaleTransaction);
+		cropScaleTransaction = null;
+	}
+
+	function cancelCropScale() {
+		Editor.history.cancel(cropScaleTransaction);
+		cropScaleTransaction = null;
+	}
+
+	onDestroy(cancelCropScale);
 
 	function finishCrop() {
 		Editor.selection.toggleCrop(element.id);
@@ -143,7 +157,18 @@
 				step="1"
 				value={element.cropScale}
 				oninput={updateCropScale}
-				onpointerdown={keepSelected}
+				onpointerdown={(event) => {
+					keepSelected(event);
+					cropScaleTransaction ??= Editor.history.begin();
+				}}
+				onpointercancel={cancelCropScale}
+				onpointerup={finishCropScale}
+				onchange={finishCropScale}
+				onkeydown={() => {
+					cropScaleTransaction ??= Editor.history.begin();
+				}}
+				onkeyup={finishCropScale}
+				onblur={finishCropScale}
 				aria-label="Crop zoom"
 				class="crop-slider h-3 w-full cursor-pointer appearance-none bg-transparent"
 			/>

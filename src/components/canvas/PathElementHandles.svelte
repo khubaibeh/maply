@@ -31,7 +31,9 @@
 		const svg = getSvgRoot(event.target);
 		if (!svg) return;
 		const start = points[index];
-		drag.start(event, {
+		drag.cancel();
+		const historyTransaction = Editor.history.begin();
+		const started = drag.start(event, {
 			project: (pointerEvent) => clientToSvgPoint(svg, pointerEvent.clientX, pointerEvent.clientY),
 			onMove: ({ totalDelta }) => {
 				const oldBounds = Editor.geometry.pathBounds(points);
@@ -43,8 +45,13 @@
 					offsetY
 				);
 				Editor.element.updatePathVertex(element.id, index, nextPoint);
+			},
+			onEnd: ({ cancelled }) => {
+				if (cancelled) Editor.history.cancel(historyTransaction);
+				else Editor.history.commit(historyTransaction);
 			}
 		});
+		if (!started) Editor.history.cancel(historyTransaction);
 	}
 
 	function removeHandle(event: MouseEvent, index: number) {

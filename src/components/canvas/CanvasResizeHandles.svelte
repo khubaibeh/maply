@@ -128,7 +128,9 @@
 		const svg = getSvgRoot(event.target);
 		if (!svg) return;
 		Editor.actions.tool.setCanvasResizing(true);
-		drag.start(event, {
+		drag.cancel();
+		const historyTransaction = Editor.history.begin();
+		const started = drag.start(event, {
 			project: (pointerEvent) => clientToSvgPoint(svg, pointerEvent.clientX, pointerEvent.clientY),
 			onMove: ({ delta }) => {
 				const before = canvasHandlePoint($canvas, handle);
@@ -169,10 +171,13 @@
 				const after = canvasHandlePoint($canvas, handle);
 				return { x: after.x - before.x, y: after.y - before.y };
 			},
-			onEnd: () => {
+			onEnd: ({ cancelled }) => {
 				Editor.actions.tool.setCanvasResizing(false);
+				if (cancelled) Editor.history.cancel(historyTransaction);
+				else Editor.history.commit(historyTransaction);
 			}
 		});
+		if (!started) Editor.history.cancel(historyTransaction);
 	}
 </script>
 

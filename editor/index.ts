@@ -31,6 +31,7 @@ import {
 	getWrappedTextLines,
 	getWrappedTextMetrics
 } from "./elements/text";
+import { history } from "./history";
 import { resetImageCrop, resizeImageCropFrame, setImageCropScale, translateImageCrop } from "./image/commands";
 import { addImageFromFile, imageFromFile, replaceImageAsset } from "./image/upload";
 import { create, rename } from "./project/commands";
@@ -164,5 +165,16 @@ export const Editor = {
 	save: {
 		queue: queueEditorSave,
 		flush: flushEditorSave
+	},
+
+	history: {
+		begin: history.begin,
+		commit: history.commit,
+		cancel: history.cancel,
+		undo: history.undo,
+		redo: history.redo,
+		canUndo: history.canUndo,
+		canRedo: history.canRedo,
+		reset: history.reset
 	}
 } as const;

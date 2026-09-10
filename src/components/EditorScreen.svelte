@@ -1,6 +1,6 @@
 <script lang="ts">
 	import CanvasArea from "@components/CanvasArea.svelte";
-	import { getArrowDelta, getShortcutTool, isEditingText } from "@components/core/shortcuts";
+	import { getArrowDelta, getHistoryShortcut, getShortcutTool, isEditingText } from "@components/core/shortcuts";
 	import { toast } from "@components/core/toast";
 	import Toolbar from "@components/core/Toolbar.svelte";
 	import Topbar from "@components/core/Topbar.svelte";
@@ -53,6 +53,16 @@
 			// The Element Names overlay is a modal editor: don't let canvas shortcuts
 			// (select-all, delete, copy/paste, tool switches…) act on the canvas underneath.
 			if (get(importNamesOverlayOpen)) return;
+
+			if (!isEditingText(event)) {
+				const historyShortcut = getHistoryShortcut(event);
+				if (historyShortcut) {
+					event.preventDefault();
+					if (historyShortcut === "redo") void Editor.history.redo();
+					else void Editor.history.undo();
+					return;
+				}
+			}
 
 			if (!isEditingText(event) && !event.ctrlKey && !event.metaKey && !event.altKey) {
 				const shortcutTool = getShortcutTool(event.key);

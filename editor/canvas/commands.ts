@@ -1,6 +1,7 @@
 import { get } from "svelte/store";
 
 import { minimumCanvasSizeState } from "../state/document";
+import { isEditorMutationBlocked } from "../state/editing";
 import { canvasState } from "../state/workspace";
 
 function sanitizeSize(value: number, minimum: number) {
@@ -9,6 +10,7 @@ function sanitizeSize(value: number, minimum: number) {
 
 /** Updates the canvas dimensions. */
 export function setSize(width: number, height: number): void {
+	if (isEditorMutationBlocked()) return;
 	const min = get(minimumCanvasSizeState);
 	canvasState.update((state) => ({
 		...state,
@@ -19,6 +21,7 @@ export function setSize(width: number, height: number): void {
 
 /** Updates the complete canvas frame. */
 export function setFrame(x: number, y: number, width: number, height: number): void {
+	if (isEditorMutationBlocked()) return;
 	const min = get(minimumCanvasSizeState);
 	canvasState.update((state) => ({
 		...state,
@@ -31,10 +34,12 @@ export function setFrame(x: number, y: number, width: number, height: number): v
 
 /** Updates the canvas background color. */
 export function setColor(color: string): void {
+	if (isEditorMutationBlocked()) return;
 	canvasState.update((state) => ({ ...state, color }));
 }
 
 /** Updates the canvas origin. */
 export function setPosition(x: number, y: number): void {
+	if (isEditorMutationBlocked()) return;
 	canvasState.update((state) => ({ ...state, x, y }));
 }

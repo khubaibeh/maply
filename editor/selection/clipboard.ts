@@ -6,6 +6,8 @@ import { clampElementToCanvas, getElementBounds } from "../elements/geometry";
 import { autofixElementName, createElementId, defaultElementName, nextElementName } from "../elements/naming";
 import { imageAssetState } from "../state/assets";
 import { clipboardState, projectState, updateProjectState } from "../state/document";
+import { applyInternalEditorMutation, beginAsyncEditorMutation } from "../state/editing";
+import { acquireMutex } from "../state/mutex";
 import { canvasState } from "../state/workspace";
 
 function pastedName(element: Element, elements: readonly Element[]): string {
@@ -29,6 +31,18 @@ export function getClipboard(): Element[] {
 
 /** Duplicates clipboard elements with new IDs/names, clones image assets, and clamps to canvas. */
 export async function paste(point?: Point): Promise<void> {
+	const releaseMutation = beginAsyncEditorMutation();
+	if (!releaseMutation) return;
+	const release = await acquireMutex();
+	try {
+		await pasteWithLock(point);
+	} finally {
+		release();
+		releaseMutation();
+	}
+}
+
+async function pasteWithLock(point?: Point): Promise<void> {
 	const copied = getClipboard();
 	if (copied.length === 0) return;
 
@@ -86,18 +100,20 @@ export async function paste(point?: Point): Promise<void> {
 		}
 	}
 
-	imageAssetState.update((current) => ({
-		...current,
-		...Object.fromEntries(clonedAssets.map((asset) => [asset.id, asset]))
-	}));
+	applyInternalEditorMutation(() => {
+		imageAssetState.update((current) => ({
+			...current,
+			...Object.fromEntries(clonedAssets.map((asset) => [asset.id, asset]))
+		}));
 
-	updateProjectState(
-		(state) => ({
-			...state,
-			elements: [...state.elements, ...positioned],
-			selectedElementIds: positioned.map((element) => element.id),
-			selectedElementId: positioned.at(-1)?.id ?? null
-		}),
-		{ added: positioned }
-	);
+		updateProjectState(
+			(state) => ({
+				...state,
+				elements: [...state.elements, ...positioned],
+				selectedElementIds: positioned.map((element) => element.id),
+				selectedElementId: positioned.at(-1)?.id ?? null
+			}),
+			{ added: positioned }
+		);
+	});
 }

@@ -7,8 +7,10 @@ import { get } from "svelte/store";
 
 import { imageFromSize } from "../elements/create";
 import { createElementId } from "../elements/naming";
+import { history } from "../history";
 import { imageAssetState } from "../state/assets";
 import { projectState, setProjectState } from "../state/document";
+import { applyInternalEditorMutation, beginAsyncEditorMutation } from "../state/editing";
 import { acquireMutex } from "../state/mutex";
 import { canvasState } from "../state/workspace";
 import type { ImageAssetState, ProjectState } from "../types";
@@ -62,6 +64,10 @@ export async function addImageFromFile(file: File): Promise<ImageFromFileResult>
 	const preparedResult = await prepareImageFile(file);
 	if (!preparedResult.ok) return preparedResult;
 	const prepared = preparedResult.value;
+	const releaseMutation = beginAsyncEditorMutation();
+	if (!releaseMutation) {
+		return { ok: false, error: { type: "AttachmentFailed", cause: new Error("Editor is busy.") } };
+	}
 	const release = await acquireMutex();
 
 	try {
@@ -82,22 +88,33 @@ export async function addImageFromFile(file: File): Promise<ImageFromFileResult>
 			return { ok: false, error: { type: "AttachmentFailed", cause: persisted.error } };
 		}
 
-		setProjectState(
-			{
-				...project,
-				elements,
-				selectedElementId: image.id,
-				selectedElementIds: [image.id],
-				hoveredElementId: null,
-				cropEditingElementId: null
-			},
-			{ added: [image] }
-		);
-		imageAssetState.set(Object.fromEntries(persisted.assets.map((entry) => [entry.id, entry])));
+		const historyTransaction = history.begin();
+		let committed = false;
+		try {
+			applyInternalEditorMutation(() => {
+				setProjectState(
+					{
+						...project,
+						elements,
+						selectedElementId: image.id,
+						selectedElementIds: [image.id],
+						hoveredElementId: null,
+						cropEditingElementId: null
+					},
+					{ added: [image] }
+				);
+				imageAssetState.set(Object.fromEntries(persisted.assets.map((entry) => [entry.id, entry])));
+			});
+			history.commit(historyTransaction);
+			committed = true;
+		} finally {
+			if (!committed) history.cancel(historyTransaction);
+		}
 
 		return { ok: true, value: prepared };
 	} finally {
 		release();
+		releaseMutation();
 	}
 }
 
@@ -114,6 +131,8 @@ export async function replaceImageAsset(
 	id: string,
 	asset: StoredImageAsset
 ): Promise<{ ok: true } | { ok: false; error: unknown }> {
+	const releaseMutation = beginAsyncEditorMutation();
+	if (!releaseMutation) return { ok: false, error: new Error("Editor is busy.") };
 	const release = await acquireMutex();
 
 	try {
@@ -145,12 +164,23 @@ export async function replaceImageAsset(
 		const persisted = await persistImageMutation(project, elements, nextAssets);
 		if (!persisted.ok) return persisted;
 
-		setProjectState({ ...project, elements }, "preserve");
-		imageAssetState.set(Object.fromEntries(persisted.assets.map((entry) => [entry.id, entry])));
+		const historyTransaction = history.begin();
+		let committed = false;
+		try {
+			applyInternalEditorMutation(() => {
+				setProjectState({ ...project, elements }, "preserve");
+				imageAssetState.set(Object.fromEntries(persisted.assets.map((entry) => [entry.id, entry])));
+			});
+			history.commit(historyTransaction);
+			committed = true;
+		} finally {
+			if (!committed) history.cancel(historyTransaction);
+		}
 
 		return { ok: true };
 	} finally {
 		release();
+		releaseMutation();
 	}
 }
 

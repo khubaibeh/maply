@@ -5,12 +5,16 @@ import type { StoredEditorProject } from "@maply/storage/types";
 
 import { clampZoom } from "../canvas/camera";
 import { clampElementToCanvas } from "../elements/geometry";
+import { history } from "../history";
 import { imageAssetState } from "../state/assets";
 import { updateProjectState } from "../state/document";
+import { applyInternalEditorMutation, withEditorMutationBlock } from "../state/editing";
 import { canvasState, createInitialCanvasState } from "../state/workspace";
 import { normalizeElement } from "./normalize";
+import { runEditorStorageOperation } from "./save";
 
 const defaultProjectId = "prod";
+let latestLoadRequest = 0;
 
 function imageAssetIds(elements: readonly Element[]) {
 	return elements.flatMap((element) => (element.type === "image" && element.assetId ? [element.assetId] : []));
@@ -52,35 +56,56 @@ function applyProject(project: StoredEditorProject) {
 
 /** Hydrates editor state and its referenced image assets from persistent storage. */
 export async function loadEditorSession(projectId = defaultProjectId): Promise<void> {
-	updateProjectState((state) => ({ ...state, id: projectId, initialized: false }), "preserve");
+	return withEditorMutationBlock(() => loadEditorSessionBlocked(projectId));
+}
 
-	const projectResult = await storage.project.fetch(projectId);
-	if (!projectResult.ok) {
-		console.warn("Failed to load project, using defaults:", projectResult.error);
-		imageAssetState.set({});
-		updateProjectState(
-			(state) => ({
-				...state,
-				selectedElementId: null,
-				selectedElementIds: [],
-				hoveredElementId: null,
-				cropEditingElementId: null,
-				initialized: true
-			}),
-			"preserve"
-		);
-		return;
-	}
+async function loadEditorSessionBlocked(projectId: string): Promise<void> {
+	const request = ++latestLoadRequest;
+	await history.settle();
+	if (request !== latestLoadRequest) return;
+	history.reset();
+	await history.withoutRecording(async () => {
+		applyInternalEditorMutation(() => {
+			updateProjectState((state) => ({ ...state, id: projectId, initialized: false }), "preserve");
+		});
 
-	applyProject(projectResult.value);
+		const loaded = await runEditorStorageOperation(async () => {
+			const projectResult = await storage.project.fetch(projectId);
+			if (!projectResult.ok) return { projectResult, assetsResult: null };
+			const assetsResult = await storage.imageAsset.fetch(imageAssetIds(projectResult.value.elements));
+			return { projectResult, assetsResult };
+		});
+		if (request !== latestLoadRequest) return;
+		const { projectResult, assetsResult } = loaded;
+		if (!projectResult.ok) {
+			console.warn("Failed to load project, using defaults:", projectResult.error);
+			applyInternalEditorMutation(() => {
+				imageAssetState.set({});
+				updateProjectState(
+					(state) => ({
+						...state,
+						selectedElementId: null,
+						selectedElementIds: [],
+						hoveredElementId: null,
+						cropEditingElementId: null,
+						initialized: true
+					}),
+					"preserve"
+				);
+			});
+			return;
+		}
 
-	const assetsResult = await storage.imageAsset.fetch(imageAssetIds(projectResult.value.elements));
-	if (!assetsResult.ok) {
-		console.warn("Failed to load image assets:", assetsResult.error);
-		imageAssetState.set({});
-	} else {
-		imageAssetState.set(Object.fromEntries(assetsResult.value.map((asset) => [asset.id, asset])));
-	}
+		applyInternalEditorMutation(() => {
+			applyProject(projectResult.value);
+			if (!assetsResult?.ok) {
+				if (assetsResult) console.warn("Failed to load image assets:", assetsResult.error);
+				imageAssetState.set({});
+			} else {
+				imageAssetState.set(Object.fromEntries(assetsResult.value.map((asset) => [asset.id, asset])));
+			}
 
-	updateProjectState((state) => ({ ...state, initialized: true }), "preserve");
+			updateProjectState((state) => ({ ...state, initialized: true }), "preserve");
+		});
+	});
 }

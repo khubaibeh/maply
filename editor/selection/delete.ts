@@ -1,11 +1,12 @@
-import { storage } from "@maply/storage";
 import { get } from "svelte/store";
 
 import { imageAssetState } from "../state/assets";
 import { projectState, updateProjectState } from "../state/document";
+import { isEditorMutationBlocked } from "../state/editing";
 
-/** Removes elements immediately and detaches parallel image asset cleanup. */
+/** Removes elements while retaining unreferenced assets for undo and later cleanup. */
 export function deleteElements(ids: string | readonly string[]): void {
+	if (isEditorMutationBlocked()) return;
 	const idSet = new Set(typeof ids === "string" ? [ids] : ids);
 	const removed = get(projectState).elements.filter((element) => idSet.has(element.id));
 
@@ -42,10 +43,6 @@ export function deleteElements(ids: string | readonly string[]): void {
 			const next = { ...assets };
 			delete next[assetId];
 			return next;
-		});
-
-		storage.imageAsset.delete(assetId).then((result) => {
-			if (!result.ok) console.warn("Failed to delete image asset:", result.error);
 		});
 	}
 }

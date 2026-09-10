@@ -4,6 +4,7 @@ import { writable } from "svelte/store";
 
 import { getElementBounds } from "../elements/geometry";
 import type { ProjectState } from "../types";
+import { isEditorMutationBlocked } from "./editing";
 
 const initialProjectState: ProjectState = {
 	id: "prod",
@@ -141,6 +142,7 @@ function applyMinimumCanvasSizeHint(
 }
 
 function applyProjectState(next: ProjectState, hint: MinimumCanvasSizeHint) {
+	if (isEditorMutationBlocked()) return;
 	currentMinimumCanvasSizeCache = applyMinimumCanvasSizeHint(
 		currentMinimumCanvasSizeCache,
 		currentProjectState,

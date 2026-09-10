@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { Input } from "$lib/components/ui/input";
 	import { parseHexColor } from "@maply/model";
+	import { Editor } from "editor";
+	import { onDestroy } from "svelte";
 
 	let {
 		id,
@@ -20,6 +22,7 @@
 	let lastId = $state("");
 	let lastCommittedColor = $state("");
 	let invalid = $state(false);
+	let historyTransaction = $state<ReturnType<typeof Editor.history.begin> | null>(null);
 
 	const colorInputValue = $derived(toSixDigitHex(value));
 
@@ -70,6 +73,22 @@
 		draft = lastCommittedColor;
 		invalid = false;
 	}
+
+	function beginHistory() {
+		historyTransaction ??= Editor.history.begin();
+	}
+
+	function commitHistory() {
+		Editor.history.commit(historyTransaction);
+		historyTransaction = null;
+	}
+
+	function cancelHistory() {
+		Editor.history.cancel(historyTransaction);
+		historyTransaction = null;
+	}
+
+	onDestroy(commitHistory);
 </script>
 
 <div class="flex flex-col gap-1 {className}">
@@ -83,6 +102,12 @@
 				type="color"
 				value={colorInputValue}
 				oninput={updateFromNativePicker}
+				onpointerdown={beginHistory}
+				onfocus={beginHistory}
+				onpointerup={commitHistory}
+				onpointercancel={cancelHistory}
+				onchange={commitHistory}
+				onblur={commitHistory}
 				aria-label="Pick {label.toLowerCase()}"
 				class="absolute inset-0 size-full cursor-pointer opacity-0"
 			/>
@@ -92,7 +117,11 @@
 			type="text"
 			value={draft}
 			oninput={updateFromTextInput}
-			onblur={restoreCommittedColor}
+			onfocus={beginHistory}
+			onblur={() => {
+				restoreCommittedColor();
+				commitHistory();
+			}}
 			aria-invalid={invalid}
 			class="h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0 {invalid
 				? 'border-destructive text-destructive aria-invalid:ring-0 dark:aria-invalid:ring-0'
