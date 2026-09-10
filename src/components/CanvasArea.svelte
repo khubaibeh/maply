@@ -2,6 +2,8 @@
 	import * as ContextMenu from "$lib/components/ui/context-menu";
 	import Artboard from "@components/canvas/Artboard.svelte";
 	import Background from "@components/canvas/Background.svelte";
+	import { chooseCanvasRenderer } from "@components/canvas/canvas-renderer";
+	import CanvasScene from "@components/canvas/CanvasScene.svelte";
 	import ContextMenuContent from "@components/canvas/ContextMenuContent.svelte";
 	import DraftOverlay from "@components/canvas/DraftOverlay.svelte";
 	import ImageCropToolbar from "@components/canvas/ImageCropToolbar.svelte";
@@ -14,6 +16,13 @@
 
 	const canvasArea = createCanvasAreaState();
 	const elements = Editor.state.elements;
+	const documentRevision = Editor.state.documentRevision;
+	const rendererKind = $derived.by(() => {
+		const revision = $documentRevision;
+		if (revision < 0) return "svg" as const;
+		const viewport = canvasArea.viewportBounds();
+		return chooseCanvasRenderer(Editor.document.size(), Editor.document.query(viewport).length);
+	});
 </script>
 
 <ContextMenu.Root bind:open={canvasArea.contextMenu.state.open}>
@@ -29,32 +38,49 @@
 			oncontextmenu={canvasArea.handleContextMenu}
 		>
 			{#if canvasArea.state.containerWidth > 0 && canvasArea.state.containerHeight > 0}
-				<svg
-					bind:this={canvasArea.state.svgRef}
-					width="100%"
-					height="100%"
-					viewBox={canvasArea.viewBox()}
-					role="img"
-					aria-label="Canvas workspace"
-					onpointerdown={canvasArea.handleSvgPointerDown}
-					onpointermove={canvasArea.handleSvgPointerMove}
-				>
-					<Background
-						containerWidth={canvasArea.state.containerWidth}
-						containerHeight={canvasArea.state.containerHeight}
-						camera={canvasArea.camera()}
-					/>
-					<Artboard viewport={canvasArea.viewportBounds()} />
-					<MarqueeSelectionPreview elements={canvasArea.marquee.state.candidates} />
-					<MarqueeSelectionOverlay box={canvasArea.marquee.state.box} />
-					<DraftOverlay
-						shapePreview={canvasArea.shapePreview()}
-						pathSession={canvasArea.path.state.session}
-						pathPreviewRadius={canvasArea.pathPreviewRadius()}
-						pathVertexRadius={canvasArea.pathVertexRadius()}
-						onClosePath={canvasArea.closePath}
-					/>
-				</svg>
+				<div class="canvas-render-stack">
+					{#if rendererKind === "canvas"}
+						<CanvasScene
+							viewport={canvasArea.viewportBounds()}
+							width={canvasArea.state.containerWidth}
+							height={canvasArea.state.containerHeight}
+						/>
+					{/if}
+					<svg
+						bind:this={canvasArea.state.svgRef}
+						class:canvas-overlay={rendererKind === "canvas"}
+						data-renderer={rendererKind}
+						width="100%"
+						height="100%"
+						viewBox={canvasArea.viewBox()}
+						role="img"
+						aria-label="Canvas workspace"
+						onpointerdown={(event) => canvasArea.handleSvgPointerDown(event, rendererKind === "canvas")}
+						onpointermove={canvasArea.handleSvgPointerMove}
+					>
+						{#if rendererKind === "svg"}
+							<Background
+								containerWidth={canvasArea.state.containerWidth}
+								containerHeight={canvasArea.state.containerHeight}
+								camera={canvasArea.camera()}
+							/>
+						{/if}
+						<Artboard
+							viewport={canvasArea.viewportBounds()}
+							renderElements={rendererKind === "svg"}
+							renderSurface={rendererKind === "svg"}
+						/>
+						<MarqueeSelectionPreview elements={canvasArea.marquee.state.candidates} />
+						<MarqueeSelectionOverlay box={canvasArea.marquee.state.box} />
+						<DraftOverlay
+							shapePreview={canvasArea.shapePreview()}
+							pathSession={canvasArea.path.state.session}
+							pathPreviewRadius={canvasArea.pathPreviewRadius()}
+							pathVertexRadius={canvasArea.pathVertexRadius()}
+							onClosePath={canvasArea.closePath}
+						/>
+					</svg>
+				</div>
 			{/if}
 			{#if canvasArea.selectedImage() && canvasArea.state.containerWidth > 0 && canvasArea.state.containerHeight > 0}
 				<ImageCropToolbar
@@ -89,3 +115,20 @@
 		/>
 	</ContextMenu.Content>
 </ContextMenu.Root>
+
+<style>
+	.canvas-render-stack {
+		position: absolute;
+		inset: 0;
+	}
+
+	.canvas-render-stack > :global(svg) {
+		position: relative;
+		z-index: 1;
+		display: block;
+	}
+
+	.canvas-overlay {
+		isolation: isolate;
+	}
+</style>

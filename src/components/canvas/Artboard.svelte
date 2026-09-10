@@ -17,7 +17,15 @@
 	const documentRevision = Editor.state.documentRevision;
 	const tool = Editor.state.tool;
 	const elementMove = createElementMove();
-	let { viewport }: { viewport: { x: number; y: number; width: number; height: number } } = $props();
+	let {
+		viewport,
+		renderElements = true,
+		renderSurface = true
+	}: {
+		viewport: { x: number; y: number; width: number; height: number };
+		renderElements?: boolean;
+		renderSurface?: boolean;
+	} = $props();
 
 	const elements = $derived.by(() => {
 		const revision = $documentRevision;
@@ -58,20 +66,24 @@
 	</filter>
 </defs>
 
-<rect
-	x={$canvas.x}
-	y={$canvas.y}
-	width={$canvas.width}
-	height={$canvas.height}
-	fill={$canvas.color}
-	stroke="var(--border)"
-	filter="url(#canvas-shadow)"
-/>
+{#if renderSurface}
+	<rect
+		x={$canvas.x}
+		y={$canvas.y}
+		width={$canvas.width}
+		height={$canvas.height}
+		fill={$canvas.color}
+		stroke="var(--border)"
+		filter="url(#canvas-shadow)"
+	/>
+{/if}
 
 <CanvasResizeHandles />
 
 <g style:cursor={elementMove.state.isDragging ? canvasCursor.allScroll : undefined}>
-	<ElementShapes {elements} onElementPointerDown={elementMove.start} />
+	{#if renderElements}
+		<ElementShapes {elements} onElementPointerDown={elementMove.start} />
+	{/if}
 
 	{#if selectedElements.length > 1}
 		<MultiSelectionOutline elements={selectedElements} />
@@ -85,13 +97,13 @@
 		<PathElementOutline element={hoveredElement} />
 	{/if}
 
-	{#each selectedElements as element (element.id)}
-		{#if element.type !== "path"}
-			<ElementOutline {element} onMoveStart={elementMove.start} />
+	{#if selectedElement}
+		{#if selectedElement.type !== "path"}
+			<ElementOutline element={selectedElement} onMoveStart={elementMove.start} />
 		{:else}
-			<PathElementOutline {element} />
+			<PathElementOutline element={selectedElement} />
 		{/if}
-	{/each}
+	{/if}
 </g>
 
 {#if selectedElement?.type === "image"}

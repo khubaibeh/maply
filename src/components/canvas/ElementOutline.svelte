@@ -75,6 +75,17 @@
 		return Editor.document.bounds(element.id) ?? Editor.geometry.elementBounds(element);
 	}
 
+	function useIndexedBounds() {
+		const bounds = elementBounds();
+		const padding = 0.5;
+		bbox = {
+			x: bounds.x - padding,
+			y: bounds.y - padding,
+			width: bounds.width + padding * 2,
+			height: bounds.height + padding * 2
+		};
+	}
+
 	$effect(() => {
 		if (element.type === "text" || element.type === "image") {
 			const padding = 0.5;
@@ -90,11 +101,17 @@
 
 		if (typeof document === "undefined") return;
 		const node = document.getElementById(`element-${element.id}`);
-		if (!(node instanceof SVGGraphicsElement)) return;
+		if (!(node instanceof SVGGraphicsElement)) {
+			useIndexedBounds();
+			return;
+		}
 		const svg = node.ownerSVGElement;
 		const elementMatrix = node.getScreenCTM();
 		const svgMatrix = svg?.getScreenCTM();
-		if (!svg || !elementMatrix || !svgMatrix) return;
+		if (!svg || !elementMatrix || !svgMatrix) {
+			useIndexedBounds();
+			return;
+		}
 
 		const rect = node.getBBox();
 		const matrix = svgMatrix.inverse().multiply(elementMatrix);

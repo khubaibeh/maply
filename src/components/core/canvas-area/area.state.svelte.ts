@@ -1,3 +1,4 @@
+import { createElementMove } from "@components/canvas/interaction/element-move.svelte";
 import { canSelectOnCanvas } from "@components/canvas/interaction/element-selection";
 import { clientToSvgPoint } from "@components/canvas/interaction/svg";
 import { canvasCursor } from "@components/core/cursors";
@@ -27,6 +28,7 @@ export function createCanvasAreaState() {
 	const tool = fromStore(Editor.state.tool);
 	const contextMenu = createCanvasContextMenu();
 	const drawing = createDrawingSession();
+	const elementMove = createElementMove();
 	const marquee = createMarqueeSelection();
 	const path = createPathSession();
 
@@ -293,7 +295,7 @@ export function createCanvasAreaState() {
 		Editor.selection.setHover(element && canSelectOnCanvas(element) ? element.id : null);
 	}
 
-	function handleSvgPointerDown(event: PointerEvent) {
+	function handleSvgPointerDown(event: PointerEvent, canvasRenderer = false) {
 		if (get(importNamesOverlayOpen)) return;
 		if (event.button !== 0) return;
 		if (isHandActive) return;
@@ -316,7 +318,8 @@ export function createCanvasAreaState() {
 			const hit = topmostElementAt(point);
 			if (hit) {
 				if (canSelectOnCanvas(hit)) {
-					Editor.selection.select(hit.id, event.ctrlKey || event.metaKey);
+					if (canvasRenderer) elementMove.start(event, hit.id);
+					else Editor.selection.select(hit.id, event.ctrlKey || event.metaKey);
 				} else {
 					Editor.selection.select(null);
 				}
