@@ -10,7 +10,7 @@ import {
 	updateElements
 } from "editor/elements/mutate";
 import { imageAssetState } from "editor/state/assets";
-import { projectState, updateProjectState } from "editor/state/document";
+import { elementsState, projectState, updateProjectState } from "editor/state/document";
 import { canvasState } from "editor/state/workspace";
 import { get } from "svelte/store";
 import { describe, expect, it } from "vitest";
@@ -205,6 +205,7 @@ describe("updateElements", () => {
 		const after = get(projectState).elements;
 		expect(after[0]).not.toBe(before[0]);
 		expect(after[1]).toBe(before[1]);
+		expect(get(elementsState)).toBe(after);
 	});
 
 	it("clamps each targeted element to the canvas", () => {

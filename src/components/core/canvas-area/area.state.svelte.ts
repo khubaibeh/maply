@@ -20,7 +20,7 @@ const CLOSE_HANDLE_SCREEN_PX = 6;
 /** Composes canvas interaction modules and owns viewport browser-resource lifetimes. */
 export function createCanvasAreaState() {
 	const canvas = fromStore(Editor.state.canvas);
-	const project = fromStore(Editor.state.project);
+	const elements = fromStore(Editor.state.elements);
 	const interaction = fromStore(Editor.state.interaction);
 	const tool = fromStore(Editor.state.tool);
 	const contextMenu = createCanvasContextMenu();
@@ -41,7 +41,7 @@ export function createCanvasAreaState() {
 
 	const selectedImage = $derived(
 		(interaction.current.selectedElementIds.length === 1
-			? (project.current.elements.find(
+			? (elements.current.find(
 					(element) => element.id === interaction.current.selectedElementId && element.type === "image"
 				) ?? null)
 			: null) as ImageElement | null
@@ -101,7 +101,7 @@ export function createCanvasAreaState() {
 
 		function handleWheel(event: WheelEvent) {
 			const cropEditingElement = interaction.current.cropEditingElementId
-				? project.current.elements.find((element) => element.id === interaction.current.cropEditingElementId)
+				? elements.current.find((element) => element.id === interaction.current.cropEditingElementId)
 				: null;
 
 			if (cropEditingElement?.type === "image") {

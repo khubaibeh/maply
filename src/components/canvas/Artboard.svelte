@@ -13,22 +13,20 @@
 	import PathElementOutline from "./PathElementOutline.svelte";
 
 	const canvas = Editor.state.canvas;
-	const project = Editor.state.project;
+	const elements = Editor.state.elements;
 	const interaction = Editor.state.interaction;
 	const tool = Editor.state.tool;
 	const elementMove = createElementMove();
 
 	const selectedElements = $derived(
-		$project.elements.filter(
-			(element) => element.visible !== false && $interaction.selectedElementIds.includes(element.id)
-		)
+		$elements.filter((element) => element.visible !== false && $interaction.selectedElementIds.includes(element.id))
 	);
 	const selectedElement = $derived(selectedElements.length === 1 ? (selectedElements[0] ?? null) : null);
 	const hoveredElement = $derived(
 		$tool.activeTool === "select" &&
 			$interaction.hoveredElementId &&
 			!$interaction.selectedElementIds.includes($interaction.hoveredElementId)
-			? ($project.elements.find(
+			? ($elements.find(
 					(element) =>
 						element.id === $interaction.hoveredElementId &&
 						element.visible !== false &&

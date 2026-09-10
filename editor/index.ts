@@ -54,6 +54,7 @@ import { imageAssetState } from "./state/assets";
 import {
 	documentIndex,
 	documentRevisionState,
+	elementsState,
 	fillState,
 	minimumCanvasSizeState,
 	projectState
@@ -78,6 +79,7 @@ export const Editor = {
 
 	state: {
 		project: readonly(projectState),
+		elements: readonly(elementsState),
 		interaction: readonly(interactionState),
 		documentRevision: readonly(documentRevisionState),
 		interactionRevision: readonly(interactionRevisionState),

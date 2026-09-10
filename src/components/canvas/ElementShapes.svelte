@@ -6,12 +6,13 @@
 	import PathShape from "@components/canvas/shapes/PathShape.svelte";
 	import RectShape from "@components/canvas/shapes/RectShape.svelte";
 	import TextShape from "@components/canvas/shapes/TextShape.svelte";
+	import type { PathElement } from "@maply/model/types";
 	import { Editor } from "editor";
 
 	let { onElementPointerDown }: { onElementPointerDown: (event: PointerEvent, id: string) => void } = $props();
 
 	const imageAssets = Editor.state.imageAssets;
-	const project = Editor.state.project;
+	const elements = Editor.state.elements;
 	const interaction = Editor.state.interaction;
 	const tool = Editor.state.tool;
 
@@ -24,10 +25,7 @@
 		if ($interaction.hoveredElementId === id) Editor.selection.setHover(null);
 	}
 
-	function insertPathVertex(
-		event: MouseEvent,
-		element: Extract<(typeof $project.elements)[number], { type: "path" }>
-	) {
+	function insertPathVertex(event: MouseEvent, element: PathElement) {
 		if ($tool.activeTool !== "select" || element.locked) return;
 		const svg = getSvgRoot(event.target);
 		const position = svg ? clientToSvgPoint(svg, event.clientX, event.clientY) : null;
@@ -44,7 +42,7 @@
 </script>
 
 <g class="canvas-elements">
-	{#each $project.elements as element (element.id)}
+	{#each $elements as element (element.id)}
 		{#if element.visible !== false}
 			<g
 				id="element-{element.id}"

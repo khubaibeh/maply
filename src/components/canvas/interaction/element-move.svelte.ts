@@ -7,7 +7,6 @@ import { clientToSvgPoint, getSvgRoot } from "./svg";
 
 /** Centralizes selection and movement policy for canvas element pointer targets. */
 export function createElementMove() {
-	const project = fromStore(Editor.state.project);
 	const interaction = fromStore(Editor.state.interaction);
 	const tool = fromStore(Editor.state.tool);
 	const drag = createPointerDrag();
@@ -15,7 +14,7 @@ export function createElementMove() {
 
 	function start(event: PointerEvent, id: string) {
 		if (event.button !== 0 || tool.current.activeTool !== "select") return;
-		const element = project.current.elements.find((element) => element.id === id);
+		const element = Editor.document.get(id);
 		if (element && canvasElementPointerAction(element) === "clear-selection") {
 			event.stopPropagation();
 			Editor.selection.select(null);

@@ -13,7 +13,7 @@
 	import { Editor } from "editor";
 
 	const canvasArea = createCanvasAreaState();
-	const project = Editor.state.project;
+	const elements = Editor.state.elements;
 </script>
 
 <ContextMenu.Root bind:open={canvasArea.contextMenu.state.open}>
@@ -72,7 +72,7 @@
 		<ContextMenuContent
 			target={canvasArea.contextMenu.state.target}
 			hasClipboardElement={canvasArea.contextMenu.hasClipboardElement()}
-			hasElements={$project.elements.length > 0}
+			hasElements={$elements.length > 0}
 			canBringToFront={canvasArea.contextMenu.canBringToFront()}
 			canBringForward={canvasArea.contextMenu.canBringForward()}
 			canSendBackward={canvasArea.contextMenu.canSendBackward()}

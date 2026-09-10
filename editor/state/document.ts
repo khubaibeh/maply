@@ -120,6 +120,7 @@ function trackDeletedElementsMinimumCanvasSize(
 }
 
 const projectStore = writable<ProjectState>(initialProjectState);
+const elementsStore = writable<readonly Element[]>(initialProjectState.elements);
 const minimumCanvasSizeStore = writable<MinimumCanvasSize>({ width: 1, height: 1 });
 const documentRevisionStore = writable(0);
 const indexedDocument = createIndexedDocument(initialProjectState.elements);
@@ -159,6 +160,7 @@ function applyProjectState(next: ProjectState, hint: MinimumCanvasSizeHint): boo
 	recordDocumentRevision();
 	minimumCanvasSizeStore.set(toMinimumCanvasSize(currentMinimumCanvasSizeCache));
 	recordChangePublication();
+	if (elementsChanged) elementsStore.set(next.elements);
 	projectStore.set(next);
 	return true;
 }
@@ -166,6 +168,11 @@ function applyProjectState(next: ProjectState, hint: MinimumCanvasSizeHint): boo
 /** The editor's live project and selection state. */
 export const projectState = {
 	subscribe: projectStore.subscribe
+} as const;
+
+/** The ordered element projection without project metadata. */
+export const elementsState = {
+	subscribe: elementsStore.subscribe
 } as const;
 
 /** Read-only access to the editor-owned indexed document seam. */
