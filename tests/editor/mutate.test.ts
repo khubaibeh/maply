@@ -194,6 +194,19 @@ describe("updateElements", () => {
 		expect(get(projectState).elements).toEqual([{ ...selected, fill: "#fff" }, untouched]);
 	});
 
+	it("retains object identity for elements outside a single-element update", () => {
+		const selected = rect("selected", 10, 20);
+		const untouched = rect("untouched", 30, 40);
+		setFixture([selected, untouched]);
+		const before = get(projectState).elements;
+
+		updateElement(selected.id, { fill: "#fff" });
+
+		const after = get(projectState).elements;
+		expect(after[0]).not.toBe(before[0]);
+		expect(after[1]).toBe(before[1]);
+	});
+
 	it("clamps each targeted element to the canvas", () => {
 		setFixture([rect("a", 10, 20), rect("b", 30, 40)]);
 

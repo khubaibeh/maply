@@ -205,6 +205,37 @@ function hintForDocumentChange(change: DocumentChangeSet): MinimumCanvasSizeHint
 	return "preserve";
 }
 
+function projectElementsForDocumentChange(change: DocumentChangeSet): Element[] {
+	const elements = currentProjectState.elements;
+
+	if (change.tag === "add" && change.order.tag === "insert") {
+		const added = change.changes.flatMap((entry) => (entry.after ? [entry.after] : []));
+		return [...elements.slice(0, change.order.index), ...added, ...elements.slice(change.order.index)];
+	}
+
+	if (change.tag === "delete" && change.order.tag === "remove") {
+		const deleted = new Set(change.order.ids);
+		return elements.filter((element) => !deleted.has(element.id));
+	}
+
+	if (change.tag === "update") {
+		const updated = new Map(
+			change.changes.flatMap((entry) => (entry.after ? [[entry.id, entry.after] as const] : []))
+		);
+		return elements.map((element) => updated.get(element.id) ?? element);
+	}
+
+	if (change.tag === "reorder" && change.order.tag === "move") {
+		const moving = new Set(change.order.ids);
+		const moved = elements.filter((element) => moving.has(element.id));
+		const remaining = elements.filter((element) => !moving.has(element.id));
+		remaining.splice(change.order.toIndex, 0, ...moved);
+		return remaining;
+	}
+
+	return indexedDocument.snapshot();
+}
+
 /** Applies one indexed document command and publishes its compatibility projection. */
 export function updateIndexedProject(
 	mutation: (document: IndexedDocument) => DocumentChangeSet | null,
@@ -217,7 +248,7 @@ export function updateIndexedProject(
 	applyingIndexedMutation = true;
 	try {
 		applyProjectState(
-			{ ...currentProjectState, elements: indexedDocument.snapshot() },
+			{ ...currentProjectState, elements: projectElementsForDocumentChange(change) },
 			hint ?? hintForDocumentChange(change)
 		);
 	} finally {
