@@ -12,7 +12,11 @@ const savePending = MutableRef.make(false);
 let pendingSaveFiber: Fiber.Fiber<void, never> | null = null;
 
 function cancelPendingSave(): void {
-	if (pendingSaveFiber) void forkStorageEffect(Fiber.interrupt(pendingSaveFiber));
+	if (pendingSaveFiber) {
+		// SAFETY: This fiber only waits for the debounce. `saveGeneration` remains the correctness guard
+		// if cancellation races with wakeup; immediate interruption merely releases the timer resource.
+		pendingSaveFiber.interruptUnsafe();
+	}
 	pendingSaveFiber = null;
 	MutableRef.update(saveGeneration, (value) => value + 1);
 	MutableRef.set(savePending, false);

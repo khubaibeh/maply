@@ -8,7 +8,7 @@ function sanitizeSize(value: number, minimum: number) {
 	return Math.max(minimum, Math.round(value));
 }
 
-/** Updates the canvas dimensions. */
+/** Updates the canvas dimensions. Returns `false` only when a session operation blocked the mutation. */
 export function setSize(width: number, height: number): boolean {
 	if (isEditorMutationBlocked()) return false;
 	const min = get(minimumCanvasSizeState);
@@ -20,7 +20,7 @@ export function setSize(width: number, height: number): boolean {
 	return true;
 }
 
-/** Updates the complete canvas frame. */
+/** Updates the complete canvas frame. Returns `false` only when a session operation blocked the mutation. */
 export function setFrame(x: number, y: number, width: number, height: number): boolean {
 	if (isEditorMutationBlocked()) return false;
 	const min = get(minimumCanvasSizeState);
@@ -34,14 +34,14 @@ export function setFrame(x: number, y: number, width: number, height: number): b
 	return true;
 }
 
-/** Updates the canvas background color. */
+/** Updates the canvas background color. Returns `false` only when a session operation blocked the mutation. */
 export function setColor(color: string): boolean {
 	if (isEditorMutationBlocked()) return false;
 	canvasState.update((state) => ({ ...state, color }));
 	return true;
 }
 
-/** Updates the canvas origin. */
+/** Updates the canvas origin. Returns `false` only when a session operation blocked the mutation. */
 export function setPosition(x: number, y: number): boolean {
 	if (isEditorMutationBlocked()) return false;
 	canvasState.update((state) => ({ ...state, x, y }));

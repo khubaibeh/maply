@@ -195,12 +195,34 @@ describe("editor history", () => {
 		history.reset();
 
 		expect(deleteElements("image")).toBe(true);
-		await runStorageEffect(settleEditorWrites);
-		const deleted = await storage.imageAsset.fetch([asset.id]);
-		expect(deleted.ok).toBe(true);
-		if (deleted.ok) expect(deleted.value).toEqual([]);
-
 		await history.undo();
+
+		const restored = await storage.imageAsset.fetch([asset.id]);
+		expect(restored.ok).toBe(true);
+		if (restored.ok) expect(restored.value).toEqual([asset]);
+	});
+
+	it("retains an asset in storage when a deletion transaction is cancelled", async () => {
+		setup();
+		const asset: StoredImageAsset = {
+			id: "cancel-asset",
+			projectId: "prod",
+			name: "image.png",
+			mimeType: "image/png",
+			dataUrl: "data:image/png;base64,AA==",
+			width: 1,
+			height: 1
+		};
+		const saved = await storage.imageAsset.save(asset);
+		expect(saved.ok).toBe(true);
+		imageAssetState.set({ [asset.id]: asset });
+		updateProjectState((state) => ({ ...state, elements: [{ ...image(), assetId: asset.id }] }), "rescan");
+		history.reset();
+
+		const transaction = history.begin();
+		expect(deleteElements("image")).toBe(true);
+		history.cancel(transaction);
+		await runStorageEffect(settleEditorWrites);
 
 		const restored = await storage.imageAsset.fetch([asset.id]);
 		expect(restored.ok).toBe(true);

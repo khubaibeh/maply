@@ -1,7 +1,7 @@
 import type { StoredImageAsset } from "@maply/model/types";
 import { imageAsset, project as projectStorage, ProjectRepository, storageRuntime } from "@maply/storage/effect";
 import type { ResetProjectOptions, StoredEditorProject } from "@maply/storage/types";
-import { Effect, Semaphore, type Fiber } from "effect";
+import { Deferred, Effect, MutableRef, Semaphore, type Fiber } from "effect";
 
 import { PersistenceFailed } from "./errors";
 import type { PersistenceOperation } from "./errors";
@@ -19,6 +19,30 @@ import type { PersistenceOperation } from "./errors";
 
 /** Serialized storage access: previously `saveChain` plus `acquireMutex`. */
 const editorWriteGate = Semaphore.makeUnsafe(1);
+const detachedWriteCount = MutableRef.make(0);
+const detachedWriteLatch = MutableRef.make(makeSettledLatch());
+
+function makeSettledLatch(): Deferred.Deferred<void> {
+	const latch = Deferred.makeUnsafe<void>();
+	Effect.runSync(Deferred.succeed(latch, undefined));
+	return latch;
+}
+
+function beginDetachedWrite(): () => void {
+	if (MutableRef.get(detachedWriteCount) === 0) {
+		MutableRef.set(detachedWriteLatch, Deferred.makeUnsafe<void>());
+	}
+	MutableRef.update(detachedWriteCount, (count) => count + 1);
+	let released = false;
+	return () => {
+		if (released) return;
+		released = true;
+		MutableRef.update(detachedWriteCount, (count) => count - 1);
+		if (MutableRef.get(detachedWriteCount) === 0) {
+			Effect.runSync(Deferred.succeed(MutableRef.get(detachedWriteLatch), undefined));
+		}
+	};
+}
 
 type ProjectRepositoryEffect<A, E = PersistenceFailed> = Effect.Effect<A, E, ProjectRepository>;
 
@@ -92,11 +116,12 @@ export const resetProjectEffect = Effect.fn("editor.coordinator.resetProject")(f
 	return yield* mapPersistenceCause(projectStorage.reset(options), "resetProject");
 });
 
-/** Schedules a one-permit pass-through behind every queued write, guaranteeing settle. */
-export const settleEditorWrites: Effect.Effect<void, never, never> = Semaphore.withPermits(
-	editorWriteGate,
-	1
-)(Effect.void);
+/** Waits for registered detached writes, then schedules a pass-through behind queued writes. */
+export const settleEditorWrites: Effect.Effect<void, never, never> = Effect.suspend(() =>
+	Deferred.await(MutableRef.get(detachedWriteLatch)).pipe(
+		Effect.andThen(Semaphore.withPermits(editorWriteGate, 1)(Effect.void))
+	)
+);
 
 /** Exposes the shared write gate for callers that must serialize their own work. */
 export function withEditorWriteGate<A, E, R>(self: Effect.Effect<A, E, R>): Effect.Effect<A, E, R> {
@@ -111,4 +136,12 @@ export function runStorageEffect<A, E>(effect: Effect.Effect<A, E, ProjectReposi
 /** Starts a storage-backed Effect workflow without awaiting its result. */
 export function forkStorageEffect<A, E>(effect: Effect.Effect<A, E, ProjectRepository>): Fiber.Fiber<A, E> {
 	return storageRuntime.runFork(effect);
+}
+
+/**
+ * Starts a detached write that settlement observes even if it has not yet acquired the write gate.
+ */
+export function forkEditorWriteEffect<A, E>(effect: Effect.Effect<A, E, ProjectRepository>): Fiber.Fiber<A, E> {
+	const release = beginDetachedWrite();
+	return forkStorageEffect(effect.pipe(Effect.ensuring(Effect.sync(release))));
 }

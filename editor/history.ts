@@ -2,7 +2,13 @@ import type { Camera, Element, ElementNameGrid, StoredImageAsset } from "@maply/
 import { Effect, MutableRef, Semaphore } from "effect";
 import { get, readonly, writable } from "svelte/store";
 
-import { persistProjectEffect, runStorageEffect } from "./session/coordinator";
+import {
+	deleteImageAssetEffect,
+	forkEditorWriteEffect,
+	persistProjectEffect,
+	runStorageEffect,
+	withEditorWriteGate
+} from "./session/coordinator";
 import { settleEditorSaveEffect } from "./session/save";
 import { imageAssetState } from "./state/assets";
 import { projectState, setProjectState } from "./state/document";
@@ -157,6 +163,7 @@ export function createHistory(limit = defaultLimit) {
 	const canRedoStore = writable(false);
 	let previous = observeSnapshot();
 	let transaction: { token: HistoryTransaction; start: ObservedSnapshot } | null = null;
+	const deferredAssetDeletions = new Set<string>();
 	let suspended = 0;
 	let applying = false;
 	const generation = MutableRef.make(0);
@@ -187,24 +194,52 @@ export function createHistory(limit = defaultLimit) {
 		return token;
 	}
 
+	function scheduleAssetDeletion(assetId: string): void {
+		void forkEditorWriteEffect(
+			withEditorWriteGate(
+				Effect.match(deleteImageAssetEffect(assetId), {
+					onFailure: (error) => {
+						console.warn("Failed to delete image asset:", error.cause);
+					},
+					onSuccess: () => {}
+				})
+			)
+		);
+	}
+
+	function flushDeferredAssetDeletions(): void {
+		const referenced = new Set(
+			get(projectState).elements.flatMap((element) =>
+				element.type === "image" && element.assetId ? [element.assetId] : []
+			)
+		);
+		for (const assetId of deferredAssetDeletions) {
+			if (!referenced.has(assetId)) scheduleAssetDeletion(assetId);
+		}
+		deferredAssetDeletions.clear();
+	}
+
 	function commit(token: HistoryTransaction | null): void {
 		if (!transaction || transaction.token !== token) return;
 		const { start } = transaction;
 		transaction = null;
 		const current = observeSnapshot();
 		previous = current;
-		if (sameSnapshot(start, current)) return;
-		undoStack.push(cloneSnapshot(start));
-		if (undoStack.length > limit) undoStack.shift();
-		redoStack.length = 0;
-		MutableRef.update(revision, (value) => value + 1);
-		publish();
+		if (!sameSnapshot(start, current)) {
+			undoStack.push(cloneSnapshot(start));
+			if (undoStack.length > limit) undoStack.shift();
+			redoStack.length = 0;
+			MutableRef.update(revision, (value) => value + 1);
+			publish();
+		}
+		flushDeferredAssetDeletions();
 	}
 
 	function cancel(token: HistoryTransaction | null): void {
 		if (!transaction || transaction.token !== token) return;
 		const { start } = transaction;
 		transaction = null;
+		deferredAssetDeletions.clear();
 		applying = true;
 		try {
 			applySnapshot(cloneSnapshot(start));
@@ -321,8 +356,14 @@ export function createHistory(limit = defaultLimit) {
 			undoStack.length = 0;
 			redoStack.length = 0;
 			transaction = null;
+			deferredAssetDeletions.clear();
 			previous = observeSnapshot();
 			publish();
+		},
+		deferAssetDeletion(assetId: string): boolean {
+			if (!transaction) return false;
+			deferredAssetDeletions.add(assetId);
+			return true;
 		},
 		withoutRecordingEffect
 	};

@@ -1,12 +1,16 @@
 import { Effect } from "effect";
 import { get } from "svelte/store";
 
-import { deleteImageAssetEffect, forkStorageEffect, withEditorWriteGate } from "../session/coordinator";
+import { history } from "../history";
+import { deleteImageAssetEffect, forkEditorWriteEffect, withEditorWriteGate } from "../session/coordinator";
 import { imageAssetState } from "../state/assets";
 import { projectState, updateProjectState } from "../state/document";
 import { isEditorMutationBlocked } from "../state/editing";
 
-/** Removes elements and their now-unreferenced persisted image assets. */
+/** Removes elements and their now-unreferenced persisted image assets.
+ *
+ * Returns `false` only when a session operation blocked the mutation; `true` means the deletion was admitted.
+ */
 export function deleteElements(ids: string | readonly string[]): boolean {
 	if (isEditorMutationBlocked()) return false;
 	const idSet = new Set(typeof ids === "string" ? [ids] : ids);
@@ -47,10 +51,8 @@ export function deleteElements(ids: string | readonly string[]): boolean {
 			return next;
 		});
 
-		// `runFork` starts this effect immediately, so it queues on the shared write gate
-		// before a subsequently invoked undo can settle and replace its snapshot. That
-		// replacement recreates this asset when the deleted image is restored.
-		void forkStorageEffect(
+		if (history.deferAssetDeletion(assetId)) continue;
+		void forkEditorWriteEffect(
 			withEditorWriteGate(
 				Effect.match(deleteImageAssetEffect(assetId), {
 					onFailure: (error) => {
