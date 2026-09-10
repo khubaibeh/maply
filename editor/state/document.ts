@@ -2,6 +2,7 @@ import { createElementNameGrid } from "@maply/model";
 import type { Element } from "@maply/model/types";
 import { writable } from "svelte/store";
 
+import { recordChangePublication, recordDocumentRevision } from "../benchmark-counters";
 import { getElementBounds } from "../elements/geometry";
 import type { ProjectState } from "../types";
 import { isEditorMutationBlocked } from "./editing";
@@ -150,7 +151,9 @@ function applyProjectState(next: ProjectState, hint: MinimumCanvasSizeHint): boo
 		hint
 	);
 	currentProjectState = next;
+	recordDocumentRevision();
 	minimumCanvasSizeStore.set(toMinimumCanvasSize(currentMinimumCanvasSizeCache));
+	recordChangePublication();
 	projectStore.set(next);
 	return true;
 }

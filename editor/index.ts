@@ -2,6 +2,12 @@ import { getImageRenderRect, getPathRenderTransform } from "@maply/model";
 import type { Element } from "@maply/model/types";
 import { readonly } from "svelte/store";
 
+import {
+	applyBenchmarkFixture,
+	getBenchmarkCounters,
+	persistBenchmarkAssets,
+	resetBenchmarkCounters
+} from "./benchmark";
 import { centerCamera, pan, resetCamera, resetZoom, setCamera, zoomIn, zoomOut } from "./canvas/camera";
 import { setColor, setFrame, setPosition, setSize } from "./canvas/commands";
 import { setCanvasResizing, setSpacePressed, setTool } from "./canvas/tool";
@@ -70,6 +76,13 @@ export const Editor = {
 		fill: readonly(fillState),
 		tool: readonly(toolState),
 		imageAssets: readonly(imageAssetState)
+	},
+
+	benchmark: {
+		applyFixture: applyBenchmarkFixture,
+		getCounters: getBenchmarkCounters,
+		persistAssets: persistBenchmarkAssets,
+		resetCounters: resetBenchmarkCounters
 	},
 
 	limits: { zoom: zoomLimits },

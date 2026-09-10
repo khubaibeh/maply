@@ -2,6 +2,7 @@ import type { Camera, Element, ElementNameGrid, StoredImageAsset } from "@maply/
 import { Effect, MutableRef, Semaphore } from "effect";
 import { get, readonly, writable } from "svelte/store";
 
+import { recordHistoryRecord } from "./benchmark-counters";
 import {
 	deleteImageAssetEffect,
 	forkEditorWriteEffect,
@@ -180,6 +181,7 @@ export function createHistory(limit = defaultLimit) {
 		const current = observeSnapshot();
 		if (sameSnapshot(current, previous)) return;
 		undoStack.push(cloneSnapshot(previous));
+		recordHistoryRecord();
 		if (undoStack.length > limit) undoStack.shift();
 		redoStack.length = 0;
 		previous = current;
@@ -227,6 +229,7 @@ export function createHistory(limit = defaultLimit) {
 		previous = current;
 		if (!sameSnapshot(start, current)) {
 			undoStack.push(cloneSnapshot(start));
+			recordHistoryRecord();
 			if (undoStack.length > limit) undoStack.shift();
 			redoStack.length = 0;
 			MutableRef.update(revision, (value) => value + 1);

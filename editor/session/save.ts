@@ -3,6 +3,7 @@ import type { StoredEditorProject } from "@maply/storage/types";
 import { Effect, Fiber, MutableRef } from "effect";
 import { get } from "svelte/store";
 
+import { recordSaveRequest } from "../benchmark-counters";
 import { projectState } from "../state/document";
 import { canvasState } from "../state/workspace";
 import { forkStorageEffect, runStorageEffect, saveProjectEffect, settleEditorWrites } from "./coordinator";
@@ -56,6 +57,7 @@ const saveCurrentProjectEffect = Effect.fn("editor.session.saveCurrent")(functio
 
 /** Persists the current project through the coordinator, logging failures. */
 function saveCurrentProject(): Promise<void> {
+	recordSaveRequest();
 	return runStorageEffect(saveCurrentProjectEffect());
 }
 

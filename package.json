@@ -16,6 +16,7 @@
 		"test:io": "pnpm --filter @maply/io test",
 		"test:model": "pnpm --filter @maply/model test",
 		"test:storage": "pnpm --filter @maply/storage test",
+		"benchmark:fixtures": "vitest run --config benchmarks/vitest.config.ts",
 		"lint": "eslint --ignore-pattern \"src/lib/components/ui/**\" --fix .",
 		"fmt": "oxfmt && prettier --log-level warn --write ."
 	},

@@ -1,0 +1,90 @@
+{
+	"generatedAt": "2026-09-10T13:03:18.899Z",
+	"fixtures": [
+		{
+			"name": "1k-simple",
+			"seed": 439041101,
+			"elementCount": 1000,
+			"viewport": {
+				"width": 1200,
+				"height": 800
+			},
+			"zoom": 1,
+			"selectionCounts": {
+				"one": 1,
+				"hundred": 100,
+				"thousand": 1000,
+				"all": 1000
+			},
+			"fingerprint": "3e156d26"
+		},
+		{
+			"name": "10k-mixed",
+			"seed": 725372254,
+			"elementCount": 10000,
+			"viewport": {
+				"width": 1200,
+				"height": 800
+			},
+			"zoom": 1,
+			"selectionCounts": {
+				"one": 1,
+				"hundred": 100,
+				"thousand": 1000,
+				"all": 10000
+			},
+			"fingerprint": "fec02767"
+		},
+		{
+			"name": "50k-typical",
+			"seed": 1011703407,
+			"elementCount": 50000,
+			"viewport": {
+				"width": 1200,
+				"height": 800
+			},
+			"zoom": 1,
+			"selectionCounts": {
+				"one": 1,
+				"hundred": 100,
+				"thousand": 1000,
+				"all": 50000
+			},
+			"fingerprint": "7b8f4dee"
+		},
+		{
+			"name": "50k-all-visible",
+			"seed": 1298034544,
+			"elementCount": 50000,
+			"viewport": {
+				"width": 1200,
+				"height": 800
+			},
+			"zoom": 1,
+			"selectionCounts": {
+				"one": 1,
+				"hundred": 100,
+				"thousand": 1000,
+				"all": 50000
+			},
+			"fingerprint": "bb0cb771"
+		},
+		{
+			"name": "50k-selection",
+			"seed": 1584361601,
+			"elementCount": 50000,
+			"viewport": {
+				"width": 1200,
+				"height": 800
+			},
+			"zoom": 1,
+			"selectionCounts": {
+				"one": 1,
+				"hundred": 100,
+				"thousand": 1000,
+				"all": 50000
+			},
+			"fingerprint": "2c1c716e"
+		}
+	]
+}

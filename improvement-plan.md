@@ -1,6 +1,6 @@
 # 50k Elements Performance Improvement Plan
 
-Status: planned
+Status: in progress
 
 ## Goal
 
@@ -96,7 +96,7 @@ Do not begin a dependent chunk until the preceding exit criteria pass.
 
 | Chunk | Deliverable | Depends on | Status |
 | --- | --- | --- | --- |
-| 0 | Reproducible benchmark and profiling harness | None | Not started |
+| 0 | Reproducible benchmark and profiling harness | None | In progress |
 | 1 | Transient interaction state separated from document state | 0 | Not started |
 | 2 | Indexed document module and typed change sets | 1 | Not started |
 | 3 | Frame-coalesced commands and narrow UI projections | 2 | Not started |
