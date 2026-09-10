@@ -428,7 +428,7 @@ large traces into this document.
 | Chunk | Commit/PR | Before | After | Verification | Decision or notes |
 | --- | --- | --- | --- | --- | --- |
 | 0 | d3604a6 | — | `benchmark-results/fixtures.json` | `pnpm benchmark:fixtures`, `pnpm check`, `pnpm test` | Browser baseline capture is available at `/benchmark`; timing evidence still needs a documented browser run. |
-| 1 | pending | — | — | `pnpm check`, focused interaction tests, existing editor tests | Selection, hover, and crop now use an independent interaction revision and subscription path. |
+| 1 | 05cd914 | — | — | `pnpm check`, focused interaction tests, existing editor tests | Selection, hover, and crop now use an independent interaction revision and subscription path. |
 | 2 | — | — | — | Indexed module work started after Chunk 1 commit | In progress |
 | 3 | — | — | — | — | Not started |
 | 4 | — | — | — | — | Not started |

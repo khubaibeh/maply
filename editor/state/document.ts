@@ -6,6 +6,7 @@ import { recordChangePublication, recordDocumentRevision } from "../benchmark-co
 import { getElementBounds } from "../elements/geometry";
 import type { ProjectState } from "../types";
 import { isEditorMutationBlocked } from "./editing";
+import { createIndexedDocument } from "./indexed-document";
 
 const initialProjectState: ProjectState = {
 	id: "prod",
@@ -121,6 +122,7 @@ function trackDeletedElementsMinimumCanvasSize(
 const projectStore = writable<ProjectState>(initialProjectState);
 const minimumCanvasSizeStore = writable<MinimumCanvasSize>({ width: 1, height: 1 });
 const documentRevisionStore = writable(0);
+const indexedDocument = createIndexedDocument(initialProjectState.elements);
 
 let currentProjectState = initialProjectState;
 let currentMinimumCanvasSizeCache = measureMinimumCanvasSizeCache(initialProjectState.elements);
@@ -148,7 +150,9 @@ function applyProjectState(next: ProjectState, hint: MinimumCanvasSizeHint): boo
 		next,
 		hint
 	);
+	const elementsChanged = next.elements !== currentProjectState.elements;
 	currentProjectState = next;
+	if (elementsChanged) indexedDocument.replace(next.elements);
 	currentDocumentRevision += 1;
 	documentRevisionStore.set(currentDocumentRevision);
 	recordDocumentRevision();
@@ -161,6 +165,17 @@ function applyProjectState(next: ProjectState, hint: MinimumCanvasSizeHint): boo
 /** The editor's live project and selection state. */
 export const projectState = {
 	subscribe: projectStore.subscribe
+} as const;
+
+/** Read-only access to the editor-owned indexed document seam. */
+export const documentIndex = {
+	size: indexedDocument.size,
+	revision: indexedDocument.revision,
+	has: indexedDocument.has,
+	get: indexedDocument.get,
+	ordered: indexedDocument.ordered,
+	snapshot: indexedDocument.snapshot,
+	subscribe: indexedDocument.subscribe
 } as const;
 
 /** The document revision, independent from interaction revisions. */

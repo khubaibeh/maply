@@ -51,7 +51,13 @@ import { canReorderSelection, moveBackward, moveForward, moveToBack, moveToFront
 import { loadEditorSession } from "./session/load";
 import { flushEditorSave, queueEditorSave } from "./session/save";
 import { imageAssetState } from "./state/assets";
-import { documentRevisionState, fillState, minimumCanvasSizeState, projectState } from "./state/document";
+import {
+	documentIndex,
+	documentRevisionState,
+	fillState,
+	minimumCanvasSizeState,
+	projectState
+} from "./state/document";
 import { interactionRevisionState, interactionState } from "./state/interaction";
 import { toolState, canvasState, zoomLimits } from "./state/workspace";
 import type { SelectionOrder } from "./types";
@@ -81,6 +87,8 @@ export const Editor = {
 		tool: readonly(toolState),
 		imageAssets: readonly(imageAssetState)
 	},
+
+	document: documentIndex,
 
 	benchmark: {
 		applyFixture: applyBenchmarkFixture,
