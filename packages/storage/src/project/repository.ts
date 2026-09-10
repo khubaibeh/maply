@@ -110,7 +110,8 @@ function applyOrderChanges(order: readonly string[], change: PersistedDocumentCh
 	if (change.tag === "none") return [...order];
 	if (change.tag === "insert") return [...order.slice(0, change.index), ...change.ids, ...order.slice(change.index)];
 	if (change.tag === "insertMany") {
-		const next = order.filter((id) => !change.entries.some((entry) => entry.id === id));
+		const insertedIds = new Set(change.entries.map((entry) => entry.id));
+		const next = order.filter((id) => !insertedIds.has(id));
 		for (const entry of [...change.entries].sort((left, right) => left.index - right.index))
 			next.splice(entry.index, 0, entry.id);
 		return next;

@@ -41,6 +41,17 @@ function image(id: string, assetId: string | null): ImageElement {
 }
 
 describe("indexed document", () => {
+	it("does not publish unchanged updates", () => {
+		const document = createIndexedDocument([rect("a")]);
+		const changes: string[] = [];
+		document.subscribe((change) => changes.push(change.tag));
+
+		expect(document.update("a", (element) => ({ ...element }))).toBeNull();
+		expect(document.updateMany(["a"], (element) => ({ ...element }))).toBeNull();
+		expect(document.revision()).toBe(0);
+		expect(changes).toEqual([]);
+	});
+
 	it("keeps ID lookup separate from ordered layer iteration", () => {
 		const document = createIndexedDocument([rect("a"), rect("b"), rect("c")]);
 		const copy = document.get("b");

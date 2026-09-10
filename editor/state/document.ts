@@ -252,8 +252,11 @@ function projectElementsForDocumentChange(change: DocumentChangeSet): Element[] 
 	}
 
 	if (change.tag === "add" && change.order.tag === "insertMany") {
+		const addedById = new Map(
+			change.changes.flatMap((entry) => (entry.after ? [[entry.id, entry.after] as const] : []))
+		);
 		for (const entry of [...change.order.entries].sort((left, right) => left.index - right.index)) {
-			const element = change.changes.find((candidate) => candidate.id === entry.id)?.after;
+			const element = addedById.get(entry.id);
 			if (element) elements.splice(entry.index, 0, element);
 		}
 		projectionIndexes.clear();
@@ -274,8 +277,9 @@ function projectElementsForDocumentChange(change: DocumentChangeSet): Element[] 
 
 	if (change.tag === "update") {
 		if (elements.length <= IMMUTABLE_PROJECTION_LIMIT) {
+			const changesById = new Map(change.changes.map((entry) => [entry.id, entry]));
 			const updated = elements.map((element) => {
-				const changeForElement = change.changes.find((entry) => entry.id === element.id);
+				const changeForElement = changesById.get(element.id);
 				return changeForElement?.after ?? element;
 			});
 			projectionIndexes.clear();

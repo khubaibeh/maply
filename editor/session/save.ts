@@ -53,7 +53,8 @@ documentIndex.subscribe((change) => {
 	if (get(projectState).initialized && change.persist !== false) pendingDocumentChanges.push(change);
 });
 
-const saveCurrentProjectEffect = Effect.fn("editor.session.saveCurrent")(function* () {
+/** Persists the currently queued document changes and preserves failures for coordinating workflows. */
+export const persistPendingEditorChangesEffect = Effect.fn("editor.session.persistPendingChanges")(function* () {
 	const batch = pendingDocumentChanges.splice(0);
 	const metadata = currentMetadata();
 	if (batch.length > 0)
@@ -61,27 +62,28 @@ const saveCurrentProjectEffect = Effect.fn("editor.session.saveCurrent")(functio
 			batch.length,
 			batch.reduce((total, change) => total + change.changes.length, 0)
 		);
-	yield* Effect.suspend(() =>
-		Effect.match(
-			saveIncrementalProjectEffect(
-				metadata,
-				batch.map(({ changes, order }) => ({ changes, order }))
-			),
-			{
-				onFailure: (error) => {
+	return yield* Effect.suspend(() =>
+		saveIncrementalProjectEffect(
+			metadata,
+			batch.map(({ changes, order }) => ({ changes, order }))
+		).pipe(
+			Effect.tapError((error) =>
+				Effect.sync(() => {
 					pendingDocumentChanges.unshift(...batch);
 					recordEditorFailure("save", error._tag);
-					console.warn("Failed to save project:", error.cause);
-				},
-				onSuccess: () => {}
-			}
+				})
+			)
 		)
 	);
 });
 
-/** Persists the currently queued document changes without materializing the full project. */
-export const persistPendingEditorChangesEffect = Effect.fn("editor.session.persistPendingChanges")(function* () {
-	return yield* saveCurrentProjectEffect();
+const saveCurrentProjectEffect = Effect.fn("editor.session.saveCurrent")(function* () {
+	return yield* Effect.match(persistPendingEditorChangesEffect(), {
+		onFailure: (error) => {
+			console.warn("Failed to save project:", error.cause);
+		},
+		onSuccess: () => {}
+	});
 });
 
 /** Drops queued document changes after a deliberately non-persistent state restoration. */

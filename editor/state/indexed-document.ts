@@ -226,6 +226,7 @@ export function createIndexedDocument(elements: readonly Element[] = []): Indexe
 			if (!current) return null;
 			const next = updater(copyElement(current));
 			if (next.id !== id) throw new Error(`Element update changed ID: ${id}`);
+			if (sameElement(current, next)) return null;
 			setElement(next);
 			return publish({
 				tag: "update",
@@ -241,6 +242,7 @@ export function createIndexedDocument(elements: readonly Element[] = []): Indexe
 				if (!current) continue;
 				const next = updater(copyElement(current));
 				if (next.id !== id) throw new Error(`Element update changed ID: ${id}`);
+				if (sameElement(current, next)) continue;
 				changes.push({ id, before: copyElement(current), after: copyElement(next) });
 			}
 			if (changes.length === 0) return null;
@@ -252,9 +254,10 @@ export function createIndexedDocument(elements: readonly Element[] = []): Indexe
 		},
 		delete: (ids) => {
 			const requested = new Set(uniqueIds(ids));
-			const removedIds = order.filter((id) => requested.has(id));
+			const removedEntries = order.flatMap((id, index) => (requested.has(id) ? [{ id, index }] : []));
+			const removedIds = removedEntries.map((entry) => entry.id);
 			if (removedIds.length === 0) return null;
-			const indexes = removedIds.map((id) => order.indexOf(id));
+			const indexes = removedEntries.map((entry) => entry.index);
 			const changes = removedIds.flatMap((id) => {
 				const element = byId.get(id);
 				return element ? [{ id, before: copyElement(element), after: null }] : [];
@@ -273,9 +276,10 @@ export function createIndexedDocument(elements: readonly Element[] = []): Indexe
 		},
 		reorder: (ids, toIndex) => {
 			const requested = new Set(uniqueIds(ids));
-			const movingIds = order.filter((id) => requested.has(id));
+			const movingEntries = order.flatMap((id, index) => (requested.has(id) ? [{ id, index }] : []));
+			const movingIds = movingEntries.map((entry) => entry.id);
 			if (movingIds.length === 0) return null;
-			const fromIndexes = movingIds.map((id) => order.indexOf(id));
+			const fromIndexes = movingEntries.map((entry) => entry.index);
 			const remaining = order.filter((id) => !requested.has(id));
 			const insertionIndex = clampIndex(toIndex, remaining.length);
 			const nextOrder = [...remaining.slice(0, insertionIndex), ...movingIds, ...remaining.slice(insertionIndex)];
