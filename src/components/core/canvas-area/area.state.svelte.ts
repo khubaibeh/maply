@@ -1,3 +1,4 @@
+import { canSelectOnCanvas } from "@components/canvas/interaction/element-selection";
 import { clientToSvgPoint } from "@components/canvas/interaction/svg";
 import { canvasCursor } from "@components/core/cursors";
 import { importNamesOverlayOpen } from "@components/elements-panel/import-names-overlay";
@@ -16,6 +17,7 @@ import { createPathSession } from "./path-session.svelte";
 
 const VERTEX_DOT_SCREEN_PX = 3;
 const CLOSE_HANDLE_SCREEN_PX = 6;
+const VIEWPORT_OVERSCAN_SCREEN_PX = 160;
 
 /** Composes canvas interaction modules and owns viewport browser-resource lifetimes. */
 export function createCanvasAreaState() {
@@ -276,6 +278,21 @@ export function createCanvasAreaState() {
 		return state.svgRef ? clientToSvgPoint(state.svgRef, clientX, clientY) : null;
 	}
 
+	function topmostElementAt(point: Point) {
+		for (const id of Editor.document.queryPoint(point).reverse()) {
+			const element = Editor.document.get(id);
+			if (element && element.visible !== false) return element;
+		}
+		return null;
+	}
+
+	function handleSvgPointerMove(event: PointerEvent) {
+		if (tool.current.activeTool !== "select" || tool.current.isCanvasResizing) return;
+		const point = projectPoint(event.clientX, event.clientY);
+		const element = point ? topmostElementAt(point) : null;
+		Editor.selection.setHover(element && canSelectOnCanvas(element) ? element.id : null);
+	}
+
 	function handleSvgPointerDown(event: PointerEvent) {
 		if (get(importNamesOverlayOpen)) return;
 		if (event.button !== 0) return;
@@ -294,6 +311,17 @@ export function createCanvasAreaState() {
 				})
 			) {
 				Editor.selection.select(null);
+				return;
+			}
+			const hit = topmostElementAt(point);
+			if (hit) {
+				if (canSelectOnCanvas(hit)) {
+					Editor.selection.select(hit.id, event.ctrlKey || event.metaKey);
+				} else {
+					Editor.selection.select(null);
+				}
+				event.preventDefault();
+				event.stopPropagation();
 				return;
 			}
 			if (!marquee.start(event, state.svgRef)) {
@@ -350,6 +378,15 @@ export function createCanvasAreaState() {
 		selectedImage: () => selectedImage,
 		cropEditing: () => cropEditing,
 		camera: () => canvas.current.camera,
+		viewportBounds: () => {
+			const overscan = VIEWPORT_OVERSCAN_SCREEN_PX / canvas.current.camera.zoom;
+			return {
+				x: canvas.current.camera.x - overscan,
+				y: canvas.current.camera.y - overscan,
+				width: state.containerWidth / canvas.current.camera.zoom + overscan * 2,
+				height: state.containerHeight / canvas.current.camera.zoom + overscan * 2
+			};
+		},
 		cursorClass: () => cursorClass,
 		toolCursor: () => toolCursor,
 		shapePreview: drawing.preview,
@@ -358,6 +395,7 @@ export function createCanvasAreaState() {
 		viewBox: () => viewBox,
 		closePath: path.close,
 		handleSvgPointerDown,
+		handleSvgPointerMove,
 		handleContextMenu
 	};
 }

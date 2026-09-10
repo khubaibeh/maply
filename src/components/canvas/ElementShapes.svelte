@@ -1,29 +1,23 @@
 <script lang="ts">
-	import { canSelectOnCanvas } from "@components/canvas/interaction/element-selection";
 	import { clientToSvgPoint, getSvgRoot } from "@components/canvas/interaction/svg";
 	import CircleShape from "@components/canvas/shapes/CircleShape.svelte";
 	import ImageShape from "@components/canvas/shapes/ImageShape.svelte";
 	import PathShape from "@components/canvas/shapes/PathShape.svelte";
 	import RectShape from "@components/canvas/shapes/RectShape.svelte";
 	import TextShape from "@components/canvas/shapes/TextShape.svelte";
-	import type { PathElement } from "@maply/model/types";
+	import type { Element, PathElement } from "@maply/model/types";
 	import { Editor } from "editor";
 
-	let { onElementPointerDown }: { onElementPointerDown: (event: PointerEvent, id: string) => void } = $props();
+	let {
+		elements,
+		onElementPointerDown
+	}: {
+		elements: readonly Element[];
+		onElementPointerDown: (event: PointerEvent, id: string) => void;
+	} = $props();
 
 	const imageAssets = Editor.state.imageAssets;
-	const elements = Editor.state.elements;
-	const interaction = Editor.state.interaction;
 	const tool = Editor.state.tool;
-
-	function hover(id: string, locked: boolean) {
-		if (!canSelectOnCanvas({ locked })) return;
-		if ($tool.activeTool === "select" && !$tool.isCanvasResizing) Editor.selection.setHover(id);
-	}
-
-	function clearHover(id: string) {
-		if ($interaction.hoveredElementId === id) Editor.selection.setHover(null);
-	}
 
 	function insertPathVertex(event: MouseEvent, element: PathElement) {
 		if ($tool.activeTool !== "select" || element.locked) return;
@@ -42,7 +36,7 @@
 </script>
 
 <g class="canvas-elements">
-	{#each $elements as element (element.id)}
+	{#each elements as element (element.id)}
 		{#if element.visible !== false}
 			<g
 				id="element-{element.id}"
@@ -53,8 +47,6 @@
 				class="canvas-element outline-none"
 				onpointerdown={(event) => onElementPointerDown(event, element.id)}
 				ondblclick={element.type === "path" ? (event) => insertPathVertex(event, element) : undefined}
-				onpointerenter={() => hover(element.id, element.locked ?? false)}
-				onpointerleave={() => clearHover(element.id)}
 			>
 				{#if element.type === "rect"}
 					<RectShape {element} />

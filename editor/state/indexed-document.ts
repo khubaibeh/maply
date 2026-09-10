@@ -1,4 +1,9 @@
-import type { Element } from "@maply/model/types";
+import type { Element, Point } from "@maply/model/types";
+
+import { getElementBounds } from "../elements/geometry";
+import { createSpatialIndex, type SpatialBounds } from "./spatial-index";
+
+export type { SpatialBounds } from "./spatial-index";
 
 /** Tags emitted by one atomic indexed-document mutation. */
 export type DocumentChangeTag = "add" | "delete" | "update" | "reorder" | "replace";
@@ -37,6 +42,8 @@ export type IndexedDocument = {
 	readonly get: (id: string) => Element | undefined;
 	readonly ordered: () => Iterable<Element>;
 	readonly snapshot: () => Element[];
+	readonly query: (bounds: SpatialBounds, includeIds?: readonly string[]) => string[];
+	readonly queryPoint: (point: Point) => string[];
 	readonly add: (elements: readonly Element[], index?: number) => DocumentChangeSet | null;
 	readonly update: (id: string, updater: (element: Element) => Element) => DocumentChangeSet | null;
 	readonly updateMany: (ids: readonly string[], updater: (element: Element) => Element) => DocumentChangeSet | null;
@@ -62,13 +69,22 @@ function clampIndex(index: number, length: number): number {
 export function createIndexedDocument(elements: readonly Element[] = []): IndexedDocument {
 	const byId = new Map<string, Element>();
 	const order: string[] = [];
+	const orderIndexes = new Map<string, number>();
 	const listeners = new Set<DocumentChangeListener>();
+	const spatial = createSpatialIndex();
 	let currentRevision = 0;
+
+	function refreshOrderIndexes() {
+		order.forEach((id, index) => orderIndexes.set(id, index));
+	}
 
 	function insertElement(element: Element, index: number): void {
 		if (byId.has(element.id)) throw new Error(`Duplicate element ID: ${element.id}`);
-		byId.set(element.id, copyElement(element));
+		const copy = copyElement(element);
+		byId.set(element.id, copy);
+		spatial.set(element.id, getElementBounds(copy));
 		order.splice(index, 0, element.id);
+		refreshOrderIndexes();
 	}
 
 	function publish(change: DocumentChangeSet): DocumentChangeSet {
@@ -88,6 +104,15 @@ export function createIndexedDocument(elements: readonly Element[] = []): Indexe
 			const element = byId.get(id);
 			return element ? copyElement(element) : undefined;
 		},
+		query: (bounds, includeIds = []) => {
+			const ids = new Set([...spatial.query(bounds), ...includeIds.filter((id) => byId.has(id))]);
+			return [...ids].sort((left, right) => (orderIndexes.get(left) ?? 0) - (orderIndexes.get(right) ?? 0));
+		},
+		queryPoint: (point) =>
+			spatial
+				.queryPoint(point)
+				.filter((id) => byId.has(id))
+				.sort((left, right) => (orderIndexes.get(left) ?? 0) - (orderIndexes.get(right) ?? 0)),
 		ordered: () =>
 			(function* orderedElements() {
 				for (const id of order) {
@@ -125,7 +150,9 @@ export function createIndexedDocument(elements: readonly Element[] = []): Indexe
 			if (!current) return null;
 			const next = updater(copyElement(current));
 			if (next.id !== id) throw new Error(`Element update changed ID: ${id}`);
-			byId.set(id, copyElement(next));
+			const copy = copyElement(next);
+			byId.set(id, copy);
+			spatial.set(id, getElementBounds(copy));
 			return publish({
 				tag: "update",
 				revision: currentRevision,
@@ -144,7 +171,10 @@ export function createIndexedDocument(elements: readonly Element[] = []): Indexe
 			}
 			if (changes.length === 0) return null;
 			for (const change of changes) {
-				if (change.after) byId.set(change.id, copyElement(change.after));
+				if (!change.after) continue;
+				const copy = copyElement(change.after);
+				byId.set(change.id, copy);
+				spatial.set(change.id, getElementBounds(copy));
 			}
 			return publish({ tag: "update", revision: currentRevision, changes, order: { tag: "none" } });
 		},
@@ -157,10 +187,15 @@ export function createIndexedDocument(elements: readonly Element[] = []): Indexe
 				const element = byId.get(id);
 				return element ? [{ id, before: copyElement(element), after: null }] : [];
 			});
-			for (const id of removedIds) byId.delete(id);
+			for (const id of removedIds) {
+				byId.delete(id);
+				spatial.delete(id);
+				orderIndexes.delete(id);
+			}
 			for (let index = order.length - 1; index >= 0; index -= 1) {
 				if (requested.has(order[index] ?? "")) order.splice(index, 1);
 			}
+			refreshOrderIndexes();
 			return publish({
 				tag: "delete",
 				revision: currentRevision,
@@ -178,6 +213,7 @@ export function createIndexedDocument(elements: readonly Element[] = []): Indexe
 			const nextOrder = [...remaining.slice(0, insertionIndex), ...movingIds, ...remaining.slice(insertionIndex)];
 			if (nextOrder.every((id, index) => id === order[index])) return null;
 			order.splice(0, order.length, ...nextOrder);
+			refreshOrderIndexes();
 			return publish({
 				tag: "reorder",
 				revision: currentRevision,
@@ -190,6 +226,8 @@ export function createIndexedDocument(elements: readonly Element[] = []): Indexe
 			const before = [...order];
 			byId.clear();
 			order.splice(0, order.length);
+			orderIndexes.clear();
+			spatial.clear();
 			for (const element of nextElements) insertElement(element, order.length);
 			const previousById = new Map(previousElements.map((element) => [element.id, element]));
 			const nextById = new Map(document.snapshot().map((element) => [element.id, element]));

@@ -183,6 +183,8 @@ export const documentIndex = {
 	get: indexedDocument.get,
 	ordered: indexedDocument.ordered,
 	snapshot: indexedDocument.snapshot,
+	query: indexedDocument.query,
+	queryPoint: indexedDocument.queryPoint,
 	subscribe: indexedDocument.subscribe
 } as const;
 

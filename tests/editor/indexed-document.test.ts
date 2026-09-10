@@ -2,7 +2,7 @@ import type { RectElement } from "@maply/model/types";
 import { createIndexedDocument } from "editor/state/indexed-document";
 import { describe, expect, it } from "vitest";
 
-function rect(id: string): RectElement {
+function rect(id: string, x = 0, y = 0, width = 10, height = 10): RectElement {
 	return {
 		id,
 		name: id,
@@ -10,10 +10,10 @@ function rect(id: string): RectElement {
 		locked: false,
 		visible: true,
 		bindable: true,
-		x: 0,
-		y: 0,
-		width: 10,
-		height: 10,
+		x,
+		y,
+		width,
+		height,
 		fill: "#000",
 		stroke: "#000",
 		strokeWidth: 1
@@ -111,5 +111,21 @@ describe("indexed document", () => {
 			expect.objectContaining({ id: "c", before: null, after: expect.objectContaining({ id: "c" }) })
 		]);
 		expect(change.order).toEqual({ tag: "replace", before: ["a", "b"], after: ["b", "c"] });
+	});
+
+	it("keeps spatial candidates current and returns them in layer order", () => {
+		const document = createIndexedDocument([rect("back", 0, 0), rect("front", 5, 5), rect("outside", 100, 100)]);
+
+		expect(document.query({ x: 4, y: 4, width: 2, height: 2 })).toEqual(["back", "front"]);
+		expect(document.queryPoint({ x: 6, y: 6 })).toEqual(["back", "front"]);
+		expect(document.query({ x: 100, y: 100, width: 0, height: 0 }, ["front"])).toEqual(["front", "outside"]);
+
+		document.update("front", (element) => ({ ...element, x: 200, y: 200 }));
+		expect(document.queryPoint({ x: 6, y: 6 })).toEqual(["back"]);
+
+		document.reorder(["outside"], 0);
+		expect(document.query({ x: 95, y: 95, width: 20, height: 20 })).toEqual(["outside"]);
+		document.delete(["outside"]);
+		expect(document.query({ x: 95, y: 95, width: 20, height: 20 })).toEqual([]);
 	});
 });

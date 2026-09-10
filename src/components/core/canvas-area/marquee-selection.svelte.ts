@@ -17,7 +17,6 @@ const MIN_MARQUEE_SCREEN_PX = 3;
 /** Owns temporary marquee state and commits enclosed element selection when its drag ends. */
 export function createMarqueeSelection() {
 	const canvas = fromStore(Editor.state.canvas);
-	const project = fromStore(Editor.state.project);
 	const interaction = fromStore(Editor.state.interaction);
 	const drag = createPointerDrag();
 	const state = $state({
@@ -40,10 +39,15 @@ export function createMarqueeSelection() {
 				if (!exceedsMarqueeThreshold(totalDelta, canvas.current.camera.zoom, MIN_MARQUEE_SCREEN_PX)) return;
 				const box = getMarqueeBounds(startPoint, current);
 				state.box = box;
-				state.candidates = project.current.elements.filter(
-					(element) =>
-						canSelectOnCanvas(element) && intersectsBounds(box, Editor.geometry.elementBounds(element))
-				);
+				state.candidates = Editor.document.query(box).flatMap((id) => {
+					const element = Editor.document.get(id);
+					return element &&
+						element.visible !== false &&
+						canSelectOnCanvas(element) &&
+						intersectsBounds(box, Editor.geometry.elementBounds(element))
+						? [element]
+						: [];
+				});
 			},
 			onEnd: ({ cancelled }) => {
 				const box = state.box;

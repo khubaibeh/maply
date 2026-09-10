@@ -37,13 +37,14 @@
 					role="img"
 					aria-label="Canvas workspace"
 					onpointerdown={canvasArea.handleSvgPointerDown}
+					onpointermove={canvasArea.handleSvgPointerMove}
 				>
 					<Background
 						containerWidth={canvasArea.state.containerWidth}
 						containerHeight={canvasArea.state.containerHeight}
 						camera={canvasArea.camera()}
 					/>
-					<Artboard />
+					<Artboard viewport={canvasArea.viewportBounds()} />
 					<MarqueeSelectionPreview elements={canvasArea.marquee.state.candidates} />
 					<MarqueeSelectionOverlay box={canvasArea.marquee.state.box} />
 					<DraftOverlay

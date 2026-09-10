@@ -13,27 +13,43 @@
 	import PathElementOutline from "./PathElementOutline.svelte";
 
 	const canvas = Editor.state.canvas;
-	const elements = Editor.state.elements;
 	const interaction = Editor.state.interaction;
+	const documentRevision = Editor.state.documentRevision;
 	const tool = Editor.state.tool;
 	const elementMove = createElementMove();
+	let { viewport }: { viewport: { x: number; y: number; width: number; height: number } } = $props();
 
-	const selectedElements = $derived(
-		$elements.filter((element) => element.visible !== false && $interaction.selectedElementIds.includes(element.id))
-	);
+	const elements = $derived.by(() => {
+		const revision = $documentRevision;
+		if (revision < 0) return [];
+		const ids = Editor.document.query(viewport, $interaction.selectedElementIds);
+		return ids.flatMap((id) => {
+			const element = Editor.document.get(id);
+			return element && element.visible !== false ? [element] : [];
+		});
+	});
+
+	const selectedElements = $derived.by(() => {
+		const revision = $documentRevision;
+		if (revision < 0) return [];
+		return $interaction.selectedElementIds.flatMap((id) => {
+			const element = Editor.document.get(id);
+			return element && element.visible !== false ? [element] : [];
+		});
+	});
 	const selectedElement = $derived(selectedElements.length === 1 ? (selectedElements[0] ?? null) : null);
-	const hoveredElement = $derived(
-		$tool.activeTool === "select" &&
-			$interaction.hoveredElementId &&
-			!$interaction.selectedElementIds.includes($interaction.hoveredElementId)
-			? ($elements.find(
-					(element) =>
-						element.id === $interaction.hoveredElementId &&
-						element.visible !== false &&
-						canSelectOnCanvas(element)
-				) ?? null)
-			: null
-	);
+	const hoveredElement = $derived.by(() => {
+		const revision = $documentRevision;
+		if (revision < 0) return null;
+		if (
+			$tool.activeTool !== "select" ||
+			!$interaction.hoveredElementId ||
+			$interaction.selectedElementIds.includes($interaction.hoveredElementId)
+		)
+			return null;
+		const element = Editor.document.get($interaction.hoveredElementId);
+		return element && element.visible !== false && canSelectOnCanvas(element) ? element : null;
+	});
 </script>
 
 <defs>
@@ -55,7 +71,7 @@
 <CanvasResizeHandles />
 
 <g style:cursor={elementMove.state.isDragging ? canvasCursor.allScroll : undefined}>
-	<ElementShapes onElementPointerDown={elementMove.start} />
+	<ElementShapes {elements} onElementPointerDown={elementMove.start} />
 
 	{#if selectedElements.length > 1}
 		<MultiSelectionOutline elements={selectedElements} />
