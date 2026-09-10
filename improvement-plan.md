@@ -101,7 +101,7 @@ Do not begin a dependent chunk until the preceding exit criteria pass.
 | 2 | Indexed document module and typed change sets | 1 | In progress |
 | 3 | Frame-coalesced commands and narrow UI projections | 2 | Complete |
 | 4 | Virtualized elements sidebar | 2 | Complete |
-| 5 | Spatial index, hit testing, and viewport-culled SVG | 2, 3 | Not started |
+| 5 | Spatial index, hit testing, and viewport-culled SVG | 2, 3 | Complete |
 | 6 | Incremental derived indexes and layout caches | 2, 5 | Not started |
 | 7 | Change-based history | 2, 3 | Not started |
 | 8 | Incremental Effect-based persistence | 2, 7 | Not started |
@@ -432,7 +432,7 @@ large traces into this document.
 | 2 | af9c1ce, dc8fd1a, e484ee7, 833767e | — | — | `pnpm check`, `pnpm test:editor`, indexed-document contract and replay tests | Indexed seam now covers ordinary, path, image-crop, asset-replacement, and ordering mutations; the 50k browser timing gate remains to be measured before marking the chunk complete. |
 | 3 | 5c97861, edeabbc, 3975c9d, a211a41 | — | — | `pnpm check`, `pnpm test`, pointer-drag coalescing, mutation-counter, cancellation, and projection tests | Pointer drags now publish one mutation per animation frame, flush pointer-up synchronously, restore canceled transactions, and drive canvas consumers through a metadata-free elements projection. |
 | 4 | 02aab02 | — | — | `pnpm check`, `pnpm test:editor`, virtual-window and elements-panel tests | Sidebar mounts a fixed overscanned window, pins active rows, preserves logical indexes for reorder, and exposes virtual list semantics and keyboard navigation. Browser timing evidence remains to be captured in the benchmark lab. |
-| 5 | — | — | — | — | Not started |
+| 5 | 118a9d9 | — | — | `pnpm check`, `pnpm test`, spatial query and mutation tests | A uniform grid with 512-unit cells now drives ordered viewport, point-picking, and marquee candidates; SVG keeps selected elements mounted and hover no longer depends on per-element enter/leave handlers. Browser timing evidence remains to be captured in the benchmark lab. |
 | 6 | — | — | — | — | Not started |
 | 7 | — | — | — | — | Not started |
 | 8 | — | — | — | — | Not started |
