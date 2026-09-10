@@ -6,6 +6,7 @@ const textFontFamily = '"Inter Variable", sans-serif';
 const textWrapSafetyMargin = 2;
 
 let textMeasureContext: CanvasRenderingContext2D | null | undefined;
+const textLayoutCache = new Map<string, { key: string; layout: TextLayout }>();
 
 type TextLayout = {
 	lines: string[];
@@ -42,6 +43,16 @@ export function getTextLayoutMetrics(
 	return { left, ascent };
 }
 
+/** Removes the cached layout for one element after text-layout inputs change. */
+export function invalidateTextLayout(id: string): void {
+	textLayoutCache.delete(id);
+}
+
+/** Clears all element text layouts when a project is replaced. */
+export function clearTextLayoutCache(): void {
+	textLayoutCache.clear();
+}
+
 /** Returns browser-aligned bounds for rendered text. */
 export function getTextBounds(element: TextElement) {
 	if (element.fontSize <= 0) {
@@ -64,7 +75,13 @@ export function getTextBounds(element: TextElement) {
 }
 
 function getWrappedTextLayout(element: TextElement): TextLayout {
-	return getWrappedTextLayoutForContent(element.text, element.fontSize, element.width);
+	const key = `${element.text}\u0000${element.fontSize}\u0000${element.width}`;
+	const cached = textLayoutCache.get(element.id);
+	if (cached?.key === key) return cached.layout;
+
+	const layout = getWrappedTextLayoutForContent(element.text, element.fontSize, element.width);
+	textLayoutCache.set(element.id, { key, layout });
+	return layout;
 }
 
 function getWrappedTextLayoutForContent(text: string, fontSize: number, width: number): TextLayout {

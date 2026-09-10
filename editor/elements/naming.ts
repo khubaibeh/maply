@@ -19,6 +19,27 @@ export type ElementNameValidation = {
 	suggestion: string | null;
 };
 
+/** Builds one name validation result from maintained name counts and names. */
+export function createElementNameValidation(
+	element: Pick<Element, "id" | "name">,
+	counts: ReadonlyMap<string, number>,
+	usedNames: ReadonlySet<string>
+): ElementNameValidation {
+	const issues = nameIssues(element.name, counts);
+	const currentName = element.name.trim();
+	const names = new Set(usedNames);
+	if ((counts.get(currentName) ?? 0) === 1) names.delete(currentName);
+
+	return {
+		id: element.id,
+		name: element.name,
+		valid: issues.length === 0,
+		issues,
+		messages: issues.map((issue) => messages[issue]),
+		suggestion: issues.length === 0 ? null : autofixElementNameFromNames(element.name, names)
+	};
+}
+
 const messages: Record<ElementNameIssue, string> = {
 	empty: "empty name",
 	spaces: "spaces",
@@ -63,26 +84,16 @@ export function validateElementNames(elements: readonly Element[]): Map<string, 
 		counts.set(name, (counts.get(name) ?? 0) + 1);
 	}
 
-	return new Map(
-		elements.map((element) => {
-			const issues = nameIssues(element.name, counts);
-
-			return [
-				element.id,
-				{
-					id: element.id,
-					name: element.name,
-					valid: issues.length === 0,
-					issues,
-					messages: issues.map((issue) => messages[issue]),
-					suggestion: issues.length === 0 ? null : autofixElementName(element.name, elements, element.id)
-				}
-			];
-		})
-	);
+	const usedNames = new Set(counts.keys());
+	return new Map(elements.map((element) => [element.id, createElementNameValidation(element, counts, usedNames)]));
 }
 
 export function autofixElementName(name: string, elements: readonly Element[], currentId?: string): string {
+	const used = new Set(elements.filter((element) => element.id !== currentId).map((element) => element.name.trim()));
+	return autofixElementNameFromNames(name, used);
+}
+
+function autofixElementNameFromNames(name: string, used: ReadonlySet<string>): string {
 	let base = name
 		.trim()
 		.replace(/[^A-Za-z0-9_-]+/g, "-")
@@ -91,8 +102,6 @@ export function autofixElementName(name: string, elements: readonly Element[], c
 
 	if (!base) base = "element";
 	if (!/^[A-Za-z_]/.test(base)) base = `element-${base}`;
-
-	const used = new Set(elements.filter((element) => element.id !== currentId).map((element) => element.name.trim()));
 
 	if (!used.has(base)) return base;
 

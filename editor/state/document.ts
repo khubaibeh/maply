@@ -185,6 +185,10 @@ export const documentIndex = {
 	snapshot: indexedDocument.snapshot,
 	query: indexedDocument.query,
 	queryPoint: indexedDocument.queryPoint,
+	bounds: indexedDocument.bounds,
+	nameCounts: indexedDocument.nameCounts,
+	validations: indexedDocument.validations,
+	referencedAssetIds: indexedDocument.referencedAssetIds,
 	subscribe: indexedDocument.subscribe
 } as const;
 

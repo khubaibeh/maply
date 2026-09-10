@@ -7,10 +7,14 @@
 	const canvas = Editor.state.canvas;
 	const strokeWidth = $derived(1.5 / $canvas.camera.zoom);
 	const dash = $derived(`${3 / $canvas.camera.zoom} ${2 / $canvas.camera.zoom}`);
+
+	function elementBounds(element: Element) {
+		return Editor.document.bounds(element.id) ?? Editor.geometry.elementBounds(element);
+	}
 </script>
 
 {#each elements as element (element.id)}
-	{@const bounds = Editor.geometry.elementBounds(element)}
+	{@const bounds = elementBounds(element)}
 	<rect
 		x={bounds.x}
 		y={bounds.y}

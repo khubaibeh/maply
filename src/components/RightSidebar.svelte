@@ -14,7 +14,7 @@
 	let { width = 288 }: { width?: number } = $props();
 	const canvas = Editor.state.canvas;
 	const minCanvasSize = Editor.state.minimumCanvasSize;
-	const project = Editor.state.project;
+	const documentRevision = Editor.state.documentRevision;
 	const interaction = Editor.state.interaction;
 
 	function updateWidth(event: Event) {
@@ -37,7 +37,7 @@
 		const input = event.target as HTMLInputElement;
 		const value = input.value.trim();
 		if (!value) {
-			input.value = $project.elements.find((element) => element.id === id)?.name ?? "";
+			input.value = Editor.document.get(id)?.name ?? "";
 			return;
 		}
 		Editor.element.rename(id, value);
@@ -47,16 +47,25 @@
 		Editor.element.rename(id, suggestion);
 	}
 
-	const selectedElement = $derived(
-		$interaction.selectedElementIds.length === 1
-			? ($project.elements.find((element) => element.id === $interaction.selectedElementId) ?? null)
-			: null
-	);
+	const selectedElement = $derived.by(() => {
+		const revision = $documentRevision;
+		if (revision < 0 || $interaction.selectedElementIds.length !== 1) return null;
+		const id = $interaction.selectedElementId;
+		return id ? (Editor.document.get(id) ?? null) : null;
+	});
 	const selectedElementCount = $derived($interaction.selectedElementIds.length);
-	const selectedElements = $derived(
-		$project.elements.filter((element) => $interaction.selectedElementIds.includes(element.id))
-	);
-	const elementNameValidations = $derived(Editor.naming.validate($project.elements));
+	const selectedElements = $derived.by(() => {
+		const revision = $documentRevision;
+		if (revision < 0) return [];
+		return $interaction.selectedElementIds.flatMap((id) => {
+			const element = Editor.document.get(id);
+			return element ? [element] : [];
+		});
+	});
+	const elementNameValidations = $derived.by(() => {
+		const revision = $documentRevision;
+		return revision >= 0 ? Editor.document.validations() : new Map();
+	});
 	const selectedElementNameValidation = $derived(
 		selectedElement ? (elementNameValidations.get(selectedElement.id) ?? null) : null
 	);

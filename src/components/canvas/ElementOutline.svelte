@@ -71,10 +71,14 @@
 	]);
 	const resize = createPointerDrag();
 
+	function elementBounds() {
+		return Editor.document.bounds(element.id) ?? Editor.geometry.elementBounds(element);
+	}
+
 	$effect(() => {
 		if (element.type === "text" || element.type === "image") {
 			const padding = 0.5;
-			const bounds = Editor.geometry.elementBounds(element);
+			const bounds = elementBounds();
 			bbox = {
 				x: bounds.x - padding,
 				y: bounds.y - padding,
@@ -120,7 +124,7 @@
 
 		const svg = getSvgRoot(event.target);
 		if (!svg) return;
-		const bounds = Editor.geometry.elementBounds(element);
+		const bounds = elementBounds();
 		const lockAspectRatio = element.type === "image" || event.shiftKey;
 		const aspectRatio = bounds.height > 0 ? bounds.width / bounds.height : undefined;
 		const source = { ...element };

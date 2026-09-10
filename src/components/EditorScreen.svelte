@@ -45,7 +45,10 @@
 	}
 
 	function getSelectedElements() {
-		return $project.elements.filter((element) => $interaction.selectedElementIds.includes(element.id));
+		return $interaction.selectedElementIds.flatMap((id) => {
+			const element = Editor.document.get(id);
+			return element ? [element] : [];
+		});
 	}
 
 	onMount(() => {

@@ -1,4 +1,4 @@
-import type { RectElement } from "@maply/model/types";
+import type { ImageElement, RectElement } from "@maply/model/types";
 import { createIndexedDocument } from "editor/state/indexed-document";
 import { describe, expect, it } from "vitest";
 
@@ -17,6 +17,26 @@ function rect(id: string, x = 0, y = 0, width = 10, height = 10): RectElement {
 		fill: "#000",
 		stroke: "#000",
 		strokeWidth: 1
+	};
+}
+
+function image(id: string, assetId: string | null): ImageElement {
+	return {
+		id,
+		name: id,
+		type: "image",
+		bindable: false,
+		locked: false,
+		visible: true,
+		x: 0,
+		y: 0,
+		width: 10,
+		height: 10,
+		assetId,
+		href: "",
+		cropX: 0,
+		cropY: 0,
+		cropScale: 1
 	};
 }
 
@@ -127,5 +147,26 @@ describe("indexed document", () => {
 		expect(document.query({ x: 95, y: 95, width: 20, height: 20 })).toEqual(["outside"]);
 		document.delete(["outside"]);
 		expect(document.query({ x: 95, y: 95, width: 20, height: 20 })).toEqual([]);
+	});
+
+	it("maintains names, validation, and referenced assets incrementally", () => {
+		const document = createIndexedDocument([rect("first"), image("photo", "asset-1")]);
+
+		expect(document.nameCounts()).toEqual(
+			new Map([
+				["first", 1],
+				["photo", 1]
+			])
+		);
+		expect(document.referencedAssetIds()).toEqual(["asset-1"]);
+
+		document.update("photo", (element) => ({ ...element, name: "first", assetId: "asset-2" }));
+		expect(document.validations().get("first")).toMatchObject({ valid: false, issues: ["duplicate"] });
+		expect(document.validations().get("photo")).toMatchObject({ valid: false, issues: ["duplicate"] });
+		expect(document.referencedAssetIds()).toEqual(["asset-2"]);
+
+		document.delete(["photo"]);
+		expect(document.referencedAssetIds()).toEqual([]);
+		expect(document.validations().has("photo")).toBe(false);
 	});
 });

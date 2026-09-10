@@ -21,6 +21,7 @@
 	import { ELEMENT_ROW_HEIGHT, ELEMENT_ROW_OVERSCAN, getVirtualWindow } from "./virtualize";
 
 	const project = Editor.state.project;
+	const documentRevision = Editor.state.documentRevision;
 	const interaction = Editor.state.interaction;
 	let list: HTMLElement | null = $state(null);
 	let viewport: HTMLElement | null = $state(null);
@@ -32,7 +33,10 @@
 	let viewportHeight = $state(320);
 	let focusedId = $state<string>();
 	let editingIds = $state<string[]>([]);
-	const validations = $derived(Editor.naming.validate($project.elements));
+	const validations = $derived.by(() => {
+		const revision = $documentRevision;
+		return revision >= 0 ? Editor.document.validations() : new Map();
+	});
 	const reorder = createElementReorder({ list: () => list, viewport: () => viewport });
 	const isSearching = $derived(appliedSearch.length > 0);
 	const hasTypeFilter = $derived(selectedTypes.length > 0);

@@ -10,6 +10,10 @@
 	let { element }: { element: TextElement } = $props();
 	const canvas = Editor.state.canvas;
 
+	function elementBounds() {
+		return Editor.document.bounds(element.id) ?? Editor.geometry.elementBounds(element);
+	}
+
 	function updateVisualPosition(axis: "x" | "y", value: string) {
 		const parsed = parseIntNumber(value);
 		if (parsed === null) return;
@@ -26,7 +30,7 @@
 
 	function updateText(text: string) {
 		if (text === element.text) return;
-		const bounds = Editor.geometry.elementBounds(element);
+		const bounds = elementBounds();
 		const { left, ascent } = Editor.text.layoutMetrics(text, element.fontSize, element.width);
 		Editor.element.update(element.id, {
 			text,
@@ -38,7 +42,7 @@
 	function updateFontSize(value: string) {
 		const fontSize = parsePositiveInt(value);
 		if (fontSize === null) return;
-		const bounds = Editor.geometry.elementBounds(element);
+		const bounds = elementBounds();
 		const { left, ascent } = Editor.text.layoutMetrics(element.text, fontSize, element.width);
 		Editor.element.update(element.id, {
 			fontSize,
@@ -56,14 +60,14 @@
 	<PropertyField
 		id="{element.id}-x"
 		label="X"
-		value={Editor.geometry.elementBounds(element).x - $canvas.x}
+		value={elementBounds().x - $canvas.x}
 		step={1}
 		onChange={(v) => updateVisualPosition("x", v)}
 	/>
 	<PropertyField
 		id="{element.id}-y"
 		label="Y"
-		value={Editor.geometry.elementBounds(element).y - $canvas.y}
+		value={elementBounds().y - $canvas.y}
 		step={1}
 		onChange={(v) => updateVisualPosition("y", v)}
 	/>

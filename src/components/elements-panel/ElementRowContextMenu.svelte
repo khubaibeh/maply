@@ -11,7 +11,12 @@
 	const orderingIds = $derived(
 		$interaction.selectedElementIds.includes(element.id) ? $interaction.selectedElementIds : [element.id]
 	);
-	const stateElements = $derived($project.elements.filter((entry) => orderingIds.includes(entry.id)));
+	const stateElements = $derived(
+		orderingIds.flatMap((id) => {
+			const entry = Editor.document.get(id);
+			return entry ? [entry] : [];
+		})
+	);
 
 	type ElementState = "locked" | "bindable" | "visible";
 
@@ -91,7 +96,10 @@
 			class="rounded-lg px-2.5 py-1.5 text-xs"
 			onclick={() => {
 				const selected = $interaction.selectedElementIds.includes(element.id)
-					? $project.elements.filter((entry) => $interaction.selectedElementIds.includes(entry.id))
+					? $interaction.selectedElementIds.flatMap((id) => {
+							const entry = Editor.document.get(id);
+							return entry ? [entry] : [];
+						})
 					: [element];
 				Editor.clipboard.copy(selected);
 				close();
