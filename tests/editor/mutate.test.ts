@@ -164,6 +164,18 @@ describe("path vertex mutations", () => {
 });
 
 describe("updateElements", () => {
+	it("keeps the large compatibility projection stable during a local edit", () => {
+		const elements = Array.from({ length: 1_025 }, (_, index) => rect(`element-${index}`, 0, 0));
+		setFixture(elements);
+		const before = get(projectState).elements;
+
+		updateElement("element-512", { fill: "#fff" });
+
+		const after = get(projectState).elements;
+		expect(after).toBe(before);
+		expect(after[512]).toMatchObject({ id: "element-512", fill: "#fff" });
+	});
+
 	it("does not write blank names", () => {
 		setFixture([rect("a", 10, 20), rect("b", 30, 40)]);
 

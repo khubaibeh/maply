@@ -19,16 +19,17 @@ export type ElementNameValidation = {
 	suggestion: string | null;
 };
 
+type UsedNames = { readonly has: (name: string) => boolean };
+
 /** Builds one name validation result from maintained name counts and names. */
 export function createElementNameValidation(
 	element: Pick<Element, "id" | "name">,
 	counts: ReadonlyMap<string, number>,
-	usedNames: ReadonlySet<string>
+	usedNames: UsedNames
 ): ElementNameValidation {
 	const issues = nameIssues(element.name, counts);
 	const currentName = element.name.trim();
-	const names = new Set(usedNames);
-	if ((counts.get(currentName) ?? 0) === 1) names.delete(currentName);
+	const excludedName = (counts.get(currentName) ?? 0) === 1 ? currentName : undefined;
 
 	return {
 		id: element.id,
@@ -36,7 +37,7 @@ export function createElementNameValidation(
 		valid: issues.length === 0,
 		issues,
 		messages: issues.map((issue) => messages[issue]),
-		suggestion: issues.length === 0 ? null : autofixElementNameFromNames(element.name, names)
+		suggestion: issues.length === 0 ? null : autofixElementNameFromNames(element.name, usedNames, excludedName)
 	};
 }
 
@@ -93,7 +94,7 @@ export function autofixElementName(name: string, elements: readonly Element[], c
 	return autofixElementNameFromNames(name, used);
 }
 
-function autofixElementNameFromNames(name: string, used: ReadonlySet<string>): string {
+function autofixElementNameFromNames(name: string, used: UsedNames, excludedName?: string): string {
 	let base = name
 		.trim()
 		.replace(/[^A-Za-z0-9_-]+/g, "-")
@@ -103,7 +104,7 @@ function autofixElementNameFromNames(name: string, used: ReadonlySet<string>): s
 	if (!base) base = "element";
 	if (!/^[A-Za-z_]/.test(base)) base = `element-${base}`;
 
-	if (!used.has(base)) return base;
+	if (base !== excludedName && !used.has(base)) return base;
 
 	let suffix = 2;
 	while (used.has(`${base}-${suffix}`)) suffix += 1;

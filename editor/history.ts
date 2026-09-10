@@ -10,11 +10,12 @@ import {
 	runStorageEffect,
 	withEditorWriteGate
 } from "./session/coordinator";
-import { settleEditorSaveEffect } from "./session/save";
+import { discardPendingEditorChanges, persistPendingEditorChangesEffect, settleEditorSaveEffect } from "./session/save";
 import { imageAssetState } from "./state/assets";
-import { documentIndex, projectState, setProjectState } from "./state/document";
+import { documentIndex, projectState, replayIndexedDocument, setProjectState } from "./state/document";
 import { applyInternalEditorMutation, withEditorMutationBlockEffect } from "./state/editing";
-import { getInteractionState, updateInteractionState } from "./state/interaction";
+import type { DocumentChangeSet, DocumentOrderChange } from "./state/indexed-document";
+import { updateInteractionState } from "./state/interaction";
 import { canvasState } from "./state/workspace";
 
 const defaultLimit = 100;
@@ -24,7 +25,6 @@ export type HistoryTransaction = symbol;
 
 type HistoryState = {
 	name: string;
-	elements: readonly Element[];
 	elementNameGrid: ElementNameGrid;
 	canvas: {
 		x: number;
@@ -36,11 +36,6 @@ type HistoryState = {
 	assets: Record<string, StoredImageAsset>;
 };
 
-type ObservedState = Omit<HistoryState, "elements" | "assets"> & {
-	elements: readonly Element[];
-	assets: Readonly<Record<string, StoredImageAsset>>;
-};
-
 type ElementChange = { id: string; before: Element | null; after: Element | null };
 type AssetChange = { id: string; before: StoredImageAsset | null; after: StoredImageAsset | null };
 type HistoryChange = {
@@ -48,8 +43,14 @@ type HistoryChange = {
 	elementNameGrid: { before: ElementNameGrid; after: ElementNameGrid } | null;
 	canvas: { before: HistoryState["canvas"]; after: HistoryState["canvas"] } | null;
 	elements: readonly ElementChange[];
-	order: { before: readonly string[]; after: readonly string[] } | null;
+	orders: readonly DocumentOrderChange[];
 	assets: readonly AssetChange[];
+};
+
+type OpenTransaction = {
+	token: HistoryTransaction;
+	start: HistoryState;
+	documentChanges: DocumentChangeSet[];
 };
 
 function referencedAssets(ids: readonly string[], assets: Record<string, StoredImageAsset>) {
@@ -61,13 +62,12 @@ function referencedAssets(ids: readonly string[], assets: Record<string, StoredI
 	return referenced;
 }
 
-function observeSnapshot(): ObservedState {
+function observeSnapshot(): HistoryState {
 	const project = get(projectState);
 	const canvas = get(canvasState);
 	const assets = get(imageAssetState);
 	return {
 		name: project.name,
-		elements: project.elements,
 		elementNameGrid: project.elementNameGrid,
 		canvas: {
 			x: canvas.x,
@@ -96,63 +96,6 @@ function sameGrid(left: ElementNameGrid, right: ElementNameGrid): boolean {
 	});
 }
 
-function projectForState(next: ObservedState) {
-	const current = get(projectState);
-
-	return {
-		...current,
-		name: next.name,
-		elements: [...next.elements],
-		elementNameGrid: next.elementNameGrid
-	};
-}
-
-function interactionForState(next: ObservedState) {
-	const current = getInteractionState();
-	const validIds = new Set(next.elements.map((element) => element.id));
-	const selectedElementIds = current.selectedElementIds.filter((id) => validIds.has(id));
-	return {
-		...current,
-		selectedElementIds,
-		selectedElementId:
-			current.selectedElementId && validIds.has(current.selectedElementId) ? current.selectedElementId : null,
-		hoveredElementId: null,
-		cropEditingElementId: null
-	};
-}
-
-function persistStateEffect(
-	next: ObservedState,
-	context: { id: string; camera: Camera; isElementNameImportOpen: boolean }
-) {
-	return persistProjectEffect(
-		{
-			id: context.id,
-			name: next.name,
-			canvas: { ...next.canvas },
-			camera: { ...context.camera },
-			elements: [...next.elements],
-			editorData: { elementNameGrid: next.elementNameGrid },
-			isElementNameImportOpen: context.isElementNameImportOpen
-		},
-		Object.values(next.assets)
-	);
-}
-
-function applyState(next: ObservedState): void {
-	applyInternalEditorMutation(() => {
-		const currentCanvas = get(canvasState);
-		setProjectState(projectForState(next), "rescan");
-		updateInteractionState(() => interactionForState(next));
-		canvasState.set({ ...currentCanvas, ...next.canvas, camera: currentCanvas.camera });
-		imageAssetState.set(structuredClone(next.assets));
-	});
-}
-
-function orderedIds(elements: readonly Element[]): string[] {
-	return elements.map((element) => element.id);
-}
-
 function sameCanvas(left: HistoryState["canvas"], right: HistoryState["canvas"]): boolean {
 	return (
 		left.x === right.x &&
@@ -163,34 +106,77 @@ function sameCanvas(left: HistoryState["canvas"], right: HistoryState["canvas"])
 	);
 }
 
-function sameIds(left: readonly string[], right: readonly string[]): boolean {
-	return left.length === right.length && left.every((id, index) => id === right[index]);
+function sameAsset(left: StoredImageAsset | null, right: StoredImageAsset | null): boolean {
+	if (left === right) return true;
+	if (!left || !right) return false;
+	return sameRecord(left, right);
 }
 
-function createHistoryChange(before: ObservedState, after: ObservedState): HistoryChange | null {
-	const beforeElements = new Map(before.elements.map((element) => [element.id, element]));
-	const afterElements = new Map(after.elements.map((element) => [element.id, element]));
-	const elementChanges: ElementChange[] = [];
-	for (const id of new Set([...beforeElements.keys(), ...afterElements.keys()])) {
-		const previous = beforeElements.get(id) ?? null;
-		const next = afterElements.get(id) ?? null;
-		if (previous && next && (previous === next || sameRecord(previous, next))) continue;
-		elementChanges.push({
-			id,
-			before: previous ? structuredClone(previous) : null,
-			after: next ? structuredClone(next) : null
-		});
+function copyOrderChange(order: DocumentOrderChange): DocumentOrderChange | null {
+	if (order.tag === "none") return null;
+	if (order.tag === "insert") return { tag: "insert", ids: [...order.ids], index: order.index };
+	if (order.tag === "insertMany") {
+		return { tag: "insertMany", entries: order.entries.map((entry) => ({ ...entry })) };
+	}
+	if (order.tag === "remove") return { tag: "remove", ids: [...order.ids], indexes: [...order.indexes] };
+	if (order.tag === "move") {
+		return {
+			tag: "move",
+			ids: [...order.ids],
+			fromIndexes: [...order.fromIndexes],
+			toIndex: order.toIndex
+		};
+	}
+	return { tag: "replace", before: [...order.before], after: [...order.after] };
+}
+
+function collectDocumentChange(documentChanges: readonly DocumentChangeSet[]): {
+	elements: ElementChange[];
+	orders: DocumentOrderChange[];
+} {
+	const elements = new Map<string, ElementChange>();
+	const orders: DocumentOrderChange[] = [];
+
+	for (const documentChange of documentChanges) {
+		for (const entry of documentChange.changes) {
+			const current = elements.get(entry.id);
+			if (!current) {
+				elements.set(entry.id, {
+					id: entry.id,
+					before: entry.before ? structuredClone(entry.before) : null,
+					after: entry.after ? structuredClone(entry.after) : null
+				});
+				continue;
+			}
+			current.after = entry.after ? structuredClone(entry.after) : null;
+		}
+		const order = copyOrderChange(documentChange.order);
+		if (order) orders.push(order);
 	}
 
-	const beforeOrder = orderedIds(before.elements);
-	const afterOrder = orderedIds(after.elements);
+	return {
+		elements: [...elements.values()].filter(
+			(change) =>
+				!(change.before && change.after && sameRecord(change.before, change.after)) &&
+				!(change.before === null && change.after === null)
+		),
+		orders
+	};
+}
+
+function createHistoryChange(
+	before: HistoryState,
+	after: HistoryState,
+	documentChanges: readonly DocumentChangeSet[]
+): HistoryChange | null {
+	const documentDelta = collectDocumentChange(documentChanges);
 	const beforeAssets = before.assets;
 	const afterAssets = after.assets;
 	const assetChanges: AssetChange[] = [];
 	for (const id of new Set([...Object.keys(beforeAssets), ...Object.keys(afterAssets)])) {
 		const previous = beforeAssets[id] ?? null;
 		const next = afterAssets[id] ?? null;
-		if (previous === next) continue;
+		if (sameAsset(previous, next)) continue;
 		assetChanges.push({
 			id,
 			before: previous ? structuredClone(previous) : null,
@@ -206,8 +192,8 @@ function createHistoryChange(before: ObservedState, after: ObservedState): Histo
 		canvas: sameCanvas(before.canvas, after.canvas)
 			? null
 			: { before: { ...before.canvas }, after: { ...after.canvas } },
-		elements: elementChanges,
-		order: sameIds(beforeOrder, afterOrder) ? null : { before: beforeOrder, after: afterOrder },
+		elements: documentDelta.elements,
+		orders: documentDelta.orders,
 		assets: assetChanges
 	};
 
@@ -215,44 +201,109 @@ function createHistoryChange(before: ObservedState, after: ObservedState): Histo
 		change.elementNameGrid ||
 		change.canvas ||
 		change.elements.length > 0 ||
-		change.order ||
+		change.orders.length > 0 ||
 		change.assets.length > 0
 		? change
 		: null;
 }
 
-function applyHistoryChange(
-	change: HistoryChange,
-	direction: "before" | "after",
-	current: ObservedState
-): ObservedState {
-	const elementsById = new Map(current.elements.map((element) => [element.id, element]));
-	for (const elementChange of change.elements) {
-		const element = elementChange[direction];
-		if (element) elementsById.set(elementChange.id, element);
-		else elementsById.delete(elementChange.id);
-	}
+function metadataChanged(before: HistoryState, after: HistoryState): boolean {
+	return (
+		before.name !== after.name ||
+		!sameGrid(before.elementNameGrid, after.elementNameGrid) ||
+		!sameCanvas(before.canvas, after.canvas)
+	);
+}
 
-	const ids = change.order?.[direction] ?? orderedIds(current.elements);
-	const elements = ids.flatMap((id) => {
-		const element = elementsById.get(id);
-		return element ? [element] : [];
-	});
+function assetsChanged(change: HistoryChange): boolean {
+	return change.assets.length > 0;
+}
+
+function nextMetadata(current: HistoryState, change: HistoryChange, direction: "before" | "after"): HistoryState {
+	return {
+		...current,
+		name: change.name?.[direction] ?? current.name,
+		elementNameGrid: change.elementNameGrid?.[direction] ?? current.elementNameGrid,
+		canvas: change.canvas?.[direction] ?? current.canvas
+	};
+}
+
+function nextState(current: HistoryState, change: HistoryChange, direction: "before" | "after"): HistoryState {
+	const metadata = nextMetadata(current, change, direction);
+	if (change.assets.length === 0) return metadata;
+
 	const assets = { ...current.assets };
 	for (const assetChange of change.assets) {
 		const asset = assetChange[direction];
 		if (asset) assets[assetChange.id] = asset;
 		else delete assets[assetChange.id];
 	}
+	return { ...metadata, assets };
+}
 
-	return {
-		...current,
-		name: change.name?.[direction] ?? current.name,
-		elementNameGrid: change.elementNameGrid?.[direction] ?? current.elementNameGrid,
-		canvas: change.canvas?.[direction] ?? current.canvas,
-		elements,
-		assets
-	};
+function applyMetadata(next: HistoryState): void {
+	const currentProject = get(projectState);
+	if (currentProject.name !== next.name || !sameGrid(currentProject.elementNameGrid, next.elementNameGrid)) {
+		setProjectState(
+			{
+				...currentProject,
+				name: next.name,
+				elementNameGrid: next.elementNameGrid
+			},
+			"preserve"
+		);
+	}
+
+	const currentCanvas = get(canvasState);
+	if (!sameCanvas(next.canvas, currentCanvas)) {
+		canvasState.set({ ...currentCanvas, ...next.canvas, camera: currentCanvas.camera });
+	}
+
+	updateInteractionState((state) => {
+		const selectedElementIds = state.selectedElementIds.filter((id) => documentIndex.has(id));
+		return {
+			...state,
+			selectedElementIds,
+			selectedElementId:
+				state.selectedElementId && documentIndex.has(state.selectedElementId) ? state.selectedElementId : null,
+			hoveredElementId: null,
+			cropEditingElementId: null
+		};
+	});
+}
+
+function applyAssets(next: HistoryState): void {
+	const current = get(imageAssetState);
+	if (sameRecord(current, next.assets)) return;
+	imageAssetState.set(structuredClone(next.assets));
+}
+
+function persistStateEffect(
+	next: HistoryState,
+	context: { id: string; camera: Camera; isElementNameImportOpen: boolean }
+) {
+	return persistProjectEffect(
+		{
+			id: context.id,
+			name: next.name,
+			canvas: { ...next.canvas },
+			camera: { ...context.camera },
+			elements: documentIndex.snapshot(),
+			editorData: { elementNameGrid: next.elementNameGrid },
+			isElementNameImportOpen: context.isElementNameImportOpen
+		},
+		Object.values(next.assets)
+	);
+}
+
+function applyHistoryChange(change: HistoryChange, direction: "before" | "after", persist: boolean): void {
+	applyInternalEditorMutation(() => {
+		replayIndexedDocument(change.elements, change.orders, direction, { persist });
+		const current = observeSnapshot();
+		const next = nextState(current, change, direction);
+		applyMetadata(next);
+		if (change.assets.length > 0) applyAssets(next);
+	});
 }
 
 /** Provides bounded editor undo and redo over persisted document state. */
@@ -262,7 +313,8 @@ export function createHistory(limit = defaultLimit) {
 	const canUndoStore = writable(false);
 	const canRedoStore = writable(false);
 	let previous = observeSnapshot();
-	let transaction: { token: HistoryTransaction; start: ObservedState } | null = null;
+	let transaction: OpenTransaction | null = null;
+	const pendingDocumentChanges: DocumentChangeSet[] = [];
 	const deferredAssetDeletions = new Set<string>();
 	let suspended = 0;
 	let applying = false;
@@ -277,14 +329,15 @@ export function createHistory(limit = defaultLimit) {
 
 	function observe() {
 		if (suspended > 0 || applying || transaction) return;
+		const documentChanges = pendingDocumentChanges.splice(0);
 		const current = observeSnapshot();
-		const change = createHistoryChange(previous, current);
+		const change = createHistoryChange(previous, current, documentChanges);
+		previous = current;
 		if (!change) return;
 		undoStack.push(change);
 		recordHistoryRecord();
 		if (undoStack.length > limit) undoStack.shift();
 		redoStack.length = 0;
-		previous = current;
 		MutableRef.update(revision, (value) => value + 1);
 		publish();
 	}
@@ -292,7 +345,7 @@ export function createHistory(limit = defaultLimit) {
 	function begin(): HistoryTransaction {
 		if (transaction) commit(transaction.token);
 		const token = Symbol("history-transaction");
-		transaction = { token, start: observeSnapshot() };
+		transaction = { token, start: observeSnapshot(), documentChanges: [] };
 		return token;
 	}
 
@@ -319,10 +372,10 @@ export function createHistory(limit = defaultLimit) {
 
 	function commit(token: HistoryTransaction | null): void {
 		if (!transaction || transaction.token !== token) return;
-		const { start } = transaction;
+		const { start, documentChanges } = transaction;
 		transaction = null;
 		const current = observeSnapshot();
-		const change = createHistoryChange(start, current);
+		const change = createHistoryChange(start, current, documentChanges);
 		previous = current;
 		if (change) {
 			undoStack.push(change);
@@ -337,25 +390,29 @@ export function createHistory(limit = defaultLimit) {
 
 	function cancel(token: HistoryTransaction | null): void {
 		if (!transaction || transaction.token !== token) return;
-		const { start } = transaction;
+		const { start, documentChanges } = transaction;
 		transaction = null;
+		const change = createHistoryChange(start, observeSnapshot(), documentChanges);
 		deferredAssetDeletions.clear();
-		applying = true;
-		try {
-			applyState(start);
-			previous = observeSnapshot();
-		} finally {
-			applying = false;
-		}
+		if (change) {
+			applying = true;
+			try {
+				applyHistoryChange(change, "before", false);
+				previous = observeSnapshot();
+				discardPendingEditorChanges();
+			} finally {
+				applying = false;
+			}
+		} else previous = observeSnapshot();
 	}
 
-	function applyStateEffect(snapshot: ObservedState): Effect.Effect<void> {
+	function applyStateEffect(change: HistoryChange, direction: "before" | "after"): Effect.Effect<void> {
 		return Effect.sync(() => {
 			applying = true;
 		}).pipe(
 			Effect.andThen(
 				Effect.sync(() => {
-					applyState(snapshot);
+					applyHistoryChange(change, direction, true);
 					previous = observeSnapshot();
 				})
 			),
@@ -387,20 +444,26 @@ export function createHistory(limit = defaultLimit) {
 		};
 		const current = observeSnapshot();
 		const direction = from === undoStack ? "before" : "after";
-		const next = applyHistoryChange(change, direction, current);
+		const next = nextState(current, change, direction);
 		to.push(change);
-		yield* applyStateEffect(next);
+		yield* applyStateEffect(change, direction);
 		publish();
-		const persisted = yield* Effect.match(persistStateEffect(next, context), {
-			onFailure: (error) => {
-				console.warn("Failed to persist history state:", error);
-				return false;
-			},
-			onSuccess: () => true
-		});
+		const persisted = yield* Effect.match(
+			metadataChanged(current, next) || assetsChanged(change)
+				? persistStateEffect(next, context)
+				: persistPendingEditorChangesEffect(),
+			{
+				onFailure: (error) => {
+					console.warn("Failed to persist history state:", error);
+					discardPendingEditorChanges();
+					return false;
+				},
+				onSuccess: () => true
+			}
+		);
 		if (persisted || MutableRef.get(revision) !== expectedRevision) return;
 
-		yield* applyStateEffect(current);
+		yield* applyStateEffect(change, direction === "before" ? "after" : "before");
 		to.pop();
 		from.push(change);
 		publish();
@@ -428,6 +491,7 @@ export function createHistory(limit = defaultLimit) {
 				Effect.ensuring(
 					Effect.sync(() => {
 						suspended -= 1;
+						pendingDocumentChanges.length = 0;
 						previous = observeSnapshot();
 					})
 				)
@@ -437,6 +501,11 @@ export function createHistory(limit = defaultLimit) {
 
 	const settleEffect = Semaphore.withPermits(moveGate, 1)(settleEditorSaveEffect());
 
+	documentIndex.subscribe((change) => {
+		if (suspended > 0 || applying || change.persist === false) return;
+		if (transaction) transaction.documentChanges.push(change);
+		else pendingDocumentChanges.push(change);
+	});
 	projectState.subscribe(observe);
 	canvasState.subscribe(observe);
 	imageAssetState.subscribe(observe);
@@ -457,6 +526,7 @@ export function createHistory(limit = defaultLimit) {
 			MutableRef.update(generation, (value) => value + 1);
 			undoStack.length = 0;
 			redoStack.length = 0;
+			pendingDocumentChanges.length = 0;
 			transaction = null;
 			deferredAssetDeletions.clear();
 			previous = observeSnapshot();

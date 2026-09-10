@@ -17,6 +17,8 @@ const initialProjectState: ProjectState = {
 	initialized: false
 };
 
+const IMMUTABLE_PROJECTION_LIMIT = 1_024;
+
 /** The default fill used by newly created fillable elements. */
 export const fillState = writable("#e5e5e5");
 
@@ -125,6 +127,9 @@ const minimumCanvasSizeStore = writable<MinimumCanvasSize>({ width: 1, height: 1
 const documentRevisionStore = writable(0);
 const indexedDocument = createIndexedDocument(initialProjectState.elements);
 
+const projectionIndexes = new Map<string, number>();
+for (const [index, element] of initialProjectState.elements.entries()) projectionIndexes.set(element.id, index);
+
 let currentProjectState = initialProjectState;
 let currentMinimumCanvasSizeCache = measureMinimumCanvasSizeCache(initialProjectState.elements);
 let currentDocumentRevision = 0;
@@ -144,7 +149,7 @@ function applyMinimumCanvasSizeHint(
 	return trackDeletedElementsMinimumCanvasSize(cache, next, hint.deleted);
 }
 
-function applyProjectState(next: ProjectState, hint: MinimumCanvasSizeHint): boolean {
+function applyProjectState(next: ProjectState, hint: MinimumCanvasSizeHint, publishElements = false): boolean {
 	if (isEditorMutationBlocked()) return false;
 	currentMinimumCanvasSizeCache = applyMinimumCanvasSizeHint(
 		currentMinimumCanvasSizeCache,
@@ -154,15 +159,32 @@ function applyProjectState(next: ProjectState, hint: MinimumCanvasSizeHint): boo
 	);
 	const elementsChanged = next.elements !== currentProjectState.elements;
 	currentProjectState = next;
+	if (elementsChanged) {
+		projectionIndexes.clear();
+		refreshProjectionIndexes();
+	}
 	if (elementsChanged && !applyingIndexedMutation) indexedDocument.replace(next.elements);
 	currentDocumentRevision += 1;
 	documentRevisionStore.set(currentDocumentRevision);
 	recordDocumentRevision();
 	minimumCanvasSizeStore.set(toMinimumCanvasSize(currentMinimumCanvasSizeCache));
 	recordChangePublication();
-	if (elementsChanged) elementsStore.set(next.elements);
+	if (elementsChanged || publishElements) elementsStore.set(next.elements);
 	projectStore.set(next);
 	return true;
+}
+
+function refreshProjectionIndexes(start = 0): void {
+	for (let index = start; index < currentProjectState.elements.length; index += 1) {
+		const element = currentProjectState.elements[index];
+		if (element) projectionIndexes.set(element.id, index);
+	}
+}
+
+function replaceProjectionElements(next: readonly Element[]): void {
+	currentProjectState.elements.splice(0, currentProjectState.elements.length, ...next);
+	projectionIndexes.clear();
+	refreshProjectionIndexes();
 }
 
 /** The editor's live project and selection state. */
@@ -223,19 +245,48 @@ function projectElementsForDocumentChange(change: DocumentChangeSet): Element[] 
 
 	if (change.tag === "add" && change.order.tag === "insert") {
 		const added = change.changes.flatMap((entry) => (entry.after ? [entry.after] : []));
-		return [...elements.slice(0, change.order.index), ...added, ...elements.slice(change.order.index)];
+		elements.splice(change.order.index, 0, ...added);
+		refreshProjectionIndexes(change.order.index);
+		return elements;
+	}
+
+	if (change.tag === "add" && change.order.tag === "insertMany") {
+		for (const entry of [...change.order.entries].sort((left, right) => left.index - right.index)) {
+			const element = change.changes.find((candidate) => candidate.id === entry.id)?.after;
+			if (element) elements.splice(entry.index, 0, element);
+		}
+		projectionIndexes.clear();
+		refreshProjectionIndexes();
+		return elements;
 	}
 
 	if (change.tag === "delete" && change.order.tag === "remove") {
-		const deleted = new Set(change.order.ids);
-		return elements.filter((element) => !deleted.has(element.id));
+		const indexes = change.order.ids
+			.map((id) => projectionIndexes.get(id))
+			.filter((index): index is number => index !== undefined)
+			.sort((left, right) => right - left);
+		for (const index of indexes) elements.splice(index, 1);
+		for (const id of change.order.ids) projectionIndexes.delete(id);
+		refreshProjectionIndexes(indexes.at(-1) ?? 0);
+		return elements;
 	}
 
 	if (change.tag === "update") {
-		const updated = new Map(
-			change.changes.flatMap((entry) => (entry.after ? [[entry.id, entry.after] as const] : []))
-		);
-		return elements.map((element) => updated.get(element.id) ?? element);
+		if (elements.length <= IMMUTABLE_PROJECTION_LIMIT) {
+			const updated = elements.map((element) => {
+				const changeForElement = change.changes.find((entry) => entry.id === element.id);
+				return changeForElement?.after ?? element;
+			});
+			projectionIndexes.clear();
+			for (const [index, element] of updated.entries()) projectionIndexes.set(element.id, index);
+			return updated;
+		}
+		for (const entry of change.changes) {
+			const index = projectionIndexes.get(entry.id);
+			if (index === undefined || !entry.after) continue;
+			elements[index] = entry.after;
+		}
+		return elements;
 	}
 
 	if (change.tag === "reorder" && change.order.tag === "move") {
@@ -243,10 +294,15 @@ function projectElementsForDocumentChange(change: DocumentChangeSet): Element[] 
 		const moved = elements.filter((element) => moving.has(element.id));
 		const remaining = elements.filter((element) => !moving.has(element.id));
 		remaining.splice(change.order.toIndex, 0, ...moved);
-		return remaining;
+		elements.splice(0, elements.length, ...remaining);
+		projectionIndexes.clear();
+		refreshProjectionIndexes();
+		return elements;
 	}
 
-	return indexedDocument.snapshot();
+	const snapshot = indexedDocument.snapshot();
+	replaceProjectionElements(snapshot);
+	return currentProjectState.elements;
 }
 
 /** Applies one indexed document command and publishes its compatibility projection. */
@@ -260,10 +316,27 @@ export function updateIndexedProject(
 
 	applyingIndexedMutation = true;
 	try {
-		applyProjectState(
-			{ ...currentProjectState, elements: projectElementsForDocumentChange(change) },
-			hint ?? hintForDocumentChange(change)
-		);
+		const elements = projectElementsForDocumentChange(change);
+		applyProjectState({ ...currentProjectState, elements }, hint ?? hintForDocumentChange(change), true);
+	} finally {
+		applyingIndexedMutation = false;
+	}
+	return change;
+}
+
+/** Replays a change-based history delta through the indexed document seam. */
+export function replayIndexedDocument(
+	changes: readonly DocumentChangeSet["changes"][number][],
+	orders: readonly DocumentChangeSet["order"][],
+	direction: "before" | "after",
+	options?: { persist?: boolean }
+): DocumentChangeSet | null {
+	const change = indexedDocument.replay(changes, orders, direction, options);
+	if (!change) return null;
+	applyingIndexedMutation = true;
+	try {
+		const elements = projectElementsForDocumentChange(change);
+		applyProjectState({ ...currentProjectState, elements }, hintForDocumentChange(change), true);
 	} finally {
 		applyingIndexedMutation = false;
 	}

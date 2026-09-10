@@ -116,6 +116,24 @@ describe("indexed document", () => {
 		expect(order.map((id) => replay.get(id))).toEqual(document.snapshot());
 	});
 
+	it("replays a mixed change sequence in both directions", () => {
+		const source = createIndexedDocument([rect("a"), rect("b"), rect("c")]);
+		const changes = [
+			source.add([rect("d")], 1),
+			source.update("b", (element) => ({ ...element, name: "B" })),
+			source.reorder(["d"], 2),
+			source.delete(["a"])
+		].filter((change): change is NonNullable<typeof change> => change !== null);
+		const expected = source.snapshot();
+		const replay = createIndexedDocument([rect("a"), rect("b"), rect("c")]);
+
+		for (const change of changes) replay.replay(change.changes, [change.order], "after");
+		expect(replay.snapshot()).toEqual(expected);
+
+		for (const change of [...changes].reverse()) replay.replay(change.changes, [change.order], "before");
+		expect(replay.snapshot()).toEqual([rect("a"), rect("b"), rect("c")]);
+	});
+
 	it("reports complete before and after data when replacing the document", () => {
 		const document = createIndexedDocument([rect("a"), rect("b")]);
 		const change = document.replace([rect("b"), rect("c")]);

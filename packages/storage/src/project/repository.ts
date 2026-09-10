@@ -24,6 +24,7 @@ export type PersistedDocumentChange = {
 	order:
 		| { tag: "none" }
 		| { tag: "insert"; ids: readonly string[]; index: number }
+		| { tag: "insertMany"; entries: readonly { id: string; index: number }[] }
 		| { tag: "remove"; ids: readonly string[]; indexes: readonly number[] }
 		| { tag: "move"; ids: readonly string[]; fromIndexes: readonly number[]; toIndex: number }
 		| { tag: "replace"; before: readonly string[]; after: readonly string[] };
@@ -108,6 +109,12 @@ function putVersionedProject(txn: IDBTransaction, project: StoredEditorProject):
 function applyOrderChanges(order: readonly string[], change: PersistedDocumentChange["order"]): string[] {
 	if (change.tag === "none") return [...order];
 	if (change.tag === "insert") return [...order.slice(0, change.index), ...change.ids, ...order.slice(change.index)];
+	if (change.tag === "insertMany") {
+		const next = order.filter((id) => !change.entries.some((entry) => entry.id === id));
+		for (const entry of [...change.entries].sort((left, right) => left.index - right.index))
+			next.splice(entry.index, 0, entry.id);
+		return next;
+	}
 	if (change.tag === "remove") return order.filter((id) => !change.ids.includes(id));
 	if (change.tag === "replace") return [...change.after];
 	const moving = new Set(change.ids);

@@ -4,7 +4,13 @@ import { getElementBounds } from "../elements/geometry";
 import type { ElementNameValidation } from "../elements/naming";
 import { clearTextLayoutCache, invalidateTextLayout } from "../elements/text";
 import { createDerivedIndexes, type DerivedIndexes } from "./derived-indexes";
-import type { DocumentChangeListener, DocumentChangeSet, DocumentElementChange } from "./document-change";
+import type {
+	DocumentChangeListener,
+	DocumentChangeSet,
+	DocumentChangeTag,
+	DocumentElementChange,
+	DocumentOrderChange
+} from "./document-change";
 import { createSpatialIndex, type SpatialBounds } from "./spatial-index";
 
 export type { SpatialBounds } from "./spatial-index";
@@ -36,6 +42,12 @@ export type IndexedDocument = {
 	readonly delete: (ids: readonly string[]) => DocumentChangeSet | null;
 	readonly reorder: (ids: readonly string[], toIndex: number) => DocumentChangeSet | null;
 	readonly replace: (elements: readonly Element[]) => DocumentChangeSet;
+	readonly replay: (
+		changes: readonly DocumentElementChange[],
+		orders: readonly DocumentOrderChange[],
+		direction: "before" | "after",
+		options?: { persist?: boolean }
+	) => DocumentChangeSet | null;
 	readonly subscribe: (listener: DocumentChangeListener) => () => void;
 };
 
@@ -47,6 +59,14 @@ function uniqueIds(ids: readonly string[]): string[] {
 	return [...new Set(ids)];
 }
 
+function assertUniqueElementIds(elements: readonly Element[]): void {
+	const ids = new Set<string>();
+	for (const element of elements) {
+		if (ids.has(element.id)) throw new Error(`Duplicate element ID: ${element.id}`);
+		ids.add(element.id);
+	}
+}
+
 function clampIndex(index: number, length: number): number {
 	return Math.max(0, Math.min(length, Math.trunc(index)));
 }
@@ -55,6 +75,12 @@ function textLayoutChanged(before: Element, after: Element): boolean {
 	if (before.type !== "text" && after.type !== "text") return false;
 	if (before.type !== "text" || after.type !== "text") return true;
 	return before.text !== after.text || before.fontSize !== after.fontSize || before.width !== after.width;
+}
+
+function sameElement(left: Element | null, right: Element | null): boolean {
+	if (left === right) return true;
+	if (!left || !right) return false;
+	return JSON.stringify(left) === JSON.stringify(right);
 }
 
 /** Creates an indexed document with private ID lookup and layer-order storage. */
@@ -87,16 +113,30 @@ export function createIndexedDocument(elements: readonly Element[] = []): Indexe
 		order.forEach((id, index) => orderIndexes.set(id, index));
 	}
 
-	function insertElement(element: Element, index: number): void {
-		if (byId.has(element.id)) throw new Error(`Duplicate element ID: ${element.id}`);
+	function removeElement(id: string): void {
+		const removed = byId.get(id);
+		const index = order.indexOf(id);
+		if (index >= 0) order.splice(index, 1);
+		byId.delete(id);
+		spatial.delete(id);
+		orderIndexes.delete(id);
+		boundsById.delete(id);
+		geometryKeys.delete(id);
+		if (removed?.type === "text") invalidateTextLayout(id);
+	}
+
+	function setElement(element: Element): void {
+		const current = byId.get(element.id);
 		const copy = copyElement(element);
 		byId.set(element.id, copy);
-		const bounds = getElementBounds(copy);
-		boundsById.set(element.id, bounds);
-		geometryKeys.set(element.id, geometryKey(copy));
-		spatial.set(element.id, bounds);
-		order.splice(index, 0, element.id);
-		refreshOrderIndexes();
+		if (current && textLayoutChanged(current, copy)) invalidateTextLayout(element.id);
+		const nextGeometryKey = geometryKey(copy);
+		if (geometryKeys.get(element.id) !== nextGeometryKey) {
+			const bounds = getElementBounds(copy);
+			boundsById.set(element.id, bounds);
+			geometryKeys.set(element.id, nextGeometryKey);
+			spatial.set(element.id, bounds);
+		}
 	}
 
 	function publish(change: DocumentChangeSet): DocumentChangeSet {
@@ -107,7 +147,12 @@ export function createIndexedDocument(elements: readonly Element[] = []): Indexe
 		return published;
 	}
 
-	for (const element of elements) insertElement(element, order.length);
+	assertUniqueElementIds(elements);
+	for (const element of elements) {
+		setElement(element);
+		order.push(element.id);
+	}
+	refreshOrderIndexes();
 
 	const document: IndexedDocument = {
 		size: () => order.length,
@@ -153,7 +198,11 @@ export function createIndexedDocument(elements: readonly Element[] = []): Indexe
 				if (byId.has(element.id) || ids.indexOf(element.id) !== ids.lastIndexOf(element.id))
 					throw new Error(`Duplicate element ID: ${element.id}`);
 			}
-			for (const [offset, element] of elementsToAdd.entries()) insertElement(element, insertionIndex + offset);
+			for (const element of elementsToAdd) {
+				setElement(element);
+			}
+			order.splice(insertionIndex, 0, ...ids);
+			refreshOrderIndexes();
 			return publish({
 				tag: "add",
 				revision: currentRevision,
@@ -170,16 +219,7 @@ export function createIndexedDocument(elements: readonly Element[] = []): Indexe
 			if (!current) return null;
 			const next = updater(copyElement(current));
 			if (next.id !== id) throw new Error(`Element update changed ID: ${id}`);
-			const copy = copyElement(next);
-			byId.set(id, copy);
-			if (textLayoutChanged(current, copy)) invalidateTextLayout(id);
-			const nextGeometryKey = geometryKey(copy);
-			if (geometryKeys.get(id) !== nextGeometryKey) {
-				const bounds = getElementBounds(copy);
-				boundsById.set(id, bounds);
-				geometryKeys.set(id, nextGeometryKey);
-				spatial.set(id, bounds);
-			}
+			setElement(next);
 			return publish({
 				tag: "update",
 				revision: currentRevision,
@@ -199,16 +239,7 @@ export function createIndexedDocument(elements: readonly Element[] = []): Indexe
 			if (changes.length === 0) return null;
 			for (const change of changes) {
 				if (!change.after) continue;
-				const copy = copyElement(change.after);
-				byId.set(change.id, copy);
-				if (change.before && textLayoutChanged(change.before, copy)) invalidateTextLayout(change.id);
-				const nextGeometryKey = geometryKey(copy);
-				if (geometryKeys.get(change.id) !== nextGeometryKey) {
-					const bounds = getElementBounds(copy);
-					boundsById.set(change.id, bounds);
-					geometryKeys.set(change.id, nextGeometryKey);
-					spatial.set(change.id, bounds);
-				}
+				setElement(change.after);
 			}
 			return publish({ tag: "update", revision: currentRevision, changes, order: { tag: "none" } });
 		},
@@ -222,13 +253,7 @@ export function createIndexedDocument(elements: readonly Element[] = []): Indexe
 				return element ? [{ id, before: copyElement(element), after: null }] : [];
 			});
 			for (const id of removedIds) {
-				const element = byId.get(id);
-				byId.delete(id);
-				spatial.delete(id);
-				orderIndexes.delete(id);
-				boundsById.delete(id);
-				geometryKeys.delete(id);
-				if (element?.type === "text") invalidateTextLayout(id);
+				removeElement(id);
 			}
 			for (let index = order.length - 1; index >= 0; index -= 1) {
 				if (requested.has(order[index] ?? "")) order.splice(index, 1);
@@ -260,6 +285,7 @@ export function createIndexedDocument(elements: readonly Element[] = []): Indexe
 			});
 		},
 		replace: (nextElements) => {
+			assertUniqueElementIds(nextElements);
 			const previousElements = document.snapshot();
 			const before = [...order];
 			byId.clear();
@@ -269,7 +295,11 @@ export function createIndexedDocument(elements: readonly Element[] = []): Indexe
 			geometryKeys.clear();
 			spatial.clear();
 			clearTextLayoutCache();
-			for (const element of nextElements) insertElement(element, order.length);
+			for (const element of nextElements) {
+				setElement(element);
+				order.push(element.id);
+			}
+			refreshOrderIndexes();
 			const previousById = new Map(previousElements.map((element) => [element.id, element]));
 			const nextById = new Map(document.snapshot().map((element) => [element.id, element]));
 			const changedIds = uniqueIds([...previousById.keys(), ...nextById.keys()]);
@@ -284,6 +314,61 @@ export function createIndexedDocument(elements: readonly Element[] = []): Indexe
 				order: { tag: "replace", before, after: [...order] }
 			});
 		},
+		replay: (changes, orders, direction, options = {}) => {
+			if (changes.length === 0 && orders.length === 0) return null;
+			const affectedIds = new Set(changes.map((change) => change.id));
+			const beforeElements = new Map<string, Element | null>();
+			for (const id of affectedIds) {
+				const element = byId.get(id);
+				beforeElements.set(id, element ? copyElement(element) : null);
+			}
+			const beforeOrder = orders.length > 0 ? [...order] : null;
+
+			for (const change of changes) {
+				const target = direction === "before" ? change.before : change.after;
+				if (target) {
+					if (!byId.has(target.id)) order.push(target.id);
+					setElement(target);
+				} else removeElement(change.id);
+			}
+
+			const orderedOperations = direction === "before" ? [...orders].reverse() : orders;
+			for (const operation of orderedOperations) applyReplayOrder(operation, direction === "before");
+			refreshOrderIndexes();
+
+			const replayedChanges = [...affectedIds].flatMap((id) => {
+				const before = beforeElements.get(id) ?? null;
+				const element = byId.get(id);
+				const after = element ? copyElement(element) : null;
+				return sameElement(before, after) ? [] : [{ id, before, after }];
+			});
+			const nextOrder = beforeOrder ? [...order] : null;
+			const orderChange: DocumentOrderChange =
+				beforeOrder && nextOrder
+					? orders.length === 1
+						? replayOrderChange(orders[0] ?? { tag: "none" }, direction, beforeOrder, nextOrder)
+						: { tag: "replace", before: beforeOrder, after: nextOrder }
+					: { tag: "none" };
+			if (replayedChanges.length === 0 && orderChange.tag === "none") return null;
+
+			const tag: DocumentChangeTag =
+				orderChange.tag === "replace"
+					? "replace"
+					: orderChange.tag !== "none"
+						? "reorder"
+						: replayedChanges.every((change) => change.before === null)
+							? "add"
+							: replayedChanges.every((change) => change.after === null)
+								? "delete"
+								: "update";
+			return publish({
+				tag,
+				revision: currentRevision,
+				changes: replayedChanges,
+				order: orderChange,
+				...(options.persist === false ? { persist: false } : {})
+			});
+		},
 		subscribe: (listener) => {
 			listeners.add(listener);
 			return () => listeners.delete(listener);
@@ -291,4 +376,79 @@ export function createIndexedDocument(elements: readonly Element[] = []): Indexe
 	};
 
 	return document;
+
+	function applyReplayOrder(operation: DocumentOrderChange, inverse: boolean): void {
+		if (operation.tag === "none") return;
+		if (operation.tag === "replace") {
+			order.splice(0, order.length, ...(inverse ? operation.before : operation.after));
+			return;
+		}
+		if (operation.tag === "insert") {
+			if (inverse) removeIds(operation.ids);
+			else {
+				removeIds(operation.ids);
+				order.splice(operation.index, 0, ...operation.ids);
+			}
+			return;
+		}
+		if (operation.tag === "insertMany") {
+			if (inverse) removeIds(operation.entries.map((entry) => entry.id));
+			else {
+				removeIds(operation.entries.map((entry) => entry.id));
+				for (const entry of [...operation.entries].sort((left, right) => left.index - right.index))
+					order.splice(entry.index, 0, entry.id);
+			}
+			return;
+		}
+		if (operation.tag === "remove") {
+			if (inverse) {
+				removeIds(operation.ids);
+				const entries = operation.ids
+					.map((id, index) => ({ id, index: operation.indexes[index] ?? 0 }))
+					.sort((left, right) => left.index - right.index);
+				for (const entry of entries) order.splice(entry.index, 0, entry.id);
+			} else removeIds(operation.ids);
+			return;
+		}
+		removeIds(operation.ids);
+		if (inverse) {
+			const entries = operation.ids
+				.map((id, entryIndex) => ({ id, index: operation.fromIndexes[entryIndex] ?? 0 }))
+				.sort((left, right) => left.index - right.index);
+			for (const entry of entries) order.splice(entry.index, 0, entry.id);
+		} else order.splice(operation.toIndex, 0, ...operation.ids);
+	}
+
+	function removeIds(ids: readonly string[]): void {
+		const requested = new Set(ids);
+		for (let index = order.length - 1; index >= 0; index -= 1) {
+			if (requested.has(order[index] ?? "")) order.splice(index, 1);
+		}
+	}
+}
+
+function replayOrderChange(
+	operation: DocumentOrderChange,
+	direction: "before" | "after",
+	before: readonly string[],
+	after: readonly string[]
+): DocumentOrderChange {
+	if (direction === "after") return operation;
+	if (operation.tag === "insert")
+		return { tag: "remove", ids: [...operation.ids], indexes: operation.ids.map((id) => after.indexOf(id)) };
+	if (operation.tag === "insertMany")
+		return {
+			tag: "remove",
+			ids: operation.entries.map((entry) => entry.id),
+			indexes: operation.entries.map((entry) => after.indexOf(entry.id))
+		};
+	if (operation.tag === "remove")
+		return {
+			tag: "insertMany",
+			entries: operation.ids.map((id, index) => ({ id, index: operation.indexes[index] ?? 0 }))
+		};
+	if (operation.tag === "move") {
+		return { tag: "replace", before: [...before], after: [...after] };
+	}
+	return { tag: "replace", before: [...after], after: [...before] };
 }

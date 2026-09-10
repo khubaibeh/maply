@@ -49,7 +49,7 @@ function currentMetadata(): StoredProjectMetadata {
 const pendingDocumentChanges: DocumentChangeSet[] = [];
 
 documentIndex.subscribe((change) => {
-	if (get(projectState).initialized) pendingDocumentChanges.push(change);
+	if (get(projectState).initialized && change.persist !== false) pendingDocumentChanges.push(change);
 });
 
 const saveCurrentProjectEffect = Effect.fn("editor.session.saveCurrent")(function* () {
@@ -71,6 +71,16 @@ const saveCurrentProjectEffect = Effect.fn("editor.session.saveCurrent")(functio
 		)
 	);
 });
+
+/** Persists the currently queued document changes without materializing the full project. */
+export const persistPendingEditorChangesEffect = Effect.fn("editor.session.persistPendingChanges")(function* () {
+	return yield* saveCurrentProjectEffect();
+});
+
+/** Drops queued document changes after a deliberately non-persistent state restoration. */
+export function discardPendingEditorChanges(): void {
+	pendingDocumentChanges.length = 0;
+}
 
 /** Persists the current project through the coordinator, logging failures. */
 function saveCurrentProject(): Promise<void> {

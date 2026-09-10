@@ -14,6 +14,7 @@ export type DocumentElementChange = {
 export type DocumentOrderChange =
 	| { tag: "none" }
 	| { tag: "insert"; ids: readonly string[]; index: number }
+	| { tag: "insertMany"; entries: readonly { id: string; index: number }[] }
 	| { tag: "remove"; ids: readonly string[]; indexes: readonly number[] }
 	| { tag: "move"; ids: readonly string[]; fromIndexes: readonly number[]; toIndex: number }
 	| { tag: "replace"; before: readonly string[]; after: readonly string[] };
@@ -24,6 +25,7 @@ export type DocumentChangeSet = {
 	revision: number;
 	changes: readonly DocumentElementChange[];
 	order: DocumentOrderChange;
+	persist?: boolean;
 };
 
 /** Callback notified once for each accepted document command. */
