@@ -4,13 +4,7 @@ import { get } from "svelte/store";
 
 import { clampCropScale, resizeImageRect, scaleImageRect, withImageRect } from "../image/crop";
 import { imageAssetState } from "../state/assets";
-import {
-	documentIndex,
-	projectState,
-	setProjectState,
-	updateIndexedProject,
-	updateProjectState
-} from "../state/document";
+import { documentIndex, updateIndexedProject } from "../state/document";
 import { updateInteractionState } from "../state/interaction";
 import { canvasState } from "../state/workspace";
 import type { ImageAssetState } from "../types";
@@ -98,49 +92,42 @@ export function translateElement(id: string, dx: number, dy: number) {
 export function translateElements(ids: readonly string[], dx: number, dy: number) {
 	if (ids.length === 0 || (dx === 0 && dy === 0)) return { x: 0, y: 0 };
 
-	const idSet = new Set(ids);
 	const canvas = get(canvasState);
 	let applied = { x: 0, y: 0 };
+	const selected = ids
+		.map((id) => documentIndex.get(id))
+		.filter((element): element is Element => element !== undefined && !element.locked);
+	if (selected.length === 0) return applied;
+	const movableIds = new Set(selected.map((element) => element.id));
 
-	updateProjectState((state) => {
-		const selected = state.elements.filter((element) => idSet.has(element.id) && !element.locked);
-		if (selected.length === 0) return state;
-		const movableIds = new Set(selected.map((element) => element.id));
+	const bounds = selected.map(getElementBounds);
 
-		const bounds = selected.map(getElementBounds);
+	const groupX = Math.min(...bounds.map((b) => b.x));
+	const groupY = Math.min(...bounds.map((b) => b.y));
+	const groupWidth = Math.max(...bounds.map((b) => b.x + b.width)) - groupX;
+	const groupHeight = Math.max(...bounds.map((b) => b.y + b.height)) - groupY;
 
-		const groupX = Math.min(...bounds.map((b) => b.x));
-		const groupY = Math.min(...bounds.map((b) => b.y));
-		const groupWidth = Math.max(...bounds.map((b) => b.x + b.width)) - groupX;
-		const groupHeight = Math.max(...bounds.map((b) => b.y + b.height)) - groupY;
+	const minDx = Math.max(...bounds.map((b) => canvas.x - b.x));
+	const maxDx = Math.min(...bounds.map((b) => canvas.x + canvas.width - b.x - b.width));
+	const minDy = Math.max(...bounds.map((b) => canvas.y - b.y));
+	const maxDy = Math.min(...bounds.map((b) => canvas.y + canvas.height - b.y - b.height));
 
-		const minDx = Math.max(...bounds.map((b) => canvas.x - b.x));
-		const maxDx = Math.min(...bounds.map((b) => canvas.x + canvas.width - b.x - b.width));
-		const minDy = Math.max(...bounds.map((b) => canvas.y - b.y));
-		const maxDy = Math.min(...bounds.map((b) => canvas.y + canvas.height - b.y - b.height));
-
-		const nextDx = Math.round(groupWidth > canvas.width ? canvas.x - groupX : Math.min(maxDx, Math.max(minDx, dx)));
-		const nextDy = Math.round(
-			groupHeight > canvas.height ? canvas.y - groupY : Math.min(maxDy, Math.max(minDy, dy))
+	const nextDx = Math.round(groupWidth > canvas.width ? canvas.x - groupX : Math.min(maxDx, Math.max(minDx, dx)));
+	const nextDy = Math.round(groupHeight > canvas.height ? canvas.y - groupY : Math.min(maxDy, Math.max(minDy, dy)));
+	applied = { x: nextDx, y: nextDy };
+	if (nextDx !== 0 || nextDy !== 0) {
+		updateIndexedProject(
+			(document) => document.updateMany([...movableIds], (element) => translate(element, nextDx, nextDy)),
+			"preserve"
 		);
-		applied = { x: nextDx, y: nextDy };
-
-		if (nextDx === 0 && nextDy === 0) return state;
-
-		return {
-			...state,
-			elements: state.elements.map((element) =>
-				movableIds.has(element.id) ? translate(element, nextDx, nextDy) : element
-			)
-		};
-	}, "preserve");
+	}
 
 	return applied;
 }
 
 /** Positions one element using its circle center or top-left anchor. */
 export function setElementPosition(id: string, x: number, y: number): void {
-	const element = get(projectState).elements.find((candidate) => candidate.id === id);
+	const element = documentIndex.get(id);
 
 	if (!element) return;
 
@@ -283,113 +270,60 @@ export function renameElement(id: string, name: string): void {
 /** Clamps every element after a canvas frame change. */
 export function clampElementsToCanvas(): void {
 	const canvas = get(canvasState);
-
-	updateProjectState(
-		(state) => ({
-			...state,
-			elements: state.elements.map((element) => clampElementToCanvas(element, canvas))
-		}),
+	const ids = [...documentIndex.ordered()].map((element) => element.id);
+	updateIndexedProject(
+		(document) => document.updateMany(ids, (element) => clampElementToCanvas(element, canvas)),
 		"rescan"
 	);
 }
 
 /** Rewrites one linear-path vertex and clamps the resulting path frame. */
 export function updatePathVertex(id: string, index: number, point: { x: number; y: number }): void {
-	const state = get(projectState);
+	const element = documentIndex.get(id);
 	const canvas = get(canvasState);
-	let beforeChange: Element | null = null;
-	let afterChange: Element | null = null;
-
-	const nextState = {
-		...state,
-		elements: state.elements.map((element) => {
-			if (element.id !== id || element.type !== "path" || element.locked) return element;
-
-			const points = toPathPoints(element.d);
-			if (index < 0 || index >= points.length) return element;
-
-			const oldBounds = getPointBounds(points);
-			points[index] = point;
-			const newBounds = getPointBounds(points);
-
-			const next = clampElementToCanvas(
-				{
-					...element,
-					d: toPath(points, element.closed),
-					x: Math.round(element.x + (newBounds.x - oldBounds.x)),
-					y: Math.round(element.y + (newBounds.y - oldBounds.y))
-				},
-				canvas
-			);
-			beforeChange = element;
-			afterChange = next;
-			return next;
-		})
-	};
-	const hint = beforeChange && afterChange ? { changed: { before: beforeChange, after: afterChange } } : "preserve";
-
-	setProjectState(nextState, hint);
+	if (!element || element.type !== "path" || element.locked) return;
+	const points = toPathPoints(element.d);
+	if (index < 0 || index >= points.length) return;
+	const oldBounds = getPointBounds(points);
+	points[index] = point;
+	const newBounds = getPointBounds(points);
+	const next = clampElementToCanvas(
+		{
+			...element,
+			d: toPath(points, element.closed),
+			x: Math.round(element.x + (newBounds.x - oldBounds.x)),
+			y: Math.round(element.y + (newBounds.y - oldBounds.y))
+		},
+		canvas
+	);
+	updateIndexedProject((document) => document.update(id, () => next));
 }
 
 /** Inserts a vertex after the path segment closest to the supplied path-local point. */
 export function insertPathVertex(id: string, point: { x: number; y: number }): void {
-	const state = get(projectState);
+	const element = documentIndex.get(id);
 	const canvas = get(canvasState);
-	let beforeChange: Element | null = null;
-	let afterChange: Element | null = null;
-
-	const nextState = {
-		...state,
-		elements: state.elements.map((element) => {
-			if (element.id !== id || element.type !== "path" || element.locked) return element;
-
-			const points = toPathPoints(element.d);
-			const insertionIndex = getPathVertexInsertionIndex(points, element.closed, point);
-			if (insertionIndex === null) return element;
-
-			const nextPoints = [...points];
-			nextPoints.splice(insertionIndex, 0, point);
-			const next = rewritePathPoints(element, nextPoints, canvas);
-			beforeChange = element;
-			afterChange = next;
-			return next;
-		})
-	};
-
-	setProjectState(
-		nextState,
-		beforeChange && afterChange ? { changed: { before: beforeChange, after: afterChange } } : "preserve"
-	);
+	if (!element || element.type !== "path" || element.locked) return;
+	const points = toPathPoints(element.d);
+	const insertionIndex = getPathVertexInsertionIndex(points, element.closed, point);
+	if (insertionIndex === null) return;
+	const nextPoints = [...points];
+	nextPoints.splice(insertionIndex, 0, point);
+	const next = rewritePathPoints(element, nextPoints, canvas);
+	updateIndexedProject((document) => document.update(id, () => next));
 }
 
 /** Removes one vertex when doing so leaves the path with a valid number of vertices. */
 export function removePathVertex(id: string, index: number): void {
-	const state = get(projectState);
+	const element = documentIndex.get(id);
 	const canvas = get(canvasState);
-	let beforeChange: Element | null = null;
-	let afterChange: Element | null = null;
-
-	const nextState = {
-		...state,
-		elements: state.elements.map((element) => {
-			if (element.id !== id || element.type !== "path" || element.locked) return element;
-
-			const points = toPathPoints(element.d);
-			const minimumVertexCount = element.closed ? 3 : 2;
-			if (index < 0 || index >= points.length || points.length <= minimumVertexCount) return element;
-
-			const nextPoints = points.filter((_, pointIndex) => pointIndex !== index);
-			const next = rewritePathPoints(element, nextPoints, canvas);
-			beforeChange = element;
-			afterChange = next;
-			return next;
-		})
-	};
-
-	setProjectState(
-		nextState,
-		beforeChange && afterChange ? { changed: { before: beforeChange, after: afterChange } } : "preserve"
-	);
+	if (!element || element.type !== "path" || element.locked) return;
+	const points = toPathPoints(element.d);
+	const minimumVertexCount = element.closed ? 3 : 2;
+	if (index < 0 || index >= points.length || points.length <= minimumVertexCount) return;
+	const nextPoints = points.filter((_, pointIndex) => pointIndex !== index);
+	const next = rewritePathPoints(element, nextPoints, canvas);
+	updateIndexedProject((document) => document.update(id, () => next));
 }
 
 function rewritePathPoints(
