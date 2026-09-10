@@ -3,7 +3,13 @@ import type { RectElement } from "@maply/model/types";
 import { getEditorBenchmarkCounters, resetEditorBenchmarkCounters } from "editor/benchmark-counters";
 import { history } from "editor/history";
 import { selectMany, setHover, toggleCrop } from "editor/selection/commands";
-import { documentRevisionState, projectState, setProjectState } from "editor/state/document";
+import {
+	documentRevisionState,
+	elementsState,
+	projectState,
+	setProjectState,
+	updateProjectState
+} from "editor/state/document";
 import { interactionRevisionState, interactionState, resetInteractionState } from "editor/state/interaction";
 import { get } from "svelte/store";
 import { describe, expect, it } from "vitest";
@@ -67,5 +73,20 @@ describe("transient interaction state", () => {
 			historyRecords: 0,
 			saveRequests: 0
 		});
+	});
+
+	it("does not publish the elements projection for project metadata changes", () => {
+		setFixture();
+		const elementsBefore = get(elementsState);
+		let elementProjectionUpdates = 0;
+		const unsubscribe = elementsState.subscribe(() => {
+			elementProjectionUpdates += 1;
+		});
+
+		updateProjectState((state) => ({ ...state, name: "Renamed" }), "preserve");
+
+		expect(get(elementsState)).toBe(elementsBefore);
+		expect(elementProjectionUpdates).toBe(1);
+		unsubscribe();
 	});
 });

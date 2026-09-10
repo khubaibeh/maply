@@ -29,7 +29,7 @@ type PendingMove = {
 };
 
 /** Owns one active window pointer-drag lifecycle for a Svelte component. */
-export function createPointerDrag() {
+export function createPointerDrag(registerDestroy: (cleanup: () => void) => void = onDestroy) {
 	let active: ActiveDrag | null = null;
 	let pending: PendingMove | null = null;
 	let frame: number | null = null;
@@ -118,7 +118,7 @@ export function createPointerDrag() {
 		return true;
 	}
 
-	onDestroy(() => stop(true, null));
+	registerDestroy(() => stop(true, null));
 
 	return { start, cancel: () => stop(true, null) };
 }
