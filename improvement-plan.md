@@ -104,7 +104,7 @@ Do not begin a dependent chunk until the preceding exit criteria pass.
 | 5 | Spatial index, hit testing, and viewport-culled SVG | 2, 3 | Complete |
 | 6 | Incremental derived indexes and layout caches | 2, 5 | Complete |
 | 7 | Change-based history | 2, 3 | Complete |
-| 8 | Incremental Effect-based persistence | 2, 7 | Not started |
+| 8 | Incremental Effect-based persistence | 2, 7 | Complete |
 | 9 | Renderer decision and optional Canvas2D scene | 0-8 | Not started |
 | 10 | Release hardening and 50k acceptance run | 0-9 | Not started |
 
@@ -435,7 +435,7 @@ large traces into this document.
 | 5 | 118a9d9 | — | — | `pnpm check`, `pnpm test`, spatial query and mutation tests | A uniform grid with 512-unit cells now drives ordered viewport, point-picking, and marquee candidates; SVG keeps selected elements mounted and hover no longer depends on per-element enter/leave handlers. Browser timing evidence remains to be captured in the benchmark lab. |
 | 6 | f3452e0 | — | — | `pnpm check`, `pnpm test`, indexed derived-state and cache invalidation tests | Name counts, validations, asset references, bounds, and text layouts now update per document change; selected projections use indexed lookup and unrelated element updates keep cached geometry/layout values. |
 | 7 | 9b8b603 | — | — | `pnpm check`, `pnpm test`, history transaction, rollback, asset, undo, and redo tests | History records now store changed element records, order deltas, metadata deltas, and asset deltas instead of full document snapshots. |
-| 8 | — | — | — | — | Not started |
+| 8 | e064248 | — | — | `pnpm check`, `pnpm test`, storage migration and incremental round-trip tests | IndexedDB version 5 stores project metadata and element records separately; autosave batches typed document changes through Effect while full replace paths remain atomic. |
 | 9 | — | — | — | — | Not started |
 | 10 | — | — | — | — | Not started |
 
