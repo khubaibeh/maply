@@ -8,6 +8,7 @@ import { runStorageEffect, saveImageAssetEffect, withEditorWriteGate } from "../
 import { imageAssetState } from "../state/assets";
 import { clipboardState, projectState, updateProjectState } from "../state/document";
 import { applyInternalEditorMutationEffect, withAsyncEditorMutationEffect } from "../state/editing";
+import { updateInteractionState } from "../state/interaction";
 import { canvasState } from "../state/workspace";
 
 function pastedName(element: Element, elements: readonly Element[]): string {
@@ -104,12 +105,17 @@ const pasteEffect = Effect.fn("editor.clipboard.paste")(function* (point?: Point
 			updateProjectState(
 				(state) => ({
 					...state,
-					elements: [...state.elements, ...positioned],
-					selectedElementIds: positioned.map((element) => element.id),
-					selectedElementId: positioned.at(-1)?.id ?? null
+					elements: [...state.elements, ...positioned]
 				}),
 				{ added: positioned }
 			);
+			updateInteractionState((state) => ({
+				...state,
+				selectedElementIds: positioned.map((element) => element.id),
+				selectedElementId: positioned.at(-1)?.id ?? null,
+				hoveredElementId: null,
+				cropEditingElementId: null
+			}));
 		})
 	);
 });

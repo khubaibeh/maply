@@ -20,6 +20,7 @@
 	import { createElementReorder } from "./use-reorder.svelte";
 
 	const project = Editor.state.project;
+	const interaction = Editor.state.interaction;
 	let list: HTMLElement | null = $state(null);
 	let viewport: HTMLElement | null = $state(null);
 	let backgroundOpen = $state(false);
@@ -194,7 +195,7 @@
 							{element}
 							{index}
 							validation={validations.get(element.id)}
-							selected={$project.selectedElementIds.includes(element.id)}
+							selected={$interaction.selectedElementIds.includes(element.id)}
 							active={reorder.isActive(element.id)}
 							onReorderStart={(event, id, rowIndex) => {
 								if (!hasActiveFilter) reorder.start(event, id, rowIndex);

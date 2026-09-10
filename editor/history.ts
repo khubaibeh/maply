@@ -14,6 +14,7 @@ import { settleEditorSaveEffect } from "./session/save";
 import { imageAssetState } from "./state/assets";
 import { projectState, setProjectState } from "./state/document";
 import { applyInternalEditorMutation, withEditorMutationBlockEffect } from "./state/editing";
+import { getInteractionState, updateInteractionState } from "./state/interaction";
 import { canvasState } from "./state/workspace";
 
 const defaultLimit = 100;
@@ -112,18 +113,24 @@ function sameSnapshot(left: ObservedSnapshot, right: ObservedSnapshot): boolean 
 
 function projectForSnapshot(next: HistorySnapshot) {
 	const current = get(projectState);
-	const validIds = new Set(next.elements.map((element) => element.id));
-	const selectedIds = current.selectedElementIds.filter((id) => validIds.has(id));
-	const selectedId =
-		current.selectedElementId && validIds.has(current.selectedElementId) ? current.selectedElementId : null;
 
 	return {
 		...current,
 		name: next.name,
 		elements: [...next.elements],
-		elementNameGrid: next.elementNameGrid,
-		selectedElementIds: selectedIds,
-		selectedElementId: selectedId,
+		elementNameGrid: next.elementNameGrid
+	};
+}
+
+function interactionForSnapshot(next: HistorySnapshot) {
+	const current = getInteractionState();
+	const validIds = new Set(next.elements.map((element) => element.id));
+	const selectedElementIds = current.selectedElementIds.filter((id) => validIds.has(id));
+	return {
+		...current,
+		selectedElementIds,
+		selectedElementId:
+			current.selectedElementId && validIds.has(current.selectedElementId) ? current.selectedElementId : null,
 		hoveredElementId: null,
 		cropEditingElementId: null
 	};
@@ -151,6 +158,7 @@ function applySnapshot(next: HistorySnapshot): void {
 	applyInternalEditorMutation(() => {
 		const currentCanvas = get(canvasState);
 		setProjectState(projectForSnapshot(next), "rescan");
+		updateInteractionState(() => interactionForSnapshot(next));
 		canvasState.set({ ...currentCanvas, ...next.canvas, camera: currentCanvas.camera });
 		imageAssetState.set(structuredClone(next.assets));
 	});

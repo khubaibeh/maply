@@ -21,6 +21,7 @@ const CLOSE_HANDLE_SCREEN_PX = 6;
 export function createCanvasAreaState() {
 	const canvas = fromStore(Editor.state.canvas);
 	const project = fromStore(Editor.state.project);
+	const interaction = fromStore(Editor.state.interaction);
 	const tool = fromStore(Editor.state.tool);
 	const contextMenu = createCanvasContextMenu();
 	const drawing = createDrawingSession();
@@ -39,14 +40,14 @@ export function createCanvasAreaState() {
 	});
 
 	const selectedImage = $derived(
-		(project.current.selectedElementIds.length === 1
+		(interaction.current.selectedElementIds.length === 1
 			? (project.current.elements.find(
-					(element) => element.id === project.current.selectedElementId && element.type === "image"
+					(element) => element.id === interaction.current.selectedElementId && element.type === "image"
 				) ?? null)
 			: null) as ImageElement | null
 	);
 	const cropEditing = $derived(
-		project.current.cropEditingElementId === project.current.selectedElementId && selectedImage !== null
+		interaction.current.cropEditingElementId === interaction.current.selectedElementId && selectedImage !== null
 	);
 
 	$effect(() => {
@@ -99,8 +100,8 @@ export function createCanvasAreaState() {
 		state.containerHeight = initialRect.height;
 
 		function handleWheel(event: WheelEvent) {
-			const cropEditingElement = project.current.cropEditingElementId
-				? project.current.elements.find((element) => element.id === project.current.cropEditingElementId)
+			const cropEditingElement = interaction.current.cropEditingElementId
+				? project.current.elements.find((element) => element.id === interaction.current.cropEditingElementId)
 				: null;
 
 			if (cropEditingElement?.type === "image") {

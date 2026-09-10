@@ -16,6 +16,7 @@
 	const RIGHT_SIDEBAR_WIDTH = 285;
 
 	const project = Editor.state.project;
+	const interaction = Editor.state.interaction;
 	let imageInput = $state<HTMLInputElement>();
 
 	function openImagePicker() {
@@ -44,7 +45,7 @@
 	}
 
 	function getSelectedElements() {
-		return $project.elements.filter((element) => $project.selectedElementIds.includes(element.id));
+		return $project.elements.filter((element) => $interaction.selectedElementIds.includes(element.id));
 	}
 
 	onMount(() => {
@@ -76,7 +77,7 @@
 
 			if (event.key === "Escape") {
 				if (isEditingText(event)) return;
-				if ($project.selectedElementIds.length === 0) return;
+				if ($interaction.selectedElementIds.length === 0) return;
 
 				event.preventDefault();
 				Editor.selection.select(null);
@@ -84,7 +85,7 @@
 			}
 
 			if (!isEditingText(event)) {
-				const selectedIds = $project.selectedElementIds;
+				const selectedIds = $interaction.selectedElementIds;
 				const delta = getArrowDelta(event.key, event.shiftKey ? 10 : 1);
 
 				if (selectedIds.length > 0 && delta) {
@@ -97,7 +98,7 @@
 
 			if (event.key === "Delete" || event.key === "Backspace") {
 				if (isEditingText(event)) return;
-				const selectedIds = $project.selectedElementIds;
+				const selectedIds = $interaction.selectedElementIds;
 				if (selectedIds.length === 0) return;
 
 				event.preventDefault();

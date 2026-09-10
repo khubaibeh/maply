@@ -20,6 +20,7 @@ import { ImageAssetMissing, ImageAttachmentFailed, ImageTargetInvalid } from "..
 import { imageAssetState } from "../state/assets";
 import { projectState, setProjectState } from "../state/document";
 import { applyInternalEditorMutation, withAsyncEditorMutationEffect } from "../state/editing";
+import { updateInteractionState } from "../state/interaction";
 import { canvasState } from "../state/workspace";
 import type { ImageAssetState, ProjectState } from "../types";
 import { fitImageRect, withImageRect } from "./crop";
@@ -100,14 +101,17 @@ const addPreparedImageEffect = Effect.fn("editor.image.addPrepared")(function* (
 			setProjectState(
 				{
 					...project,
-					elements,
-					selectedElementId: image.id,
-					selectedElementIds: [image.id],
-					hoveredElementId: null,
-					cropEditingElementId: null
+					elements
 				},
 				{ added: [image] }
 			);
+			updateInteractionState((state) => ({
+				...state,
+				selectedElementId: image.id,
+				selectedElementIds: [image.id],
+				hoveredElementId: null,
+				cropEditingElementId: null
+			}));
 			imageAssetState.set(Object.fromEntries(persistedAssets.map((entry) => [entry.id, entry])));
 		});
 		history.commit(historyTransaction);

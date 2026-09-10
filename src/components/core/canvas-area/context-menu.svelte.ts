@@ -6,6 +6,7 @@ import { fromStore } from "svelte/store";
 /** Owns canvas context-menu targeting, availability, and command dispatch. */
 export function createCanvasContextMenu() {
 	const project = fromStore(Editor.state.project);
+	const interaction = fromStore(Editor.state.interaction);
 	const state = $state({
 		open: false,
 		target: "empty" as "element" | "empty",
@@ -18,12 +19,12 @@ export function createCanvasContextMenu() {
 		const node = event.target instanceof Element ? event.target.closest("[data-canvas-element]") : null;
 		const id = node?.getAttribute("data-canvas-element") ?? null;
 		if (id) {
-			if (!project.current.selectedElementIds.includes(id)) Editor.selection.select(id);
+			if (!interaction.current.selectedElementIds.includes(id)) Editor.selection.select(id);
 			state.target = "element";
 			state.elementId = id;
 			return;
 		}
-		if (project.current.selectedElementIds.length > 0) Editor.selection.select(null);
+		if (interaction.current.selectedElementIds.length > 0) Editor.selection.select(null);
 		state.target = "empty";
 		state.elementId = null;
 	}
@@ -36,8 +37,8 @@ export function createCanvasContextMenu() {
 
 	function copy() {
 		if (!state.elementId) return;
-		const ids = project.current.selectedElementIds.includes(state.elementId)
-			? project.current.selectedElementIds
+		const ids = interaction.current.selectedElementIds.includes(state.elementId)
+			? interaction.current.selectedElementIds
 			: [state.elementId];
 		Editor.clipboard.copy(project.current.elements.filter((element) => ids.includes(element.id)));
 		state.open = false;
@@ -45,8 +46,8 @@ export function createCanvasContextMenu() {
 
 	function remove() {
 		if (!state.elementId) return;
-		const ids = project.current.selectedElementIds.includes(state.elementId)
-			? project.current.selectedElementIds
+		const ids = interaction.current.selectedElementIds.includes(state.elementId)
+			? interaction.current.selectedElementIds
 			: [state.elementId];
 		if (Editor.element.delete(ids)) state.open = false;
 	}
@@ -74,8 +75,8 @@ export function createCanvasContextMenu() {
 
 	function orderingIds() {
 		if (!state.elementId) return [];
-		return project.current.selectedElementIds.includes(state.elementId)
-			? project.current.selectedElementIds
+		return interaction.current.selectedElementIds.includes(state.elementId)
+			? interaction.current.selectedElementIds
 			: [state.elementId];
 	}
 

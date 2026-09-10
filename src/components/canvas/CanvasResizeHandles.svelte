@@ -14,13 +14,13 @@
 
 	const canvas = Editor.state.canvas;
 	const minCanvasSize = Editor.state.minimumCanvasSize;
-	const project = Editor.state.project;
+	const interaction = Editor.state.interaction;
 	const tool = Editor.state.tool;
 
 	const canResize = $derived(
 		$tool.activeTool === "select" &&
-			$project.cropEditingElementId === null &&
-			$project.selectedElementIds.length === 0
+			$interaction.cropEditingElementId === null &&
+			$interaction.selectedElementIds.length === 0
 	);
 	const handleSize = $derived(HANDLE_SIZE_SCREEN / $canvas.camera.zoom);
 	const handleThickness = $derived(HANDLE_THICKNESS_SCREEN / $canvas.camera.zoom);

@@ -15,6 +15,7 @@
 	const canvas = Editor.state.canvas;
 	const minCanvasSize = Editor.state.minimumCanvasSize;
 	const project = Editor.state.project;
+	const interaction = Editor.state.interaction;
 
 	function updateWidth(event: Event) {
 		const value = parseInt((event.target as HTMLInputElement).value, 10);
@@ -47,13 +48,13 @@
 	}
 
 	const selectedElement = $derived(
-		$project.selectedElementIds.length === 1
-			? ($project.elements.find((element) => element.id === $project.selectedElementId) ?? null)
+		$interaction.selectedElementIds.length === 1
+			? ($project.elements.find((element) => element.id === $interaction.selectedElementId) ?? null)
 			: null
 	);
-	const selectedElementCount = $derived($project.selectedElementIds.length);
+	const selectedElementCount = $derived($interaction.selectedElementIds.length);
 	const selectedElements = $derived(
-		$project.elements.filter((element) => $project.selectedElementIds.includes(element.id))
+		$project.elements.filter((element) => $interaction.selectedElementIds.includes(element.id))
 	);
 	const elementNameValidations = $derived(Editor.naming.validate($project.elements));
 	const selectedElementNameValidation = $derived(

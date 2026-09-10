@@ -6,7 +6,7 @@ export type { ResizeHandle, ResizeOptions } from "./elements/resize";
 /** A layer-order direction for one or more selected elements. */
 export type SelectionOrder = "front" | "forward" | "backward" | "back";
 
-/** The live project data and editor-only selection state. */
+/** The live persisted project data. */
 export type ProjectState = {
 	id: string;
 	name: string;
@@ -14,6 +14,10 @@ export type ProjectState = {
 	elementNameGrid: ElementNameGrid;
 	isElementNameImportOpen: boolean;
 	initialized: boolean;
+};
+
+/** Selection, hover, and crop state that never crosses the persistence seam. */
+export type InteractionState = {
 	selectedElementId: string | null;
 	selectedElementIds: string[];
 	hoveredElementId: string | null;

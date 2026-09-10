@@ -5,6 +5,7 @@ import { history } from "./history";
 import { runStorageEffect, saveImageAssetEffect } from "./session/coordinator";
 import { imageAssetState } from "./state/assets";
 import { updateProjectState } from "./state/document";
+import { resetInteractionState } from "./state/interaction";
 import { canvasState } from "./state/workspace";
 
 /** Applies a cold benchmark fixture through the editor's public benchmark seam. */
@@ -24,14 +25,11 @@ export function applyBenchmarkFixture(project: Project, imageAssets: readonly St
 			id: project.id,
 			name: project.name,
 			elements: [...project.elements],
-			initialized: true,
-			selectedElementId: null,
-			selectedElementIds: [],
-			hoveredElementId: null,
-			cropEditingElementId: null
+			initialized: true
 		}),
 		"rescan"
 	);
+	resetInteractionState();
 	history.reset();
 }
 

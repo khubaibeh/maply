@@ -19,11 +19,7 @@ beforeEach(async () => {
 			elements: [],
 			elementNameGrid: createElementNameGrid(),
 			isElementNameImportOpen: true,
-			initialized: true,
-			selectedElementId: null,
-			selectedElementIds: [],
-			hoveredElementId: null,
-			cropEditingElementId: null
+			initialized: true
 		},
 		"rescan"
 	);

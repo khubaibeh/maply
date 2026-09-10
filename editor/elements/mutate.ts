@@ -5,6 +5,7 @@ import { get } from "svelte/store";
 import { clampCropScale, resizeImageRect, scaleImageRect, withImageRect } from "../image/crop";
 import { imageAssetState } from "../state/assets";
 import { projectState, setProjectState, updateProjectState } from "../state/document";
+import { updateInteractionState } from "../state/interaction";
 import { canvasState } from "../state/workspace";
 import type { ImageAssetState } from "../types";
 import { clampElementToCanvas, getElementBounds, getPointBounds } from "./geometry";
@@ -57,12 +58,17 @@ export function addElement(element: Element): void {
 	updateProjectState(
 		(state) => ({
 			...state,
-			elements: [...state.elements, next],
-			selectedElementId: next.id,
-			selectedElementIds: [next.id]
+			elements: [...state.elements, next]
 		}),
 		{ added: [next] }
 	);
+	updateInteractionState((state) => ({
+		...state,
+		selectedElementId: next.id,
+		selectedElementIds: [next.id],
+		hoveredElementId: null,
+		cropEditingElementId: null
+	}));
 }
 
 /** Moves one element while retaining it within the canvas. */

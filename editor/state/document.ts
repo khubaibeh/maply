@@ -13,11 +13,7 @@ const initialProjectState: ProjectState = {
 	elements: [],
 	elementNameGrid: createElementNameGrid(),
 	isElementNameImportOpen: true,
-	initialized: false,
-	selectedElementId: null,
-	selectedElementIds: [],
-	hoveredElementId: null,
-	cropEditingElementId: null
+	initialized: false
 };
 
 /** The default fill used by newly created fillable elements. */
@@ -124,9 +120,11 @@ function trackDeletedElementsMinimumCanvasSize(
 
 const projectStore = writable<ProjectState>(initialProjectState);
 const minimumCanvasSizeStore = writable<MinimumCanvasSize>({ width: 1, height: 1 });
+const documentRevisionStore = writable(0);
 
 let currentProjectState = initialProjectState;
 let currentMinimumCanvasSizeCache = measureMinimumCanvasSizeCache(initialProjectState.elements);
+let currentDocumentRevision = 0;
 
 function applyMinimumCanvasSizeHint(
 	cache: MinimumCanvasSizeCache,
@@ -151,6 +149,8 @@ function applyProjectState(next: ProjectState, hint: MinimumCanvasSizeHint): boo
 		hint
 	);
 	currentProjectState = next;
+	currentDocumentRevision += 1;
+	documentRevisionStore.set(currentDocumentRevision);
 	recordDocumentRevision();
 	minimumCanvasSizeStore.set(toMinimumCanvasSize(currentMinimumCanvasSizeCache));
 	recordChangePublication();
@@ -161,6 +161,11 @@ function applyProjectState(next: ProjectState, hint: MinimumCanvasSizeHint): boo
 /** The editor's live project and selection state. */
 export const projectState = {
 	subscribe: projectStore.subscribe
+} as const;
+
+/** The document revision, independent from interaction revisions. */
+export const documentRevisionState = {
+	subscribe: documentRevisionStore.subscribe
 } as const;
 
 /** Applies a project-state transition with an explicit minimum-canvas-size cache strategy. */

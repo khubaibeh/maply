@@ -12,6 +12,7 @@
 
 	const imageAssets = Editor.state.imageAssets;
 	const project = Editor.state.project;
+	const interaction = Editor.state.interaction;
 	const tool = Editor.state.tool;
 
 	function hover(id: string, locked: boolean) {
@@ -20,7 +21,7 @@
 	}
 
 	function clearHover(id: string) {
-		if ($project.hoveredElementId === id) Editor.selection.setHover(null);
+		if ($interaction.hoveredElementId === id) Editor.selection.setHover(null);
 	}
 
 	function insertPathVertex(

@@ -6,6 +6,7 @@ import { deleteElements } from "editor/selection/delete";
 import { runStorageEffect, settleEditorWrites } from "editor/session/coordinator";
 import { imageAssetState } from "editor/state/assets";
 import { projectState, updateProjectState } from "editor/state/document";
+import { interactionState, updateInteractionState } from "editor/state/interaction";
 import { canvasState } from "editor/state/workspace";
 import { IDBKeyRange, indexedDB } from "fake-indexeddb";
 import { get } from "svelte/store";
@@ -57,13 +58,12 @@ function setup() {
 		(state) => ({
 			...state,
 			initialized: false,
-			elements: [rect()],
-			selectedElementId: "rect",
-			selectedElementIds: ["rect"]
+			elements: [rect()]
 		}),
 		"rescan"
 	);
 	history.reset();
+	updateInteractionState((state) => ({ ...state, selectedElementId: "rect", selectedElementIds: ["rect"] }));
 }
 
 function rectX(): number | undefined {
@@ -75,13 +75,13 @@ describe("editor history", () => {
 	it("records document changes, ignores camera and selection changes, and supports redo", async () => {
 		setup();
 		updateElement("rect", { x: 40 });
-		updateProjectState((state) => ({ ...state, selectedElementIds: [] }), "preserve");
+		updateInteractionState((state) => ({ ...state, selectedElementIds: [], selectedElementId: null }));
 		canvasState.update((state) => ({ ...state, camera: { x: 20, y: 10, zoom: 2 } }));
 
 		const undo = history.undo();
 		await undo;
 		expect(rectX()).toBe(10);
-		expect(get(projectState).selectedElementIds).toEqual([]);
+		expect(get(interactionState).selectedElementIds).toEqual([]);
 		expect(get(canvasState).camera.zoom).toBe(2);
 
 		await history.redo();

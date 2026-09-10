@@ -9,6 +9,7 @@ import { history } from "../history";
 import { imageAssetState } from "../state/assets";
 import { updateProjectState } from "../state/document";
 import { applyInternalEditorMutationEffect, withEditorMutationBlockEffect } from "../state/editing";
+import { resetInteractionState } from "../state/interaction";
 import { canvasState, createInitialCanvasState } from "../state/workspace";
 import { fetchImageAssetsEffect, fetchProjectEffect, runStorageEffect, withEditorWriteGate } from "./coordinator";
 import { SessionSuperseded } from "./errors";
@@ -44,15 +45,11 @@ function applyProject(project: StoredEditorProject) {
 				clampElementToCanvas(normalizeElement(element), project.canvas)
 			),
 			elementNameGrid: editorData.elementNameGrid,
-			isElementNameImportOpen: project.isElementNameImportOpen,
-			// TODO: This single one needs to go away at a later time, this is code smell
-			selectedElementId: null,
-			selectedElementIds: [],
-			hoveredElementId: null,
-			cropEditingElementId: null
+			isElementNameImportOpen: project.isElementNameImportOpen
 		}),
 		"rescan"
 	);
+	resetInteractionState();
 }
 
 /** Hydrates editor state and its referenced image assets from persistent storage. */
@@ -97,14 +94,11 @@ export const loadEditorSessionEffect = Effect.fn("editor.session.load")(function
 						updateProjectState(
 							(state) => ({
 								...state,
-								selectedElementId: null,
-								selectedElementIds: [],
-								hoveredElementId: null,
-								cropEditingElementId: null,
 								initialized: true
 							}),
 							"preserve"
 						);
+						resetInteractionState();
 					})
 				);
 				return;

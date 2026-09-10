@@ -8,6 +8,7 @@ import { clientToSvgPoint, getSvgRoot } from "./svg";
 /** Centralizes selection and movement policy for canvas element pointer targets. */
 export function createElementMove() {
 	const project = fromStore(Editor.state.project);
+	const interaction = fromStore(Editor.state.interaction);
 	const tool = fromStore(Editor.state.tool);
 	const drag = createPointerDrag();
 	const state = $state({ isDragging: false });
@@ -24,7 +25,7 @@ export function createElementMove() {
 		drag.cancel();
 
 		const additive = event.ctrlKey || event.metaKey;
-		const wasSelected = project.current.selectedElementIds.includes(id);
+		const wasSelected = interaction.current.selectedElementIds.includes(id);
 		if (additive) {
 			event.preventDefault();
 			if (!wasSelected) {
@@ -35,7 +36,7 @@ export function createElementMove() {
 			Editor.selection.select(id);
 		}
 
-		const selectedIds = [...project.current.selectedElementIds];
+		const selectedIds = [...interaction.current.selectedElementIds];
 		const svg = getSvgRoot(event.target);
 		if (!svg) return;
 		const toggleId = additive && wasSelected ? id : null;

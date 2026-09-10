@@ -30,11 +30,7 @@ function reset(elements: RectElement[]) {
 			elements,
 			elementNameGrid: createElementNameGrid(),
 			isElementNameImportOpen: true,
-			initialized: true,
-			selectedElementId: null,
-			selectedElementIds: [],
-			hoveredElementId: null,
-			cropEditingElementId: null
+			initialized: true
 		},
 		"rescan"
 	);

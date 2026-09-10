@@ -27,6 +27,7 @@ type ReorderOptions = {
 /** Owns delayed activation, preview ordering, auto-scroll, and cleanup for the elements panel. */
 export function createElementReorder({ list, viewport }: ReorderOptions) {
 	const project = fromStore(Editor.state.project);
+	const interaction = fromStore(Editor.state.interaction);
 	let active = $state<ReorderState | null>(null);
 	let pending: PendingState | null = null;
 	let frame: number | null = null;
@@ -159,8 +160,8 @@ export function createElementReorder({ list, viewport }: ReorderOptions) {
 
 	function select(event: PointerEvent, elementId: string, rows: readonly Element[]) {
 		if (event.button !== 0 || event.target instanceof HTMLInputElement) return;
-		if (event.shiftKey && project.current.selectedElementIds.length > 0) {
-			const selected = getSelectionRange(rows, project.current.selectedElementIds, elementId);
+		if (event.shiftKey && interaction.current.selectedElementIds.length > 0) {
+			const selected = getSelectionRange(rows, interaction.current.selectedElementIds, elementId);
 			if (selected.length > 0) {
 				Editor.selection.selectMany(selected.map((element) => element.id));
 				return;

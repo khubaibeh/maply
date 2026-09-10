@@ -15,15 +15,15 @@
 
 	let { element, interactive = true, onMoveStart }: Props = $props();
 	const canvas = Editor.state.canvas;
-	const project = Editor.state.project;
+	const interaction = Editor.state.interaction;
 	const tool = Editor.state.tool;
-	const hideOutline = $derived(element.type === "image" && $project.cropEditingElementId === element.id);
+	const hideOutline = $derived(element.type === "image" && $interaction.cropEditingElementId === element.id);
 	const canResize = $derived(
 		interactive &&
 			!hideOutline &&
 			$tool.activeTool === "select" &&
-			$project.selectedElementIds.length === 1 &&
-			$project.selectedElementId === element.id &&
+			$interaction.selectedElementIds.length === 1 &&
+			$interaction.selectedElementId === element.id &&
 			(element.type === "rect" ||
 				element.type === "text" ||
 				element.type === "image" ||

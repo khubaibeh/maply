@@ -6,6 +6,7 @@ import { deleteImageAssetEffect, forkEditorWriteEffect, withEditorWriteGate } fr
 import { imageAssetState } from "../state/assets";
 import { projectState, updateProjectState } from "../state/document";
 import { isEditorMutationBlocked } from "../state/editing";
+import { getInteractionState, updateInteractionState } from "../state/interaction";
 
 /** Removes elements and their now-unreferenced persisted image assets.
  *
@@ -15,24 +16,25 @@ export function deleteElements(ids: string | readonly string[]): boolean {
 	if (isEditorMutationBlocked()) return false;
 	const idSet = new Set(typeof ids === "string" ? [ids] : ids);
 	const removed = get(projectState).elements.filter((element) => idSet.has(element.id));
+	const interaction = getInteractionState();
+	const selectedElementIds = interaction.selectedElementIds.filter((id) => !idSet.has(id));
 
 	updateProjectState(
 		(state) => {
-			const selectedElementIds = state.selectedElementIds.filter((id) => !idSet.has(id));
-
 			return {
 				...state,
-				elements: state.elements.filter((element) => !idSet.has(element.id)),
-				selectedElementIds,
-				selectedElementId: selectedElementIds.at(-1) ?? null,
-				cropEditingElementId:
-					state.cropEditingElementId && idSet.has(state.cropEditingElementId)
-						? null
-						: state.cropEditingElementId
+				elements: state.elements.filter((element) => !idSet.has(element.id))
 			};
 		},
 		{ deleted: [...idSet] }
 	);
+	updateInteractionState((state) => ({
+		...state,
+		selectedElementIds,
+		selectedElementId: selectedElementIds.at(-1) ?? null,
+		cropEditingElementId:
+			state.cropEditingElementId && idSet.has(state.cropEditingElementId) ? null : state.cropEditingElementId
+	}));
 
 	const remaining = get(projectState).elements;
 	const usedAssetIds = new Set(

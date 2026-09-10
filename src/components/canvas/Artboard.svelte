@@ -14,22 +14,23 @@
 
 	const canvas = Editor.state.canvas;
 	const project = Editor.state.project;
+	const interaction = Editor.state.interaction;
 	const tool = Editor.state.tool;
 	const elementMove = createElementMove();
 
 	const selectedElements = $derived(
 		$project.elements.filter(
-			(element) => element.visible !== false && $project.selectedElementIds.includes(element.id)
+			(element) => element.visible !== false && $interaction.selectedElementIds.includes(element.id)
 		)
 	);
 	const selectedElement = $derived(selectedElements.length === 1 ? (selectedElements[0] ?? null) : null);
 	const hoveredElement = $derived(
 		$tool.activeTool === "select" &&
-			$project.hoveredElementId &&
-			!$project.selectedElementIds.includes($project.hoveredElementId)
+			$interaction.hoveredElementId &&
+			!$interaction.selectedElementIds.includes($interaction.hoveredElementId)
 			? ($project.elements.find(
 					(element) =>
-						element.id === $project.hoveredElementId &&
+						element.id === $interaction.hoveredElementId &&
 						element.visible !== false &&
 						canSelectOnCanvas(element)
 				) ?? null)
@@ -80,7 +81,10 @@
 </g>
 
 {#if selectedElement?.type === "image"}
-	<ImageCropOverlay element={selectedElement} cropEditing={$project.cropEditingElementId === selectedElement.id} />
+	<ImageCropOverlay
+		element={selectedElement}
+		cropEditing={$interaction.cropEditingElementId === selectedElement.id}
+	/>
 {/if}
 
 {#if selectedElement?.type === "path" && $tool.activeTool === "select"}

@@ -1,4 +1,7 @@
-import { updateProjectState } from "../state/document";
+import { get } from "svelte/store";
+
+import { projectState } from "../state/document";
+import { updateInteractionState } from "../state/interaction";
 
 function selection(ids: readonly string[]) {
 	const selectedElementIds = [...new Set(ids)];
@@ -7,7 +10,7 @@ function selection(ids: readonly string[]) {
 
 /** Selects an element, optionally toggling it into the current selection. */
 export function select(id: string | null, additive = false): void {
-	updateProjectState((state) => {
+	updateInteractionState((state) => {
 		if (id === null) {
 			return { ...state, ...selection([]), hoveredElementId: null, cropEditingElementId: null };
 		}
@@ -39,12 +42,12 @@ export function select(id: string | null, additive = false): void {
 			hoveredElementId: null,
 			cropEditingElementId
 		};
-	}, "preserve");
+	});
 }
 
 /** Replaces the current selection with the supplied element IDs. */
 export function selectMany(ids: readonly string[]): void {
-	updateProjectState((state) => {
+	updateInteractionState((state) => {
 		const next = selection(ids);
 		return {
 			...state,
@@ -55,33 +58,27 @@ export function selectMany(ids: readonly string[]): void {
 					? state.cropEditingElementId
 					: null
 		};
-	}, "preserve");
+	});
 }
 
 /** Selects every current element. */
 export function selectAll(): void {
-	updateProjectState(
-		(state) => ({
-			...state,
-			...selection(state.elements.map((element) => element.id)),
-			hoveredElementId: null
-		}),
-		"preserve"
-	);
+	const ids = get(projectState).elements.map((element) => element.id);
+	updateInteractionState((state) => ({ ...state, ...selection(ids), hoveredElementId: null }));
 }
 
 /** Updates the currently hovered element. */
 export function setHover(id: string | null): void {
-	updateProjectState((state) => {
+	updateInteractionState((state) => {
 		return state.hoveredElementId === id ? state : { ...state, hoveredElementId: id };
-	}, "preserve");
+	});
 }
 
 /** Toggles crop editing for a selected image element. */
 export function toggleCrop(id: string): void {
-	updateProjectState((state) => {
+	updateInteractionState((state) => {
 		const cropEditingElementId = state.cropEditingElementId === id ? null : id;
 
 		return { ...state, ...selection([id]), cropEditingElementId };
-	}, "preserve");
+	});
 }

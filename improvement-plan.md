@@ -96,9 +96,9 @@ Do not begin a dependent chunk until the preceding exit criteria pass.
 
 | Chunk | Deliverable | Depends on | Status |
 | --- | --- | --- | --- |
-| 0 | Reproducible benchmark and profiling harness | None | In progress |
-| 1 | Transient interaction state separated from document state | 0 | Not started |
-| 2 | Indexed document module and typed change sets | 1 | Not started |
+| 0 | Reproducible benchmark and profiling harness | None | Complete |
+| 1 | Transient interaction state separated from document state | 0 | Complete |
+| 2 | Indexed document module and typed change sets | 1 | In progress |
 | 3 | Frame-coalesced commands and narrow UI projections | 2 | Not started |
 | 4 | Virtualized elements sidebar | 2 | Not started |
 | 5 | Spatial index, hit testing, and viewport-culled SVG | 2, 3 | Not started |
@@ -427,9 +427,9 @@ large traces into this document.
 
 | Chunk | Commit/PR | Before | After | Verification | Decision or notes |
 | --- | --- | --- | --- | --- | --- |
-| 0 | — | — | — | — | Not started |
-| 1 | — | — | — | — | Not started |
-| 2 | — | — | — | — | Not started |
+| 0 | d3604a6 | — | `benchmark-results/fixtures.json` | `pnpm benchmark:fixtures`, `pnpm check`, `pnpm test` | Browser baseline capture is available at `/benchmark`; timing evidence still needs a documented browser run. |
+| 1 | pending | — | — | `pnpm check`, focused interaction tests, existing editor tests | Selection, hover, and crop now use an independent interaction revision and subscription path. |
+| 2 | — | — | — | Indexed module work started after Chunk 1 commit | In progress |
 | 3 | — | — | — | — | Not started |
 | 4 | — | — | — | — | Not started |
 | 5 | — | — | — | — | Not started |

@@ -7,8 +7,9 @@
 
 	let { element, close, onRename }: { element: Element; close: () => void; onRename: () => void } = $props();
 	const project = Editor.state.project;
+	const interaction = Editor.state.interaction;
 	const orderingIds = $derived(
-		$project.selectedElementIds.includes(element.id) ? $project.selectedElementIds : [element.id]
+		$interaction.selectedElementIds.includes(element.id) ? $interaction.selectedElementIds : [element.id]
 	);
 	const stateElements = $derived($project.elements.filter((entry) => orderingIds.includes(entry.id)));
 
@@ -89,8 +90,8 @@
 		<ContextMenu.Item
 			class="rounded-lg px-2.5 py-1.5 text-xs"
 			onclick={() => {
-				const selected = $project.selectedElementIds.includes(element.id)
-					? $project.elements.filter((entry) => $project.selectedElementIds.includes(entry.id))
+				const selected = $interaction.selectedElementIds.includes(element.id)
+					? $project.elements.filter((entry) => $interaction.selectedElementIds.includes(entry.id))
 					: [element];
 				Editor.clipboard.copy(selected);
 				close();
@@ -134,8 +135,8 @@
 			class="rounded-lg px-2.5 py-1.5 text-xs"
 			variant="destructive"
 			onclick={() => {
-				const ids = $project.selectedElementIds.includes(element.id)
-					? $project.selectedElementIds
+				const ids = $interaction.selectedElementIds.includes(element.id)
+					? $interaction.selectedElementIds
 					: [element.id];
 				if (Editor.element.delete(ids)) close();
 				else toast.info("The editor is finishing another action. Try again in a moment.");

@@ -18,6 +18,7 @@ const MIN_MARQUEE_SCREEN_PX = 3;
 export function createMarqueeSelection() {
 	const canvas = fromStore(Editor.state.canvas);
 	const project = fromStore(Editor.state.project);
+	const interaction = fromStore(Editor.state.interaction);
 	const drag = createPointerDrag();
 	const state = $state({
 		active: false,
@@ -51,7 +52,7 @@ export function createMarqueeSelection() {
 				state.box = null;
 				state.candidates = [];
 				const selection = resolveMarqueeSelection(
-					project.current.selectedElementIds,
+					interaction.current.selectedElementIds,
 					candidateIds,
 					additive,
 					box !== null,
