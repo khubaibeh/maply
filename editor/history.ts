@@ -1,10 +1,12 @@
 import type { Camera, Element, ElementNameGrid, StoredImageAsset } from "@maply/model/types";
+import { Effect, MutableRef, Semaphore } from "effect";
 import { get, readonly, writable } from "svelte/store";
 
-import { persistEditorProject, settleEditorSave } from "./session/save";
+import { persistProjectEffect, runStorageEffect } from "./session/coordinator";
+import { settleEditorSaveEffect } from "./session/save";
 import { imageAssetState } from "./state/assets";
 import { projectState, setProjectState } from "./state/document";
-import { applyInternalEditorMutation, withEditorMutationBlock } from "./state/editing";
+import { applyInternalEditorMutation, withEditorMutationBlockEffect } from "./state/editing";
 import { canvasState } from "./state/workspace";
 
 const defaultLimit = 100;
@@ -120,11 +122,11 @@ function projectForSnapshot(next: HistorySnapshot) {
 	};
 }
 
-async function persistSnapshot(
+function persistSnapshotEffect(
 	next: HistorySnapshot,
 	context: { id: string; camera: Camera; isElementNameImportOpen: boolean }
-): Promise<boolean> {
-	return persistEditorProject(
+) {
+	return persistProjectEffect(
 		{
 			id: context.id,
 			name: next.name,
@@ -157,9 +159,9 @@ export function createHistory(limit = defaultLimit) {
 	let transaction: { token: HistoryTransaction; start: ObservedSnapshot } | null = null;
 	let suspended = 0;
 	let applying = false;
-	let generation = 0;
-	let revision = 0;
-	let moveChain = Promise.resolve();
+	const generation = MutableRef.make(0);
+	const revision = MutableRef.make(0);
+	const moveGate = Semaphore.makeUnsafe(1);
 
 	function publish() {
 		canUndoStore.set(undoStack.length > 0);
@@ -174,7 +176,7 @@ export function createHistory(limit = defaultLimit) {
 		if (undoStack.length > limit) undoStack.shift();
 		redoStack.length = 0;
 		previous = current;
-		revision += 1;
+		MutableRef.update(revision, (value) => value + 1);
 		publish();
 	}
 
@@ -195,7 +197,7 @@ export function createHistory(limit = defaultLimit) {
 		undoStack.push(cloneSnapshot(start));
 		if (undoStack.length > limit) undoStack.shift();
 		redoStack.length = 0;
-		revision += 1;
+		MutableRef.update(revision, (value) => value + 1);
 		publish();
 	}
 
@@ -212,16 +214,34 @@ export function createHistory(limit = defaultLimit) {
 		}
 	}
 
-	async function move(
+	function applySnapshotEffect(snapshot: HistorySnapshot): Effect.Effect<void> {
+		return Effect.sync(() => {
+			applying = true;
+		}).pipe(
+			Effect.andThen(
+				Effect.sync(() => {
+					applySnapshot(snapshot);
+					previous = observeSnapshot();
+				})
+			),
+			Effect.ensuring(
+				Effect.sync(() => {
+					applying = false;
+				})
+			)
+		);
+	}
+
+	const move = Effect.fn("editor.history.move")(function* (
 		from: HistorySnapshot[],
 		to: HistorySnapshot[],
 		expectedGeneration: number,
 		expectedRevision: number
-	): Promise<void> {
+	) {
 		const next = from.at(-1);
 		if (!next) return;
-		await settleEditorSave();
-		if (generation !== expectedGeneration || revision !== expectedRevision) return;
+		yield* settleEditorSaveEffect();
+		if (MutableRef.get(generation) !== expectedGeneration || MutableRef.get(revision) !== expectedRevision) return;
 		from.pop();
 		const project = get(projectState);
 		const canvas = get(canvasState);
@@ -232,38 +252,53 @@ export function createHistory(limit = defaultLimit) {
 		};
 		const current = cloneSnapshot(observeSnapshot());
 		to.push(current);
-		applying = true;
-		try {
-			applySnapshot(next);
-			previous = observeSnapshot();
-		} finally {
-			applying = false;
-		}
+		yield* applySnapshotEffect(next);
 		publish();
-		const persisted = await persistSnapshot(next, context);
-		if (persisted || revision !== expectedRevision) return;
+		const persisted = yield* Effect.match(persistSnapshotEffect(next, context), {
+			onFailure: (error) => {
+				console.warn("Failed to persist history state:", error);
+				return false;
+			},
+			onSuccess: () => true
+		});
+		if (persisted || MutableRef.get(revision) !== expectedRevision) return;
 
-		applying = true;
-		try {
-			applySnapshot(current);
-			previous = observeSnapshot();
-			to.pop();
-			from.push(next);
-		} finally {
-			applying = false;
-		}
+		yield* applySnapshotEffect(current);
+		to.pop();
+		from.push(next);
 		publish();
-	}
+	});
 
 	function scheduleMove(from: HistorySnapshot[], to: HistorySnapshot[]): Promise<void> {
-		const expectedGeneration = generation;
-		const expectedRevision = revision;
-		const operation = moveChain.then(() =>
-			withEditorMutationBlock(() => move(from, to, expectedGeneration, expectedRevision))
+		const expectedGeneration = MutableRef.get(generation);
+		const expectedRevision = MutableRef.get(revision);
+		return runStorageEffect(
+			Semaphore.withPermits(
+				moveGate,
+				1
+			)(
+				Effect.promise(() => Promise.resolve()).pipe(
+					Effect.andThen(withEditorMutationBlockEffect(move(from, to, expectedGeneration, expectedRevision)))
+				)
+			)
 		);
-		moveChain = operation.catch(() => undefined);
-		return operation;
 	}
+
+	function withoutRecordingEffect<A, E, R>(operation: Effect.Effect<A, E, R>): Effect.Effect<A, E, R> {
+		return Effect.suspend(() => {
+			suspended += 1;
+			return operation.pipe(
+				Effect.ensuring(
+					Effect.sync(() => {
+						suspended -= 1;
+						previous = observeSnapshot();
+					})
+				)
+			);
+		});
+	}
+
+	const settleEffect = Semaphore.withPermits(moveGate, 1)(settleEditorSaveEffect());
 
 	projectState.subscribe(observe);
 	canvasState.subscribe(observe);
@@ -278,26 +313,18 @@ export function createHistory(limit = defaultLimit) {
 		canUndo: readonly(canUndoStore),
 		canRedo: readonly(canRedoStore),
 		async settle(): Promise<void> {
-			await moveChain;
-			await settleEditorSave();
+			await runStorageEffect(settleEffect);
 		},
+		settleEffect,
 		reset() {
-			generation += 1;
+			MutableRef.update(generation, (value) => value + 1);
 			undoStack.length = 0;
 			redoStack.length = 0;
 			transaction = null;
 			previous = observeSnapshot();
 			publish();
 		},
-		async withoutRecording<T>(operation: () => Promise<T>): Promise<T> {
-			suspended += 1;
-			try {
-				return await operation();
-			} finally {
-				suspended -= 1;
-				previous = observeSnapshot();
-			}
-		}
+		withoutRecordingEffect
 	};
 }
 

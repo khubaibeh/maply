@@ -3,6 +3,7 @@ import { storage } from "@maply/storage";
 import { updateElement } from "editor/elements/mutate";
 import { history } from "editor/history";
 import { deleteElements } from "editor/selection/delete";
+import { runStorageEffect, settleEditorWrites } from "editor/session/coordinator";
 import { imageAssetState } from "editor/state/assets";
 import { projectState, updateProjectState } from "editor/state/document";
 import { canvasState } from "editor/state/workspace";
@@ -193,7 +194,12 @@ describe("editor history", () => {
 		updateProjectState((state) => ({ ...state, elements: [{ ...image(), assetId: asset.id }] }), "rescan");
 		history.reset();
 
-		deleteElements("image");
+		expect(deleteElements("image")).toBe(true);
+		await runStorageEffect(settleEditorWrites);
+		const deleted = await storage.imageAsset.fetch([asset.id]);
+		expect(deleted.ok).toBe(true);
+		if (deleted.ok) expect(deleted.value).toEqual([]);
+
 		await history.undo();
 
 		const restored = await storage.imageAsset.fetch([asset.id]);

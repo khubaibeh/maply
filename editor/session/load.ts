@@ -1,20 +1,21 @@
 import { copyProjectEditorData } from "@maply/model";
 import type { Element } from "@maply/model/types";
-import { storage } from "@maply/storage";
 import type { StoredEditorProject } from "@maply/storage/types";
+import { Effect, MutableRef } from "effect";
 
 import { clampZoom } from "../canvas/camera";
 import { clampElementToCanvas } from "../elements/geometry";
 import { history } from "../history";
 import { imageAssetState } from "../state/assets";
 import { updateProjectState } from "../state/document";
-import { applyInternalEditorMutation, withEditorMutationBlock } from "../state/editing";
+import { applyInternalEditorMutationEffect, withEditorMutationBlockEffect } from "../state/editing";
 import { canvasState, createInitialCanvasState } from "../state/workspace";
+import { fetchImageAssetsEffect, fetchProjectEffect, runStorageEffect, withEditorWriteGate } from "./coordinator";
+import { SessionSuperseded } from "./errors";
 import { normalizeElement } from "./normalize";
-import { runEditorStorageOperation } from "./save";
 
 const defaultProjectId = "prod";
-let latestLoadRequest = 0;
+const latestLoadRequest = MutableRef.make(0);
 
 function imageAssetIds(elements: readonly Element[]) {
 	return elements.flatMap((element) => (element.type === "image" && element.assetId ? [element.assetId] : []));
@@ -56,56 +57,74 @@ function applyProject(project: StoredEditorProject) {
 
 /** Hydrates editor state and its referenced image assets from persistent storage. */
 export async function loadEditorSession(projectId = defaultProjectId): Promise<void> {
-	return withEditorMutationBlock(() => loadEditorSessionBlocked(projectId));
+	return runStorageEffect(
+		withEditorMutationBlockEffect(
+			loadEditorSessionEffect(projectId).pipe(Effect.catchTag("SessionSuperseded", () => Effect.void))
+		)
+	);
 }
 
-async function loadEditorSessionBlocked(projectId: string): Promise<void> {
-	const request = ++latestLoadRequest;
-	await history.settle();
-	if (request !== latestLoadRequest) return;
-	history.reset();
-	await history.withoutRecording(async () => {
-		applyInternalEditorMutation(() => {
-			updateProjectState((state) => ({ ...state, id: projectId, initialized: false }), "preserve");
-		});
+/** Effect workflow that hydrates one project while the caller owns the mutation block. */
+export const loadEditorSessionEffect = Effect.fn("editor.session.load")(function* (projectId: string) {
+	const request = MutableRef.updateAndGet(latestLoadRequest, (value) => value + 1);
+	yield* history.settleEffect;
+	if (request !== MutableRef.get(latestLoadRequest)) return yield* Effect.fail(new SessionSuperseded({}));
+	yield* Effect.sync(history.reset);
+	yield* history.withoutRecordingEffect(
+		Effect.gen(function* () {
+			yield* applyInternalEditorMutationEffect(
+				Effect.sync(() => {
+					updateProjectState((state) => ({ ...state, id: projectId, initialized: false }), "preserve");
+				})
+			);
 
-		const loaded = await runEditorStorageOperation(async () => {
-			const projectResult = await storage.project.fetch(projectId);
-			if (!projectResult.ok) return { projectResult, assetsResult: null };
-			const assetsResult = await storage.imageAsset.fetch(imageAssetIds(projectResult.value.elements));
-			return { projectResult, assetsResult };
-		});
-		if (request !== latestLoadRequest) return;
-		const { projectResult, assetsResult } = loaded;
-		if (!projectResult.ok) {
-			console.warn("Failed to load project, using defaults:", projectResult.error);
-			applyInternalEditorMutation(() => {
-				imageAssetState.set({});
-				updateProjectState(
-					(state) => ({
-						...state,
-						selectedElementId: null,
-						selectedElementIds: [],
-						hoveredElementId: null,
-						cropEditingElementId: null,
-						initialized: true
-					}),
-					"preserve"
+			const loaded = yield* withEditorWriteGate(
+				Effect.gen(function* () {
+					const projectResult = yield* Effect.result(fetchProjectEffect(projectId));
+					if (projectResult._tag === "Failure") return { projectResult, assetsResult: null };
+					const project = projectResult.success;
+					const assetsResult = yield* Effect.result(fetchImageAssetsEffect(imageAssetIds(project.elements)));
+					return { projectResult, assetsResult };
+				})
+			);
+			if (request !== MutableRef.get(latestLoadRequest)) return yield* Effect.fail(new SessionSuperseded({}));
+			const { projectResult, assetsResult } = loaded;
+			if (projectResult._tag === "Failure") {
+				console.warn("Failed to load project, using defaults:", projectResult.failure.cause);
+				yield* applyInternalEditorMutationEffect(
+					Effect.sync(() => {
+						imageAssetState.set({});
+						updateProjectState(
+							(state) => ({
+								...state,
+								selectedElementId: null,
+								selectedElementIds: [],
+								hoveredElementId: null,
+								cropEditingElementId: null,
+								initialized: true
+							}),
+							"preserve"
+						);
+					})
 				);
-			});
-			return;
-		}
-
-		applyInternalEditorMutation(() => {
-			applyProject(projectResult.value);
-			if (!assetsResult?.ok) {
-				if (assetsResult) console.warn("Failed to load image assets:", assetsResult.error);
-				imageAssetState.set({});
-			} else {
-				imageAssetState.set(Object.fromEntries(assetsResult.value.map((asset) => [asset.id, asset])));
+				return;
 			}
 
-			updateProjectState((state) => ({ ...state, initialized: true }), "preserve");
-		});
-	});
-}
+			const project = projectResult.success;
+
+			yield* applyInternalEditorMutationEffect(
+				Effect.sync(() => {
+					applyProject(project);
+					if (!assetsResult || assetsResult._tag === "Failure") {
+						if (assetsResult) console.warn("Failed to load image assets:", assetsResult.failure.cause);
+						imageAssetState.set({});
+					} else {
+						imageAssetState.set(Object.fromEntries(assetsResult.success.map((asset) => [asset.id, asset])));
+					}
+
+					updateProjectState((state) => ({ ...state, initialized: true }), "preserve");
+				})
+			);
+		})
+	);
+});

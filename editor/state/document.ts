@@ -141,8 +141,8 @@ function applyMinimumCanvasSizeHint(
 	return trackDeletedElementsMinimumCanvasSize(cache, next, hint.deleted);
 }
 
-function applyProjectState(next: ProjectState, hint: MinimumCanvasSizeHint) {
-	if (isEditorMutationBlocked()) return;
+function applyProjectState(next: ProjectState, hint: MinimumCanvasSizeHint): boolean {
+	if (isEditorMutationBlocked()) return false;
 	currentMinimumCanvasSizeCache = applyMinimumCanvasSizeHint(
 		currentMinimumCanvasSizeCache,
 		currentProjectState,
@@ -152,6 +152,7 @@ function applyProjectState(next: ProjectState, hint: MinimumCanvasSizeHint) {
 	currentProjectState = next;
 	minimumCanvasSizeStore.set(toMinimumCanvasSize(currentMinimumCanvasSizeCache));
 	projectStore.set(next);
+	return true;
 }
 
 /** The editor's live project and selection state. */
@@ -160,13 +161,17 @@ export const projectState = {
 } as const;
 
 /** Applies a project-state transition with an explicit minimum-canvas-size cache strategy. */
-export function updateProjectState(updater: (state: ProjectState) => ProjectState, hint: MinimumCanvasSizeHint) {
-	applyProjectState(updater(currentProjectState), hint);
+export function updateProjectState(
+	updater: (state: ProjectState) => ProjectState,
+	hint: MinimumCanvasSizeHint
+): boolean {
+	if (isEditorMutationBlocked()) return false;
+	return applyProjectState(updater(currentProjectState), hint);
 }
 
 /** Sets the complete project state with an explicit minimum-canvas-size cache strategy. */
-export function setProjectState(next: ProjectState, hint: MinimumCanvasSizeHint) {
-	applyProjectState(next, hint);
+export function setProjectState(next: ProjectState, hint: MinimumCanvasSizeHint): boolean {
+	return applyProjectState(next, hint);
 }
 
 /** The smallest canvas size that can contain the current largest element dimensions. */

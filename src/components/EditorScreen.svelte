@@ -37,7 +37,7 @@
 		}
 
 		toast.error(
-			result.error.type === "UnsupportedFormat"
+			result.error._tag === "ImageUnsupportedFormatError"
 				? "Choose a PNG, JPEG, or SVG image."
 				: "The image could not be added. Try another file."
 		);
@@ -101,7 +101,9 @@
 				if (selectedIds.length === 0) return;
 
 				event.preventDefault();
-				Editor.element.delete(selectedIds);
+				if (!Editor.element.delete(selectedIds)) {
+					toast.info("The editor is finishing another action. Press Delete again in a moment.");
+				}
 				return;
 			}
 

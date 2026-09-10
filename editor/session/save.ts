@@ -1,37 +1,21 @@
 import { copyProjectEditorData } from "@maply/model";
-import type { StoredImageAsset } from "@maply/model/types";
-import { storage } from "@maply/storage";
 import type { StoredEditorProject } from "@maply/storage/types";
+import { Effect, Fiber, MutableRef } from "effect";
 import { get } from "svelte/store";
 
 import { projectState } from "../state/document";
-import { acquireMutex } from "../state/mutex";
 import { canvasState } from "../state/workspace";
+import { forkStorageEffect, runStorageEffect, saveProjectEffect, settleEditorWrites } from "./coordinator";
 
-let saveTimeout: ReturnType<typeof setTimeout> | null = null;
-let saveChain = Promise.resolve();
+const saveGeneration = MutableRef.make(0);
+const savePending = MutableRef.make(false);
+let pendingSaveFiber: Fiber.Fiber<void, never> | null = null;
 
-/** Runs one editor storage operation in the shared save order under the editor mutex. */
-export function runEditorStorageOperation<T>(operation: () => Promise<T>): Promise<T> {
-	const queued = saveChain.then(async () => {
-		const release = await acquireMutex();
-		try {
-			return await operation();
-		} finally {
-			release();
-		}
-	});
-	saveChain = queued.then(
-		() => undefined,
-		() => undefined
-	);
-	return queued;
-}
-
-function clearPendingSave() {
-	if (!saveTimeout) return;
-	clearTimeout(saveTimeout);
-	saveTimeout = null;
+function cancelPendingSave(): void {
+	if (pendingSaveFiber) void forkStorageEffect(Fiber.interrupt(pendingSaveFiber));
+	pendingSaveFiber = null;
+	MutableRef.update(saveGeneration, (value) => value + 1);
+	MutableRef.set(savePending, false);
 }
 
 function currentProject(): StoredEditorProject {
@@ -55,51 +39,58 @@ function currentProject(): StoredEditorProject {
 	};
 }
 
-function saveCurrentProject(): Promise<void> {
-	return runEditorStorageOperation(async () => {
-		const result = await storage.project.save(currentProject());
-		if (!result.ok) console.warn("Failed to save project:", result.error);
-	});
-}
+const saveCurrentProjectEffect = Effect.fn("editor.session.saveCurrent")(function* () {
+	yield* Effect.suspend(() =>
+		Effect.match(saveProjectEffect(currentProject()), {
+			onFailure: (error) => {
+				console.warn("Failed to save project:", error.cause);
+			},
+			onSuccess: () => {}
+		})
+	);
+});
 
-/** Persists a complete project and its assets in the shared save order. */
-export function persistEditorProject(
-	project: StoredEditorProject,
-	assets: readonly StoredImageAsset[]
-): Promise<boolean> {
-	return runEditorStorageOperation(async () => {
-		const result = await storage.project.replace(project, assets);
-		if (!result.ok) console.warn("Failed to persist project:", result.error);
-		return result.ok;
-	});
+/** Persists the current project through the coordinator, logging failures. */
+function saveCurrentProject(): Promise<void> {
+	return runStorageEffect(saveCurrentProjectEffect());
 }
 
 /** Queues a debounced project save after editor session hydration completes. */
 export function queueEditorSave(): void {
 	if (!get(projectState).initialized) return;
-	clearPendingSave();
-
-	saveTimeout = setTimeout(() => {
-		void saveCurrentProject();
-	}, 500);
+	cancelPendingSave();
+	const generation = MutableRef.get(saveGeneration);
+	MutableRef.set(savePending, true);
+	pendingSaveFiber = forkStorageEffect(
+		Effect.sleep("500 millis").pipe(
+			Effect.andThen(
+				Effect.suspend(() => {
+					if (MutableRef.get(saveGeneration) !== generation) return Effect.void;
+					MutableRef.set(savePending, false);
+					pendingSaveFiber = null;
+					return saveCurrentProjectEffect();
+				})
+			)
+		)
+	);
 }
 
-/** Persists a pending debounce, then waits for all queued project writes. */
-export async function settleEditorSave(): Promise<void> {
-	if (saveTimeout) {
-		clearPendingSave();
-		await saveCurrentProject();
+/** Persists a pending debounce, then settles behind all queued project writes. */
+export const settleEditorSaveEffect = Effect.fn("editor.session.settleSave")(function* () {
+	if (MutableRef.get(savePending)) {
+		cancelPendingSave();
+		yield* saveCurrentProjectEffect();
 		return;
 	}
-	await saveChain;
-}
+	yield* settleEditorWrites;
+});
 
 /** Cancels a pending debounce and persists the current project immediately. */
 export async function flushEditorSave(): Promise<void> {
 	if (get(projectState).initialized) {
-		clearPendingSave();
+		cancelPendingSave();
 		await saveCurrentProject();
 		return;
 	}
-	await saveChain;
+	await runStorageEffect(settleEditorSaveEffect());
 }
