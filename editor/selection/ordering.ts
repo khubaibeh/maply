@@ -1,16 +1,5 @@
-import { updateProjectState } from "../state/document";
-import type { ProjectState, SelectionOrder } from "../types";
-
-function reorderInState(state: ProjectState, from: number, to: number): ProjectState {
-	if (from === to || from < 0 || to < 0 || from >= state.elements.length || to >= state.elements.length) return state;
-	if (state.elements[from]?.locked) return state;
-
-	const next = [...state.elements];
-	const [element] = next.splice(from, 1);
-	next.splice(to, 0, element);
-
-	return { ...state, elements: next };
-}
+import { documentIndex, updateIndexedProject } from "../state/document";
+import type { SelectionOrder } from "../types";
 
 /** Returns paint order after moving selected elements together in the requested direction. */
 export function reorderSelection<T extends { id: string; locked?: boolean }>(
@@ -63,32 +52,39 @@ export function canReorderSelection<T extends { id: string; locked?: boolean }>(
 	return next.some((element, index) => element !== elements[index]);
 }
 
-function reorderSelectionInState(state: ProjectState, ids: readonly string[], direction: SelectionOrder): ProjectState {
-	const elements = reorderSelection(state.elements, ids, direction);
-	return elements.some((element, index) => element !== state.elements[index]) ? { ...state, elements } : state;
+function reorderToResult(ids: readonly string[], direction: SelectionOrder): void {
+	const elements = documentIndex.snapshot();
+	const next = reorderSelection(elements, ids, direction);
+	const firstSelectedIndex = next.findIndex((element) => ids.includes(element.id));
+	if (firstSelectedIndex < 0) return;
+	const toIndex = next.slice(0, firstSelectedIndex).filter((element) => !ids.includes(element.id)).length;
+	updateIndexedProject((document) => document.reorder(ids, toIndex), "preserve");
 }
 
 /** Moves an element between two valid paint-order indices. */
 export function reorder(from: number, to: number): void {
-	updateProjectState((state) => reorderInState(state, from, to), "preserve");
+	const elements = documentIndex.snapshot();
+	const element = elements[from];
+	if (!element || from === to || from < 0 || to < 0 || to >= elements.length || element.locked) return;
+	updateIndexedProject((document) => document.reorder([element.id], to), "preserve");
 }
 
 /** Moves selected elements to the front of paint order, preserving their relative order. */
 export function moveToFront(ids: readonly string[]): void {
-	updateProjectState((state) => reorderSelectionInState(state, ids, "front"), "preserve");
+	reorderToResult(ids, "front");
 }
 
 /** Moves selected elements one unselected layer toward the front. */
 export function moveForward(ids: readonly string[]): void {
-	updateProjectState((state) => reorderSelectionInState(state, ids, "forward"), "preserve");
+	reorderToResult(ids, "forward");
 }
 
 /** Moves selected elements one unselected layer toward the back. */
 export function moveBackward(ids: readonly string[]): void {
-	updateProjectState((state) => reorderSelectionInState(state, ids, "backward"), "preserve");
+	reorderToResult(ids, "backward");
 }
 
 /** Moves selected elements to the back of paint order, preserving their relative order. */
 export function moveToBack(ids: readonly string[]): void {
-	updateProjectState((state) => reorderSelectionInState(state, ids, "back"), "preserve");
+	reorderToResult(ids, "back");
 }

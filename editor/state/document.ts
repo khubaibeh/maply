@@ -6,7 +6,7 @@ import { recordChangePublication, recordDocumentRevision } from "../benchmark-co
 import { getElementBounds } from "../elements/geometry";
 import type { ProjectState } from "../types";
 import { isEditorMutationBlocked } from "./editing";
-import { createIndexedDocument } from "./indexed-document";
+import { createIndexedDocument, type DocumentChangeSet, type IndexedDocument } from "./indexed-document";
 
 const initialProjectState: ProjectState = {
 	id: "prod",
@@ -127,6 +127,7 @@ const indexedDocument = createIndexedDocument(initialProjectState.elements);
 let currentProjectState = initialProjectState;
 let currentMinimumCanvasSizeCache = measureMinimumCanvasSizeCache(initialProjectState.elements);
 let currentDocumentRevision = 0;
+let applyingIndexedMutation = false;
 
 function applyMinimumCanvasSizeHint(
 	cache: MinimumCanvasSizeCache,
@@ -152,7 +153,7 @@ function applyProjectState(next: ProjectState, hint: MinimumCanvasSizeHint): boo
 	);
 	const elementsChanged = next.elements !== currentProjectState.elements;
 	currentProjectState = next;
-	if (elementsChanged) indexedDocument.replace(next.elements);
+	if (elementsChanged && !applyingIndexedMutation) indexedDocument.replace(next.elements);
 	currentDocumentRevision += 1;
 	documentRevisionStore.set(currentDocumentRevision);
 	recordDocumentRevision();
@@ -190,6 +191,39 @@ export function updateProjectState(
 ): boolean {
 	if (isEditorMutationBlocked()) return false;
 	return applyProjectState(updater(currentProjectState), hint);
+}
+
+function hintForDocumentChange(change: DocumentChangeSet): MinimumCanvasSizeHint {
+	if (change.tag === "add") {
+		return { added: change.changes.flatMap((entry) => (entry.after ? [entry.after] : [])) };
+	}
+	if (change.tag === "delete") return { deleted: change.changes.map((entry) => entry.id) };
+	if (change.tag === "update" && change.changes.length === 1) {
+		const entry = change.changes[0];
+		if (entry?.before && entry.after) return { changed: { before: entry.before, after: entry.after } };
+	}
+	return "preserve";
+}
+
+/** Applies one indexed document command and publishes its compatibility projection. */
+export function updateIndexedProject(
+	mutation: (document: IndexedDocument) => DocumentChangeSet | null,
+	hint?: MinimumCanvasSizeHint
+): DocumentChangeSet | null {
+	if (isEditorMutationBlocked()) return null;
+	const change = mutation(indexedDocument);
+	if (!change) return null;
+
+	applyingIndexedMutation = true;
+	try {
+		applyProjectState(
+			{ ...currentProjectState, elements: indexedDocument.snapshot() },
+			hint ?? hintForDocumentChange(change)
+		);
+	} finally {
+		applyingIndexedMutation = false;
+	}
+	return change;
 }
 
 /** Sets the complete project state with an explicit minimum-canvas-size cache strategy. */

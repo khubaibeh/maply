@@ -1,4 +1,4 @@
-import { updateProjectState } from "../state/document";
+import { updateIndexedProject } from "../state/document";
 import { updateInteractionState } from "../state/interaction";
 
 function toIdSet(ids: string | readonly string[]): Set<string> {
@@ -8,14 +8,9 @@ function toIdSet(ids: string | readonly string[]): Set<string> {
 /** Sets the locked state for one or more existing elements and ends their canvas interactions. */
 export function setLocked(ids: string | readonly string[], locked: boolean): void {
 	const idSet = toIdSet(ids);
+	const targetIds = typeof ids === "string" ? [ids] : ids;
 
-	updateProjectState(
-		(state) => ({
-			...state,
-			elements: state.elements.map((element) => (idSet.has(element.id) ? { ...element, locked } : element))
-		}),
-		"preserve"
-	);
+	updateIndexedProject((document) => document.updateMany(targetIds, (element) => ({ ...element, locked })));
 	if (locked) {
 		updateInteractionState((state) => ({
 			...state,
@@ -27,29 +22,18 @@ export function setLocked(ids: string | readonly string[], locked: boolean): voi
 
 /** Sets the bindable state for one or more existing elements. */
 export function setBindable(ids: string | readonly string[], bindable: boolean): void {
-	const idSet = toIdSet(ids);
+	const targetIds = typeof ids === "string" ? [ids] : ids;
 
-	updateProjectState(
-		(state) => ({
-			...state,
-			elements: state.elements.map((element) => (idSet.has(element.id) ? { ...element, bindable } : element))
-		}),
-		"preserve"
-	);
+	updateIndexedProject((document) => document.updateMany(targetIds, (element) => ({ ...element, bindable })));
 }
 
 /** Sets visibility and clears hover or crop state for elements that become hidden. */
 export function setVisible(ids: string | readonly string[], visible: boolean): void {
 	const idSet = toIdSet(ids);
+	const targetIds = typeof ids === "string" ? [ids] : ids;
 
 	const hiddenIds = visible ? new Set<string>() : idSet;
-	updateProjectState(
-		(state) => ({
-			...state,
-			elements: state.elements.map((element) => (idSet.has(element.id) ? { ...element, visible } : element))
-		}),
-		"preserve"
-	);
+	updateIndexedProject((document) => document.updateMany(targetIds, (element) => ({ ...element, visible })));
 	if (!visible) {
 		updateInteractionState((state) => ({
 			...state,

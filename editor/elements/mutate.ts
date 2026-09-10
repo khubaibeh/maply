@@ -4,7 +4,13 @@ import { get } from "svelte/store";
 
 import { clampCropScale, resizeImageRect, scaleImageRect, withImageRect } from "../image/crop";
 import { imageAssetState } from "../state/assets";
-import { projectState, setProjectState, updateProjectState } from "../state/document";
+import {
+	documentIndex,
+	projectState,
+	setProjectState,
+	updateIndexedProject,
+	updateProjectState
+} from "../state/document";
 import { updateInteractionState } from "../state/interaction";
 import { canvasState } from "../state/workspace";
 import type { ImageAssetState } from "../types";
@@ -55,13 +61,8 @@ export function addElement(element: Element): void {
 	const canvas = get(canvasState);
 	const next = clampElementToCanvas(element, canvas);
 
-	updateProjectState(
-		(state) => ({
-			...state,
-			elements: [...state.elements, next]
-		}),
-		{ added: [next] }
-	);
+	const change = updateIndexedProject((document) => document.add([next]));
+	if (!change) return;
 	updateInteractionState((state) => ({
 		...state,
 		selectedElementId: next.id,
@@ -76,21 +77,18 @@ export function translateElement(id: string, dx: number, dy: number) {
 	if (dx === 0 && dy === 0) return { x: 0, y: 0 };
 
 	const canvas = get(canvasState);
+	const current = documentIndex.get(id);
+	if (!current || current.locked) return { x: 0, y: 0 };
 	let applied = { x: 0, y: 0 };
 
-	updateProjectState(
-		(state) => ({
-			...state,
-			elements: state.elements.map((element) => {
-				if (element.id !== id || element.locked) return element;
-				const next = clampElementToCanvas(translate(element, dx, dy), canvas);
-				const before = getElementPosition(element);
-				const after = getElementPosition(next);
-				applied = { x: after.x - before.x, y: after.y - before.y };
-				return next;
-			})
-		}),
-		"preserve"
+	updateIndexedProject((document) =>
+		document.update(id, (element) => {
+			const next = clampElementToCanvas(translate(element, dx, dy), canvas);
+			const before = getElementPosition(element);
+			const after = getElementPosition(next);
+			applied = { x: after.x - before.x, y: after.y - before.y };
+			return next;
+		})
 	);
 
 	return applied;
@@ -164,31 +162,21 @@ export function resizeElementByHandle(
 ) {
 	if (dx === 0 && dy === 0) return { x: 0, y: 0 };
 
-	const state = get(projectState);
 	const canvas = get(canvasState);
 	const assets = get(imageAssetState);
 	let applied = { x: 0, y: 0 };
-	let beforeChange: Element | null = null;
-	let afterChange: Element | null = null;
 
-	const nextState = {
-		...state,
-		elements: state.elements.map((element) => {
-			if (element.id !== id) return element;
+	updateIndexedProject((document) =>
+		document.update(id, (element) => {
 			const original = source?.id === id ? source : element;
 			const resized = resizeElementPure(original, handle, dx, dy, canvas, options);
 			const next = resizeImageTransform(original, resized, assets);
 			const before = getHandlePosition(element, handle);
 			const after = getHandlePosition(next, handle);
 			applied = { x: after.x - before.x, y: after.y - before.y };
-			beforeChange = element;
-			afterChange = next;
 			return next;
 		})
-	};
-	const hint = beforeChange && afterChange ? { changed: { before: beforeChange, after: afterChange } } : "preserve";
-
-	setProjectState(nextState, hint);
+	);
 
 	return applied;
 }
@@ -256,47 +244,30 @@ function normalizeNamePatch(patch: Partial<Element>): Partial<Element> {
 
 /** Applies an element property patch and clamps the resulting element. */
 export function updateElement(id: string, patch: Partial<Element>): void {
-	const state = get(projectState);
 	const canvas = get(canvasState);
 	const assets = get(imageAssetState);
 	const normalizedPatch = normalizeNamePatch(patch);
-	let beforeChange: Element | null = null;
-	let afterChange: Element | null = null;
-
-	const nextState = {
-		...state,
-		elements: state.elements.map((element) => {
-			if (element.id !== id) return element;
+	updateIndexedProject((document) =>
+		document.update(id, (element) => {
 			const clamped = clampElementToCanvas({ ...element, ...normalizedPatch } as Element, canvas);
-			const next = updateImageTransform(element, clamped, normalizedPatch, assets);
-			beforeChange = element;
-			afterChange = next;
-			return next;
+			return updateImageTransform(element, clamped, normalizedPatch, assets);
 		})
-	};
-	const hint = beforeChange && afterChange ? { changed: { before: beforeChange, after: afterChange } } : "preserve";
-
-	setProjectState(nextState, hint);
+	);
 }
 
 /** Applies one property patch to every identified element in a single state transition. */
 export function updateElements(ids: readonly string[], patch: Partial<Element>): void {
 	if (ids.length === 0) return;
 
-	const idSet = new Set(ids);
 	const canvas = get(canvasState);
 	const assets = get(imageAssetState);
 	const normalizedPatch = normalizeNamePatch(patch);
-
-	updateProjectState(
-		(state) => ({
-			...state,
-			elements: state.elements.map((element) => {
-				if (!idSet.has(element.id)) return element;
+	updateIndexedProject(
+		(document) =>
+			document.updateMany(ids, (element) => {
 				const clamped = clampElementToCanvas({ ...element, ...normalizedPatch } as Element, canvas);
 				return updateImageTransform(element, clamped, normalizedPatch, assets);
-			})
-		}),
+			}),
 		"rescan"
 	);
 }
@@ -306,13 +277,7 @@ export function renameElement(id: string, name: string): void {
 	const trimmedName = name.trim();
 	if (!trimmedName) return;
 
-	updateProjectState(
-		(state) => ({
-			...state,
-			elements: state.elements.map((element) => (element.id === id ? { ...element, name: trimmedName } : element))
-		}),
-		"preserve"
-	);
+	updateIndexedProject((document) => document.update(id, (element) => ({ ...element, name: trimmedName })));
 }
 
 /** Clamps every element after a canvas frame change. */

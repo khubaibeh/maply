@@ -1,10 +1,9 @@
 import { Effect } from "effect";
-import { get } from "svelte/store";
 
 import { history } from "../history";
 import { deleteImageAssetEffect, forkEditorWriteEffect, withEditorWriteGate } from "../session/coordinator";
 import { imageAssetState } from "../state/assets";
-import { projectState, updateProjectState } from "../state/document";
+import { documentIndex, updateIndexedProject } from "../state/document";
 import { isEditorMutationBlocked } from "../state/editing";
 import { getInteractionState, updateInteractionState } from "../state/interaction";
 
@@ -15,19 +14,14 @@ import { getInteractionState, updateInteractionState } from "../state/interactio
 export function deleteElements(ids: string | readonly string[]): boolean {
 	if (isEditorMutationBlocked()) return false;
 	const idSet = new Set(typeof ids === "string" ? [ids] : ids);
-	const removed = get(projectState).elements.filter((element) => idSet.has(element.id));
+	const removed = [...idSet].flatMap((id) => {
+		const element = documentIndex.get(id);
+		return element ? [element] : [];
+	});
 	const interaction = getInteractionState();
 	const selectedElementIds = interaction.selectedElementIds.filter((id) => !idSet.has(id));
 
-	updateProjectState(
-		(state) => {
-			return {
-				...state,
-				elements: state.elements.filter((element) => !idSet.has(element.id))
-			};
-		},
-		{ deleted: [...idSet] }
-	);
+	updateIndexedProject((document) => document.delete([...idSet]));
 	updateInteractionState((state) => ({
 		...state,
 		selectedElementIds,
@@ -36,7 +30,7 @@ export function deleteElements(ids: string | readonly string[]): boolean {
 			state.cropEditingElementId && idSet.has(state.cropEditingElementId) ? null : state.cropEditingElementId
 	}));
 
-	const remaining = get(projectState).elements;
+	const remaining = documentIndex.snapshot();
 	const usedAssetIds = new Set(
 		remaining.flatMap((element) => (element.type === "image" && element.assetId ? [element.assetId] : []))
 	);

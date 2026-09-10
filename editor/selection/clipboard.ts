@@ -6,7 +6,7 @@ import { clampElementToCanvas, getElementBounds } from "../elements/geometry";
 import { autofixElementName, createElementId, defaultElementName, nextElementName } from "../elements/naming";
 import { runStorageEffect, saveImageAssetEffect, withEditorWriteGate } from "../session/coordinator";
 import { imageAssetState } from "../state/assets";
-import { clipboardState, projectState, updateProjectState } from "../state/document";
+import { clipboardState, projectState, updateIndexedProject } from "../state/document";
 import { applyInternalEditorMutationEffect, withAsyncEditorMutationEffect } from "../state/editing";
 import { updateInteractionState } from "../state/interaction";
 import { canvasState } from "../state/workspace";
@@ -102,13 +102,7 @@ const pasteEffect = Effect.fn("editor.clipboard.paste")(function* (point?: Point
 				...Object.fromEntries(clonedAssets.map((asset) => [asset.id, asset]))
 			}));
 
-			updateProjectState(
-				(state) => ({
-					...state,
-					elements: [...state.elements, ...positioned]
-				}),
-				{ added: positioned }
-			);
+			updateIndexedProject((document) => document.add(positioned));
 			updateInteractionState((state) => ({
 				...state,
 				selectedElementIds: positioned.map((element) => element.id),

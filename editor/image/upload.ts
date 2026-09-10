@@ -18,7 +18,7 @@ import { history } from "../history";
 import { replaceProjectEffect, runStorageEffect, withEditorWriteGate } from "../session/coordinator";
 import { ImageAssetMissing, ImageAttachmentFailed, ImageTargetInvalid } from "../session/errors";
 import { imageAssetState } from "../state/assets";
-import { projectState, setProjectState } from "../state/document";
+import { projectState, setProjectState, updateIndexedProject } from "../state/document";
 import { applyInternalEditorMutation, withAsyncEditorMutationEffect } from "../state/editing";
 import { updateInteractionState } from "../state/interaction";
 import { canvasState } from "../state/workspace";
@@ -98,13 +98,7 @@ const addPreparedImageEffect = Effect.fn("editor.image.addPrepared")(function* (
 	let committed = false;
 	try {
 		applyInternalEditorMutation(() => {
-			setProjectState(
-				{
-					...project,
-					elements
-				},
-				{ added: [image] }
-			);
+			updateIndexedProject((document) => document.add([image]));
 			updateInteractionState((state) => ({
 				...state,
 				selectedElementId: image.id,
