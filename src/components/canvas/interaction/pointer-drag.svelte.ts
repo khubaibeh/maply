@@ -23,9 +23,22 @@ type ActiveDrag = {
 	callbacks: DragCallbacks;
 };
 
+type PendingMove = {
+	current: Point;
+	event: PointerEvent;
+};
+
 /** Owns one active window pointer-drag lifecycle for a Svelte component. */
 export function createPointerDrag() {
 	let active: ActiveDrag | null = null;
+	let pending: PendingMove | null = null;
+	let frame: number | null = null;
+
+	function cancelFrame() {
+		if (frame === null) return;
+		cancelAnimationFrame(frame);
+		frame = null;
+	}
 
 	function removeListeners() {
 		window.removeEventListener("pointermove", move);
@@ -33,10 +46,36 @@ export function createPointerDrag() {
 		window.removeEventListener("pointercancel", cancel);
 	}
 
+	function flush() {
+		const completed = active;
+		const move = pending;
+		pending = null;
+		if (!completed || !move) return;
+
+		const measured = measureDrag(completed.start, completed.previous, move.current);
+		if (measured.delta.x === 0 && measured.delta.y === 0) return;
+		completed.didMove = true;
+		const consumedDelta = completed.callbacks.onMove({ current: move.current, ...measured, event: move.event });
+		completed.previous = consumedDelta
+			? { x: completed.previous.x + consumedDelta.x, y: completed.previous.y + consumedDelta.y }
+			: move.current;
+	}
+
+	function queue(move: PendingMove) {
+		pending = move;
+		if (frame !== null) return;
+		frame = requestAnimationFrame(() => {
+			frame = null;
+			flush();
+		});
+	}
+
 	function stop(cancelled: boolean, event: PointerEvent | null) {
 		if (!active) return;
 		const completed = active;
 		active = null;
+		cancelFrame();
+		pending = null;
 		removeListeners();
 		completed.callbacks.onEnd?.({ cancelled, didMove: completed.didMove, event });
 	}
@@ -45,18 +84,15 @@ export function createPointerDrag() {
 		if (!active || event.pointerId !== active.pointerId) return;
 		const current = active.callbacks.project(event);
 		if (!current) return;
-
-		const measured = measureDrag(active.start, active.previous, current);
-		if (measured.delta.x === 0 && measured.delta.y === 0) return;
-		active.didMove = true;
-		const consumedDelta = active.callbacks.onMove({ current, ...measured, event });
-		active.previous = consumedDelta
-			? { x: active.previous.x + consumedDelta.x, y: active.previous.y + consumedDelta.y }
-			: current;
+		queue({ current, event });
 	}
 
 	function end(event: PointerEvent) {
 		if (!active || event.pointerId !== active.pointerId) return;
+		const current = active.callbacks.project(event);
+		if (current) queue({ current, event });
+		cancelFrame();
+		flush();
 		stop(false, event);
 	}
 

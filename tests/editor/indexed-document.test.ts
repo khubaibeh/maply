@@ -67,28 +67,25 @@ describe("indexed document", () => {
 		let order = ["a", "b"];
 
 		const apply = (change: NonNullable<ReturnType<typeof document.add>>) => {
+			const orderChange = change.order;
 			for (const entry of change.changes) {
 				if (entry.after) replay.set(entry.id, entry.after);
 				else replay.delete(entry.id);
 			}
-			if (change.order.tag === "insert") {
-				order = [
-					...order.slice(0, change.order.index),
-					...change.order.ids,
-					...order.slice(change.order.index)
-				];
+			if (orderChange.tag === "insert") {
+				order = [...order.slice(0, orderChange.index), ...orderChange.ids, ...order.slice(orderChange.index)];
 			}
-			if (change.order.tag === "remove") order = order.filter((id) => !change.order.ids.includes(id));
-			if (change.order.tag === "move") {
-				const moved = new Set(change.order.ids);
+			if (orderChange.tag === "remove") order = order.filter((id) => !orderChange.ids.includes(id));
+			if (orderChange.tag === "move") {
+				const moved = new Set(orderChange.ids);
 				const remaining = order.filter((id) => !moved.has(id));
 				order = [
-					...remaining.slice(0, change.order.toIndex),
-					...change.order.ids,
-					...remaining.slice(change.order.toIndex)
+					...remaining.slice(0, orderChange.toIndex),
+					...orderChange.ids,
+					...remaining.slice(orderChange.toIndex)
 				];
 			}
-			if (change.order.tag === "replace") order = [...change.order.after];
+			if (orderChange.tag === "replace") order = [...orderChange.after];
 		};
 
 		apply(document.add([rect("c")], 1)!);
