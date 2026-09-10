@@ -18,7 +18,7 @@ import { history } from "../history";
 import { replaceProjectEffect, runStorageEffect, withEditorWriteGate } from "../session/coordinator";
 import { ImageAssetMissing, ImageAttachmentFailed, ImageTargetInvalid } from "../session/errors";
 import { imageAssetState } from "../state/assets";
-import { projectState, setProjectState, updateIndexedProject } from "../state/document";
+import { projectState, updateIndexedProject } from "../state/document";
 import { applyInternalEditorMutation, withAsyncEditorMutationEffect } from "../state/editing";
 import { updateInteractionState } from "../state/interaction";
 import { canvasState } from "../state/workspace";
@@ -145,21 +145,22 @@ const replaceImageAssetEffect = Effect.fn("editor.image.replaceAsset")(function*
 	}
 
 	const nextAsset = { ...asset, id: createElementId(), projectId: project.id };
+	const currentImage = current;
+	const frame = { ...currentImage };
+	delete frame.href;
+	const nextImage = withImageRect(
+		{
+			...frame,
+			assetId: nextAsset.id,
+			cropX: 0,
+			cropY: 0,
+			cropScale: 100
+		},
+		fitImageRect(currentImage, nextAsset.width, nextAsset.height)
+	);
 	const elements = project.elements.map((element) => {
-		if (element.id !== id || element.type !== "image") return element;
-		const frame = { ...element };
-		delete frame.href;
-
-		return withImageRect(
-			{
-				...frame,
-				assetId: nextAsset.id,
-				cropX: 0,
-				cropY: 0,
-				cropScale: 100
-			},
-			fitImageRect(element, nextAsset.width, nextAsset.height)
-		);
+		if (element.id !== id) return element;
+		return nextImage;
 	});
 	const nextAssets = { ...get(imageAssetState), [nextAsset.id]: nextAsset };
 	const persistedAssets = yield* persistImageMutationEffect(project, elements, nextAssets);
@@ -168,7 +169,7 @@ const replaceImageAssetEffect = Effect.fn("editor.image.replaceAsset")(function*
 	let committed = false;
 	try {
 		applyInternalEditorMutation(() => {
-			setProjectState({ ...project, elements }, "preserve");
+			updateIndexedProject((document) => document.update(id, () => nextImage));
 			imageAssetState.set(Object.fromEntries(persistedAssets.map((entry) => [entry.id, entry])));
 		});
 		history.commit(historyTransaction);

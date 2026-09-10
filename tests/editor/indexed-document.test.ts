@@ -60,4 +60,59 @@ describe("indexed document", () => {
 		expect(change?.changes.map((entry) => entry.id)).toEqual(["c", "a"]);
 		expect(document.snapshot().map((element) => element.locked)).toEqual([true, false, true]);
 	});
+
+	it("replays typed changes to the same ordered document", () => {
+		const document = createIndexedDocument([rect("a"), rect("b")]);
+		const replay = new Map(document.snapshot().map((element) => [element.id, element]));
+		let order = ["a", "b"];
+
+		const apply = (change: NonNullable<ReturnType<typeof document.add>>) => {
+			for (const entry of change.changes) {
+				if (entry.after) replay.set(entry.id, entry.after);
+				else replay.delete(entry.id);
+			}
+			if (change.order.tag === "insert") {
+				order = [
+					...order.slice(0, change.order.index),
+					...change.order.ids,
+					...order.slice(change.order.index)
+				];
+			}
+			if (change.order.tag === "remove") order = order.filter((id) => !change.order.ids.includes(id));
+			if (change.order.tag === "move") {
+				const moved = new Set(change.order.ids);
+				const remaining = order.filter((id) => !moved.has(id));
+				order = [
+					...remaining.slice(0, change.order.toIndex),
+					...change.order.ids,
+					...remaining.slice(change.order.toIndex)
+				];
+			}
+			if (change.order.tag === "replace") order = [...change.order.after];
+		};
+
+		apply(document.add([rect("c")], 1)!);
+		apply(document.update("b", (element) => ({ ...element, name: "B" }))!);
+		apply(document.reorder(["c"], 0)!);
+		apply(document.delete(["a"])!);
+
+		expect(order.map((id) => replay.get(id))).toEqual(document.snapshot());
+	});
+
+	it("reports complete before and after data when replacing the document", () => {
+		const document = createIndexedDocument([rect("a"), rect("b")]);
+		const change = document.replace([rect("b"), rect("c")]);
+
+		expect(change.tag).toBe("replace");
+		expect(change.changes).toEqual([
+			expect.objectContaining({ id: "a", before: expect.objectContaining({ id: "a" }), after: null }),
+			expect.objectContaining({
+				id: "b",
+				before: expect.objectContaining({ id: "b" }),
+				after: expect.objectContaining({ id: "b" })
+			}),
+			expect.objectContaining({ id: "c", before: null, after: expect.objectContaining({ id: "c" }) })
+		]);
+		expect(change.order).toEqual({ tag: "replace", before: ["a", "b"], after: ["b", "c"] });
+	});
 });
