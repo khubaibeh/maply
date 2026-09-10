@@ -18,6 +18,7 @@
 	import { importNamesOverlayOpen } from "./import-names-overlay";
 	import ImportNamesOverlay from "./ImportNamesOverlay.svelte";
 	import { createElementReorder } from "./use-reorder.svelte";
+	import { ELEMENT_ROW_HEIGHT, ELEMENT_ROW_OVERSCAN, getVirtualWindow } from "./virtualize";
 
 	const project = Editor.state.project;
 	const interaction = Editor.state.interaction;
@@ -27,6 +28,10 @@
 	let search = $state("");
 	let appliedSearch = $state("");
 	let selectedTypes = $state<ElementType[]>([]);
+	let scrollTop = $state(0);
+	let viewportHeight = $state(320);
+	let focusedId = $state<string>();
+	let editingIds = $state<string[]>([]);
 	const validations = $derived(Editor.naming.validate($project.elements));
 	const reorder = createElementReorder({ list: () => list, viewport: () => viewport });
 	const isSearching = $derived(appliedSearch.length > 0);
@@ -36,22 +41,61 @@
 	const visibleElements = $derived.by(() => {
 		return filterElements(orderedElements, selectedTypes, appliedSearch);
 	});
+	const activeIndex = $derived(visibleElements.findIndex((element) => reorder.isActive(element.id)));
+	const editingIndexes = $derived(
+		[...editingIds]
+			.map((id) => visibleElements.findIndex((element) => element.id === id))
+			.filter((index) => index >= 0)
+	);
+	const virtualWindow = $derived(
+		getVirtualWindow(visibleElements.length, scrollTop, viewportHeight, {
+			overscan: ELEMENT_ROW_OVERSCAN,
+			pinnedIndexes: activeIndex >= 0 ? [activeIndex, ...editingIndexes] : editingIndexes
+		})
+	);
+	const tabStopId = $derived(
+		visibleElements.some((element) => element.id === focusedId)
+			? focusedId
+			: visibleElements[virtualWindow.indexes[0]]?.id
+	);
 
 	$effect(() => {
 		const nextSearch = search.trim().toLocaleLowerCase();
 		if (!nextSearch) {
 			appliedSearch = "";
+			resetListPosition();
 			return;
 		}
 		const timer = setTimeout(() => {
 			appliedSearch = nextSearch;
+			resetListPosition();
 		}, 200);
 		return () => clearTimeout(timer);
+	});
+
+	$effect(() => {
+		const target = viewport;
+		if (!target) return;
+
+		const updateViewport = () => {
+			scrollTop = target.scrollTop;
+			viewportHeight = target.clientHeight;
+		};
+		updateViewport();
+		target.addEventListener("scroll", updateViewport, { passive: true });
+		const observer = typeof ResizeObserver === "undefined" ? undefined : new ResizeObserver(updateViewport);
+		observer?.observe(target);
+
+		return () => {
+			target.removeEventListener("scroll", updateViewport);
+			observer?.disconnect();
+		};
 	});
 
 	function clearSearch() {
 		search = "";
 		appliedSearch = "";
+		resetListPosition();
 	}
 
 	function clearFilters() {
@@ -65,6 +109,37 @@
 
 	function setTypeSelected(type: ElementType, selected: boolean) {
 		selectedTypes = toggleType(selectedTypes, type, selected);
+		resetListPosition();
+	}
+
+	function setEditing(id: string, editing: boolean) {
+		editingIds = editing
+			? [...editingIds.filter((editingId) => editingId !== id), id]
+			: editingIds.filter((editingId) => editingId !== id);
+	}
+
+	function clearTypeFilters() {
+		selectedTypes = [];
+		resetListPosition();
+	}
+
+	function resetListPosition() {
+		if (!viewport) return;
+		viewport.scrollTop = 0;
+		scrollTop = 0;
+	}
+
+	function focusRow(index: number) {
+		const element = visibleElements[index];
+		if (!element || !viewport) return;
+		focusedId = element.id;
+		const top = index * ELEMENT_ROW_HEIGHT + 8;
+		const bottom = top + ELEMENT_ROW_HEIGHT;
+		if (top < scrollTop) viewport.scrollTo({ top: Math.max(0, top - 8) });
+		else if (bottom > scrollTop + viewportHeight) viewport.scrollTo({ top: bottom - viewportHeight + 8 });
+		requestAnimationFrame(() => {
+			list?.querySelector<HTMLElement>(`[data-row-index="${index}"] button`)?.focus();
+		});
 	}
 
 	function exportNames(elements: typeof $project.elements, suffix: string) {
@@ -131,7 +206,7 @@
 						<DropdownMenu.Item
 							class="rounded-lg px-2.5 py-1.5 pl-8 text-xs"
 							disabled={!hasTypeFilter}
-							onclick={() => (selectedTypes = [])}>Clear filter</DropdownMenu.Item
+							onclick={clearTypeFilters}>Clear filter</DropdownMenu.Item
 						>
 						{#each elementTypes as type (type)}
 							<DropdownMenu.CheckboxItem
@@ -184,24 +259,42 @@
 			>
 				<div
 					bind:this={list}
-					class="flex min-h-full flex-col gap-0.5 p-2"
-					role="presentation"
+					class="relative box-border min-h-full p-2"
+					style:height={`${virtualWindow.totalSize + 16}px`}
+					data-row-count={visibleElements.length}
+					role="listbox"
+					tabindex="-1"
+					aria-multiselectable="true"
+					aria-label="Elements"
 					onpointerdown={(event) => {
 						if (event.target === event.currentTarget) Editor.selection.select(null);
 					}}
 				>
-					{#each visibleElements as element, index (element.id)}
-						<ElementRow
-							{element}
-							{index}
-							validation={validations.get(element.id)}
-							selected={$interaction.selectedElementIds.includes(element.id)}
-							active={reorder.isActive(element.id)}
-							onReorderStart={(event, id, rowIndex) => {
-								if (!hasActiveFilter) reorder.start(event, id, rowIndex);
-							}}
-							onSelect={(event, id) => reorder.select(event, id, visibleElements)}
-						/>
+					{#each virtualWindow.indexes as index (visibleElements[index]?.id ?? index)}
+						{@const element = visibleElements[index]}
+						{#if element}
+							<div
+								class="absolute right-2 left-2"
+								style={`top: ${8 + index * ELEMENT_ROW_HEIGHT}px; height: ${ELEMENT_ROW_HEIGHT - 2}px`}
+							>
+								<ElementRow
+									{element}
+									{index}
+									total={visibleElements.length}
+									validation={validations.get(element.id)}
+									selected={$interaction.selectedElementIds.includes(element.id)}
+									active={reorder.isActive(element.id)}
+									tabIndex={tabStopId === element.id ? 0 : -1}
+									onNavigate={focusRow}
+									onFocus={(id) => (focusedId = id)}
+									onEditingChange={setEditing}
+									onReorderStart={(event, id, rowIndex) => {
+										if (!hasActiveFilter) reorder.start(event, id, rowIndex);
+									}}
+									onSelect={(event, id) => reorder.select(event, id, visibleElements)}
+								/>
+							</div>
+						{/if}
 					{:else}
 						<p class="text-muted-foreground px-2 py-1 text-xs">
 							{hasActiveFilter ? "No matching elements" : "No elements"}

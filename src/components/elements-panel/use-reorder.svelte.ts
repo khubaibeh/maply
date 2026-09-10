@@ -43,10 +43,20 @@ export function createElementReorder({ list, viewport }: ReorderOptions) {
 		const rows = Array.from(container.querySelectorAll<HTMLElement>("[data-element-row]")).filter(
 			(row) => row.dataset.elementId !== active?.elementId
 		);
-		for (const [index, row] of rows.entries()) {
+		const activeRow = container.querySelector<HTMLElement>(`[data-element-id="${active.elementId}"]`);
+		const activeIndex = activeRow ? Number(activeRow.dataset.rowIndex) : -1;
+		const logicalIndex = (row: HTMLElement) => {
+			const rowIndex = Number(row.dataset.rowIndex);
+			return rowIndex - (activeIndex >= 0 && activeIndex < rowIndex ? 1 : 0);
+		};
+
+		for (const row of rows) {
 			const bounds = row.getBoundingClientRect();
-			if (clientY < bounds.top + bounds.height / 2) return index;
+			if (clientY < bounds.top + bounds.height / 2) return logicalIndex(row);
 		}
+
+		const total = Number(container.dataset.rowCount);
+		if (Number.isFinite(total) && total > 0) return total - (activeIndex >= 0 ? 1 : 0);
 		return rows.length;
 	}
 

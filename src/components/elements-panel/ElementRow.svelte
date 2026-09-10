@@ -27,14 +27,32 @@
 	type Props = {
 		element: Element;
 		index: number;
+		total: number;
 		validation?: NameValidation;
 		selected: boolean;
 		active: boolean;
+		tabIndex: number;
 		onReorderStart: (event: PointerEvent, id: string, index: number) => void;
 		onSelect: (event: PointerEvent, id: string) => void;
+		onNavigate: (index: number) => void;
+		onFocus: (id: string) => void;
+		onEditingChange: (id: string, editing: boolean) => void;
 	};
 
-	let { element, index, validation, selected, active, onReorderStart, onSelect }: Props = $props();
+	let {
+		element,
+		index,
+		total,
+		validation,
+		selected,
+		active,
+		tabIndex,
+		onReorderStart,
+		onSelect,
+		onNavigate,
+		onFocus,
+		onEditingChange
+	}: Props = $props();
 	let editing = $state(false);
 	let name = $state("");
 	let input: HTMLInputElement | null = $state(null);
@@ -66,6 +84,7 @@
 	function edit() {
 		name = element.name;
 		editing = true;
+		onEditingChange(element.id, true);
 	}
 
 	function save() {
@@ -73,6 +92,12 @@
 		if (nextName) Editor.element.rename(element.id, nextName);
 		else name = element.name;
 		editing = false;
+		onEditingChange(element.id, false);
+	}
+
+	function cancelEdit() {
+		editing = false;
+		onEditingChange(element.id, false);
 	}
 
 	function stopPropagation(event: Event) {
@@ -90,6 +115,11 @@
 		<div
 			data-element-row
 			data-element-id={element.id}
+			data-row-index={index}
+			role="option"
+			aria-setsize={total}
+			aria-posinset={index + 1}
+			aria-selected={selected}
 			class="group grid w-full grid-cols-[minmax(0,1fr)_auto_auto_auto_auto_auto] items-center rounded-lg {invalid
 				? 'bg-destructive/10 text-destructive hover:bg-destructive/15'
 				: active
@@ -100,7 +130,25 @@
 		>
 			<button
 				type="button"
+				tabindex={tabIndex}
 				class="flex min-w-0 items-center gap-2 px-2 py-1.5 text-left text-xs outline-none select-none"
+				onfocus={() => onFocus(element.id)}
+				onkeydown={(event) => {
+					if (event.target instanceof HTMLInputElement) return;
+					const nextIndex =
+						event.key === "ArrowDown"
+							? index + 1
+							: event.key === "ArrowUp"
+								? index - 1
+								: event.key === "Home"
+									? 0
+									: event.key === "End"
+										? total - 1
+										: undefined;
+					if (nextIndex === undefined || nextIndex < 0 || nextIndex >= total) return;
+					event.preventDefault();
+					onNavigate(nextIndex);
+				}}
 				onpointerdown={(event) => {
 					onSelect(event, element.id);
 					onReorderStart(event, element.id, index);
@@ -115,7 +163,7 @@
 						onblur={save}
 						onkeydown={(event) => {
 							if (event.key === "Enter") save();
-							if (event.key === "Escape") editing = false;
+							if (event.key === "Escape") cancelEdit();
 						}}
 						class="h-4 min-h-0 min-w-0 flex-1 rounded-none! border-0 bg-transparent p-0 text-xs leading-4 shadow-none transition-none focus-visible:ring-0 focus-visible:ring-offset-0"
 						style="font: inherit;"
