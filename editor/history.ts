@@ -12,7 +12,7 @@ import {
 } from "./session/coordinator";
 import { settleEditorSaveEffect } from "./session/save";
 import { imageAssetState } from "./state/assets";
-import { projectState, setProjectState } from "./state/document";
+import { documentIndex, projectState, setProjectState } from "./state/document";
 import { applyInternalEditorMutation, withEditorMutationBlockEffect } from "./state/editing";
 import { getInteractionState, updateInteractionState } from "./state/interaction";
 import { canvasState } from "./state/workspace";
@@ -22,7 +22,7 @@ const defaultLimit = 100;
 /** Identifies the caller that owns an open history transaction. */
 export type HistoryTransaction = symbol;
 
-type HistorySnapshot = {
+type HistoryState = {
 	name: string;
 	elements: readonly Element[];
 	elementNameGrid: ElementNameGrid;
@@ -36,13 +36,23 @@ type HistorySnapshot = {
 	assets: Record<string, StoredImageAsset>;
 };
 
-type ObservedSnapshot = Omit<HistorySnapshot, "elements" | "assets"> & {
+type ObservedState = Omit<HistoryState, "elements" | "assets"> & {
 	elements: readonly Element[];
 	assets: Readonly<Record<string, StoredImageAsset>>;
 };
 
-function referencedAssets(elements: readonly Element[], assets: Record<string, StoredImageAsset>) {
-	const ids = elements.flatMap((element) => (element.type === "image" && element.assetId ? [element.assetId] : []));
+type ElementChange = { id: string; before: Element | null; after: Element | null };
+type AssetChange = { id: string; before: StoredImageAsset | null; after: StoredImageAsset | null };
+type HistoryChange = {
+	name: { before: string; after: string } | null;
+	elementNameGrid: { before: ElementNameGrid; after: ElementNameGrid } | null;
+	canvas: { before: HistoryState["canvas"]; after: HistoryState["canvas"] } | null;
+	elements: readonly ElementChange[];
+	order: { before: readonly string[]; after: readonly string[] } | null;
+	assets: readonly AssetChange[];
+};
+
+function referencedAssets(ids: readonly string[], assets: Record<string, StoredImageAsset>) {
 	const referenced: Record<string, StoredImageAsset> = {};
 	for (const id of ids) {
 		const asset = assets[id];
@@ -51,9 +61,10 @@ function referencedAssets(elements: readonly Element[], assets: Record<string, S
 	return referenced;
 }
 
-function observeSnapshot(): ObservedSnapshot {
+function observeSnapshot(): ObservedState {
 	const project = get(projectState);
 	const canvas = get(canvasState);
+	const assets = get(imageAssetState);
 	return {
 		name: project.name,
 		elements: project.elements,
@@ -65,12 +76,8 @@ function observeSnapshot(): ObservedSnapshot {
 			height: canvas.height,
 			color: canvas.color
 		},
-		assets: referencedAssets(project.elements, get(imageAssetState))
+		assets: referencedAssets(documentIndex.referencedAssetIds(), assets)
 	};
-}
-
-function cloneSnapshot(value: ObservedSnapshot): HistorySnapshot {
-	return structuredClone(value);
 }
 
 function sameRecord(left: Record<string, unknown>, right: Record<string, unknown>): boolean {
@@ -78,14 +85,6 @@ function sameRecord(left: Record<string, unknown>, right: Record<string, unknown
 	const rightKeys = Object.keys(right);
 	if (leftKeys.length !== rightKeys.length) return false;
 	return leftKeys.every((key) => left[key] === right[key]);
-}
-
-function sameElements(left: readonly Element[], right: readonly Element[]): boolean {
-	if (left.length !== right.length) return false;
-	return left.every((element, index) => {
-		const other = right[index];
-		return other !== undefined && (element === other || sameRecord(element, other));
-	});
 }
 
 function sameGrid(left: ElementNameGrid, right: ElementNameGrid): boolean {
@@ -97,21 +96,7 @@ function sameGrid(left: ElementNameGrid, right: ElementNameGrid): boolean {
 	});
 }
 
-function sameSnapshot(left: ObservedSnapshot, right: ObservedSnapshot): boolean {
-	return (
-		left.name === right.name &&
-		sameGrid(left.elementNameGrid, right.elementNameGrid) &&
-		left.canvas.x === right.canvas.x &&
-		left.canvas.y === right.canvas.y &&
-		left.canvas.width === right.canvas.width &&
-		left.canvas.height === right.canvas.height &&
-		left.canvas.color === right.canvas.color &&
-		sameElements(left.elements, right.elements) &&
-		sameRecord(left.assets, right.assets)
-	);
-}
-
-function projectForSnapshot(next: HistorySnapshot) {
+function projectForState(next: ObservedState) {
 	const current = get(projectState);
 
 	return {
@@ -122,7 +107,7 @@ function projectForSnapshot(next: HistorySnapshot) {
 	};
 }
 
-function interactionForSnapshot(next: HistorySnapshot) {
+function interactionForState(next: ObservedState) {
 	const current = getInteractionState();
 	const validIds = new Set(next.elements.map((element) => element.id));
 	const selectedElementIds = current.selectedElementIds.filter((id) => validIds.has(id));
@@ -136,8 +121,8 @@ function interactionForSnapshot(next: HistorySnapshot) {
 	};
 }
 
-function persistSnapshotEffect(
-	next: HistorySnapshot,
+function persistStateEffect(
+	next: ObservedState,
 	context: { id: string; camera: Camera; isElementNameImportOpen: boolean }
 ) {
 	return persistProjectEffect(
@@ -154,24 +139,130 @@ function persistSnapshotEffect(
 	);
 }
 
-function applySnapshot(next: HistorySnapshot): void {
+function applyState(next: ObservedState): void {
 	applyInternalEditorMutation(() => {
 		const currentCanvas = get(canvasState);
-		setProjectState(projectForSnapshot(next), "rescan");
-		updateInteractionState(() => interactionForSnapshot(next));
+		setProjectState(projectForState(next), "rescan");
+		updateInteractionState(() => interactionForState(next));
 		canvasState.set({ ...currentCanvas, ...next.canvas, camera: currentCanvas.camera });
 		imageAssetState.set(structuredClone(next.assets));
 	});
 }
 
+function orderedIds(elements: readonly Element[]): string[] {
+	return elements.map((element) => element.id);
+}
+
+function sameCanvas(left: HistoryState["canvas"], right: HistoryState["canvas"]): boolean {
+	return (
+		left.x === right.x &&
+		left.y === right.y &&
+		left.width === right.width &&
+		left.height === right.height &&
+		left.color === right.color
+	);
+}
+
+function sameIds(left: readonly string[], right: readonly string[]): boolean {
+	return left.length === right.length && left.every((id, index) => id === right[index]);
+}
+
+function createHistoryChange(before: ObservedState, after: ObservedState): HistoryChange | null {
+	const beforeElements = new Map(before.elements.map((element) => [element.id, element]));
+	const afterElements = new Map(after.elements.map((element) => [element.id, element]));
+	const elementChanges: ElementChange[] = [];
+	for (const id of new Set([...beforeElements.keys(), ...afterElements.keys()])) {
+		const previous = beforeElements.get(id) ?? null;
+		const next = afterElements.get(id) ?? null;
+		if (previous && next && (previous === next || sameRecord(previous, next))) continue;
+		elementChanges.push({
+			id,
+			before: previous ? structuredClone(previous) : null,
+			after: next ? structuredClone(next) : null
+		});
+	}
+
+	const beforeOrder = orderedIds(before.elements);
+	const afterOrder = orderedIds(after.elements);
+	const beforeAssets = before.assets;
+	const afterAssets = after.assets;
+	const assetChanges: AssetChange[] = [];
+	for (const id of new Set([...Object.keys(beforeAssets), ...Object.keys(afterAssets)])) {
+		const previous = beforeAssets[id] ?? null;
+		const next = afterAssets[id] ?? null;
+		if (previous === next) continue;
+		assetChanges.push({
+			id,
+			before: previous ? structuredClone(previous) : null,
+			after: next ? structuredClone(next) : null
+		});
+	}
+
+	const change: HistoryChange = {
+		name: before.name === after.name ? null : { before: before.name, after: after.name },
+		elementNameGrid: sameGrid(before.elementNameGrid, after.elementNameGrid)
+			? null
+			: { before: structuredClone(before.elementNameGrid), after: structuredClone(after.elementNameGrid) },
+		canvas: sameCanvas(before.canvas, after.canvas)
+			? null
+			: { before: { ...before.canvas }, after: { ...after.canvas } },
+		elements: elementChanges,
+		order: sameIds(beforeOrder, afterOrder) ? null : { before: beforeOrder, after: afterOrder },
+		assets: assetChanges
+	};
+
+	return change.name ||
+		change.elementNameGrid ||
+		change.canvas ||
+		change.elements.length > 0 ||
+		change.order ||
+		change.assets.length > 0
+		? change
+		: null;
+}
+
+function applyHistoryChange(
+	change: HistoryChange,
+	direction: "before" | "after",
+	current: ObservedState
+): ObservedState {
+	const elementsById = new Map(current.elements.map((element) => [element.id, element]));
+	for (const elementChange of change.elements) {
+		const element = elementChange[direction];
+		if (element) elementsById.set(elementChange.id, element);
+		else elementsById.delete(elementChange.id);
+	}
+
+	const ids = change.order?.[direction] ?? orderedIds(current.elements);
+	const elements = ids.flatMap((id) => {
+		const element = elementsById.get(id);
+		return element ? [element] : [];
+	});
+	const assets = { ...current.assets };
+	for (const assetChange of change.assets) {
+		const asset = assetChange[direction];
+		if (asset) assets[assetChange.id] = asset;
+		else delete assets[assetChange.id];
+	}
+
+	return {
+		...current,
+		name: change.name?.[direction] ?? current.name,
+		elementNameGrid: change.elementNameGrid?.[direction] ?? current.elementNameGrid,
+		canvas: change.canvas?.[direction] ?? current.canvas,
+		elements,
+		assets
+	};
+}
+
 /** Provides bounded editor undo and redo over persisted document state. */
 export function createHistory(limit = defaultLimit) {
-	const undoStack: HistorySnapshot[] = [];
-	const redoStack: HistorySnapshot[] = [];
+	const undoStack: HistoryChange[] = [];
+	const redoStack: HistoryChange[] = [];
 	const canUndoStore = writable(false);
 	const canRedoStore = writable(false);
 	let previous = observeSnapshot();
-	let transaction: { token: HistoryTransaction; start: ObservedSnapshot } | null = null;
+	let transaction: { token: HistoryTransaction; start: ObservedState } | null = null;
 	const deferredAssetDeletions = new Set<string>();
 	let suspended = 0;
 	let applying = false;
@@ -187,8 +278,9 @@ export function createHistory(limit = defaultLimit) {
 	function observe() {
 		if (suspended > 0 || applying || transaction) return;
 		const current = observeSnapshot();
-		if (sameSnapshot(current, previous)) return;
-		undoStack.push(cloneSnapshot(previous));
+		const change = createHistoryChange(previous, current);
+		if (!change) return;
+		undoStack.push(change);
 		recordHistoryRecord();
 		if (undoStack.length > limit) undoStack.shift();
 		redoStack.length = 0;
@@ -218,11 +310,7 @@ export function createHistory(limit = defaultLimit) {
 	}
 
 	function flushDeferredAssetDeletions(): void {
-		const referenced = new Set(
-			get(projectState).elements.flatMap((element) =>
-				element.type === "image" && element.assetId ? [element.assetId] : []
-			)
-		);
+		const referenced = new Set(documentIndex.referencedAssetIds());
 		for (const assetId of deferredAssetDeletions) {
 			if (!referenced.has(assetId)) scheduleAssetDeletion(assetId);
 		}
@@ -234,9 +322,10 @@ export function createHistory(limit = defaultLimit) {
 		const { start } = transaction;
 		transaction = null;
 		const current = observeSnapshot();
+		const change = createHistoryChange(start, current);
 		previous = current;
-		if (!sameSnapshot(start, current)) {
-			undoStack.push(cloneSnapshot(start));
+		if (change) {
+			undoStack.push(change);
 			recordHistoryRecord();
 			if (undoStack.length > limit) undoStack.shift();
 			redoStack.length = 0;
@@ -253,20 +342,20 @@ export function createHistory(limit = defaultLimit) {
 		deferredAssetDeletions.clear();
 		applying = true;
 		try {
-			applySnapshot(cloneSnapshot(start));
+			applyState(start);
 			previous = observeSnapshot();
 		} finally {
 			applying = false;
 		}
 	}
 
-	function applySnapshotEffect(snapshot: HistorySnapshot): Effect.Effect<void> {
+	function applyStateEffect(snapshot: ObservedState): Effect.Effect<void> {
 		return Effect.sync(() => {
 			applying = true;
 		}).pipe(
 			Effect.andThen(
 				Effect.sync(() => {
-					applySnapshot(snapshot);
+					applyState(snapshot);
 					previous = observeSnapshot();
 				})
 			),
@@ -279,13 +368,13 @@ export function createHistory(limit = defaultLimit) {
 	}
 
 	const move = Effect.fn("editor.history.move")(function* (
-		from: HistorySnapshot[],
-		to: HistorySnapshot[],
+		from: HistoryChange[],
+		to: HistoryChange[],
 		expectedGeneration: number,
 		expectedRevision: number
 	) {
-		const next = from.at(-1);
-		if (!next) return;
+		const change = from.at(-1);
+		if (!change) return;
 		yield* settleEditorSaveEffect();
 		if (MutableRef.get(generation) !== expectedGeneration || MutableRef.get(revision) !== expectedRevision) return;
 		from.pop();
@@ -296,11 +385,13 @@ export function createHistory(limit = defaultLimit) {
 			camera: canvas.camera,
 			isElementNameImportOpen: project.isElementNameImportOpen
 		};
-		const current = cloneSnapshot(observeSnapshot());
-		to.push(current);
-		yield* applySnapshotEffect(next);
+		const current = observeSnapshot();
+		const direction = from === undoStack ? "before" : "after";
+		const next = applyHistoryChange(change, direction, current);
+		to.push(change);
+		yield* applyStateEffect(next);
 		publish();
-		const persisted = yield* Effect.match(persistSnapshotEffect(next, context), {
+		const persisted = yield* Effect.match(persistStateEffect(next, context), {
 			onFailure: (error) => {
 				console.warn("Failed to persist history state:", error);
 				return false;
@@ -309,13 +400,13 @@ export function createHistory(limit = defaultLimit) {
 		});
 		if (persisted || MutableRef.get(revision) !== expectedRevision) return;
 
-		yield* applySnapshotEffect(current);
+		yield* applyStateEffect(current);
 		to.pop();
-		from.push(next);
+		from.push(change);
 		publish();
 	});
 
-	function scheduleMove(from: HistorySnapshot[], to: HistorySnapshot[]): Promise<void> {
+	function scheduleMove(from: HistoryChange[], to: HistoryChange[]): Promise<void> {
 		const expectedGeneration = MutableRef.get(generation);
 		const expectedRevision = MutableRef.get(revision);
 		return runStorageEffect(
