@@ -42,7 +42,9 @@ export function createElementMove() {
 		const collapseId = !additive && wasSelected && selectedIds.length > 1 ? id : null;
 		const ids = wasSelected && selectedIds.length > 1 ? selectedIds : [id];
 
-		drag.start(event, {
+		drag.cancel();
+		const historyTransaction = Editor.history.begin();
+		const started = drag.start(event, {
 			project: (pointerEvent) => clientToSvgPoint(svg, pointerEvent.clientX, pointerEvent.clientY),
 			onMove: ({ delta }) => {
 				state.isDragging = true;
@@ -52,11 +54,14 @@ export function createElementMove() {
 			},
 			onEnd: ({ cancelled, didMove }) => {
 				state.isDragging = false;
+				if (cancelled) Editor.history.cancel(historyTransaction);
+				else Editor.history.commit(historyTransaction);
 				if (cancelled || didMove) return;
 				if (toggleId) Editor.selection.select(toggleId, true);
 				else if (collapseId) Editor.selection.select(collapseId);
 			}
 		});
+		if (!started) Editor.history.cancel(historyTransaction);
 	}
 
 	return { start, state };

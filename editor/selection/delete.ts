@@ -1,11 +1,18 @@
-import { storage } from "@maply/storage";
+import { Effect } from "effect";
 import { get } from "svelte/store";
 
+import { history } from "../history";
+import { deleteImageAssetEffect, forkEditorWriteEffect, withEditorWriteGate } from "../session/coordinator";
 import { imageAssetState } from "../state/assets";
 import { projectState, updateProjectState } from "../state/document";
+import { isEditorMutationBlocked } from "../state/editing";
 
-/** Removes elements immediately and detaches parallel image asset cleanup. */
-export function deleteElements(ids: string | readonly string[]): void {
+/** Removes elements and their now-unreferenced persisted image assets.
+ *
+ * Returns `false` only when a session operation blocked the mutation; `true` means the deletion was admitted.
+ */
+export function deleteElements(ids: string | readonly string[]): boolean {
+	if (isEditorMutationBlocked()) return false;
 	const idSet = new Set(typeof ids === "string" ? [ids] : ids);
 	const removed = get(projectState).elements.filter((element) => idSet.has(element.id));
 
@@ -44,8 +51,18 @@ export function deleteElements(ids: string | readonly string[]): void {
 			return next;
 		});
 
-		storage.imageAsset.delete(assetId).then((result) => {
-			if (!result.ok) console.warn("Failed to delete image asset:", result.error);
-		});
+		if (history.deferAssetDeletion(assetId)) continue;
+		void forkEditorWriteEffect(
+			withEditorWriteGate(
+				Effect.match(deleteImageAssetEffect(assetId), {
+					onFailure: (error) => {
+						console.warn("Failed to delete image asset:", error.cause);
+					},
+					onSuccess: () => {}
+				})
+			)
+		);
 	}
+
+	return true;
 }

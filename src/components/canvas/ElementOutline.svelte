@@ -124,7 +124,9 @@
 		const lockAspectRatio = element.type === "image" || event.shiftKey;
 		const aspectRatio = bounds.height > 0 ? bounds.width / bounds.height : undefined;
 		const source = { ...element };
-		resize.start(event, {
+		resize.cancel();
+		const historyTransaction = Editor.history.begin();
+		const started = resize.start(event, {
 			project: (pointerEvent) => clientToSvgPoint(svg, pointerEvent.clientX, pointerEvent.clientY),
 			onMove: ({ totalDelta }) => {
 				Editor.element.resize(
@@ -135,8 +137,13 @@
 					{ lockAspectRatio, aspectRatio },
 					source
 				);
+			},
+			onEnd: ({ cancelled }) => {
+				if (cancelled) Editor.history.cancel(historyTransaction);
+				else Editor.history.commit(historyTransaction);
 			}
 		});
+		if (!started) Editor.history.cancel(historyTransaction);
 	}
 </script>
 

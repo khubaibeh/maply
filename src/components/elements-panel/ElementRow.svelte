@@ -3,6 +3,7 @@
 	import * as ContextMenu from "$lib/components/ui/context-menu";
 	import { Input } from "$lib/components/ui/input";
 	import ElementNameValidation from "@components/core/ElementNameValidation.svelte";
+	import { toast } from "@components/core/toast";
 	import { defaultBindable } from "@maply/model";
 	import type { Element } from "@maply/model/types";
 	import { Editor } from "editor";
@@ -187,7 +188,9 @@
 					: ''}"
 				onclick={(event) => {
 					event.stopPropagation();
-					void Editor.element.delete(element.id);
+					if (!Editor.element.delete(element.id)) {
+						toast.info("The editor is finishing another action. Try again in a moment.");
+					}
 				}}
 				aria-label="Delete {element.name}"><Trash class="size-3.5" /></button
 			>

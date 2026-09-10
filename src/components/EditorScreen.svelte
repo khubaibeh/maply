@@ -1,6 +1,6 @@
 <script lang="ts">
 	import CanvasArea from "@components/CanvasArea.svelte";
-	import { getArrowDelta, getShortcutTool, isEditingText } from "@components/core/shortcuts";
+	import { getArrowDelta, getHistoryShortcut, getShortcutTool, isEditingText } from "@components/core/shortcuts";
 	import { toast } from "@components/core/toast";
 	import Toolbar from "@components/core/Toolbar.svelte";
 	import Topbar from "@components/core/Topbar.svelte";
@@ -37,7 +37,7 @@
 		}
 
 		toast.error(
-			result.error.type === "UnsupportedFormat"
+			result.error._tag === "ImageUnsupportedFormatError"
 				? "Choose a PNG, JPEG, or SVG image."
 				: "The image could not be added. Try another file."
 		);
@@ -53,6 +53,16 @@
 			// The Element Names overlay is a modal editor: don't let canvas shortcuts
 			// (select-all, delete, copy/paste, tool switches…) act on the canvas underneath.
 			if (get(importNamesOverlayOpen)) return;
+
+			if (!isEditingText(event)) {
+				const historyShortcut = getHistoryShortcut(event);
+				if (historyShortcut) {
+					event.preventDefault();
+					if (historyShortcut === "redo") void Editor.history.redo();
+					else void Editor.history.undo();
+					return;
+				}
+			}
 
 			if (!isEditingText(event) && !event.ctrlKey && !event.metaKey && !event.altKey) {
 				const shortcutTool = getShortcutTool(event.key);
@@ -91,7 +101,9 @@
 				if (selectedIds.length === 0) return;
 
 				event.preventDefault();
-				Editor.element.delete(selectedIds);
+				if (!Editor.element.delete(selectedIds)) {
+					toast.info("The editor is finishing another action. Press Delete again in a moment.");
+				}
 				return;
 			}
 

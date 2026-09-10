@@ -48,8 +48,7 @@ export function createCanvasContextMenu() {
 		const ids = project.current.selectedElementIds.includes(state.elementId)
 			? project.current.selectedElementIds
 			: [state.elementId];
-		void Editor.element.delete(ids);
-		state.open = false;
+		if (Editor.element.delete(ids)) state.open = false;
 	}
 
 	function order(action: SelectionOrder) {

@@ -1,35 +1,61 @@
-import { project as ioProject } from "@maply/io";
+import { project as ioProject } from "@maply/io/effect";
 import { copyProjectEditorData } from "@maply/model";
-import { storage } from "@maply/storage";
+import { Effect } from "effect";
 import { get } from "svelte/store";
 
-import { loadEditorSession } from "../session/load";
-import { projectState } from "../state/document";
+import { history } from "../history";
+import { replaceProjectEffect, runStorageEffect, withEditorWriteGate } from "../session/coordinator";
+import { loadEditorSessionEffect } from "../session/load";
+import { projectState, updateProjectState } from "../state/document";
+import { applyInternalEditorMutationEffect, withEditorMutationBlockEffect } from "../state/editing";
 
 /** Atomically replaces the active project with an IO-validated project-file payload. */
 export async function importProject(
 	projectFile: Parameters<typeof ioProject.file.assign>[0]
 ): Promise<{ ok: true } | { ok: false; error: unknown }> {
+	return runStorageEffect(
+		Effect.match(
+			withEditorMutationBlockEffect(
+				importProjectEffect(projectFile).pipe(
+					Effect.tapErrorTag("PersistenceFailed", () =>
+						applyInternalEditorMutationEffect(
+							Effect.sync(() => {
+								updateProjectState((state) => ({ ...state, initialized: true }), "preserve");
+							})
+						)
+					)
+				)
+			),
+			{
+				onFailure: (error) => ({ ok: false as const, error }),
+				onSuccess: () => ({ ok: true as const })
+			}
+		)
+	);
+}
+
+const importProjectEffect = Effect.fn("editor.project.import")(function* (
+	projectFile: Parameters<typeof ioProject.file.assign>[0]
+) {
 	const projectId = get(projectState).id;
-	const assigned = await ioProject.file.assign(projectFile, projectId);
+	const assigned = yield* ioProject.file.assign(projectFile, projectId);
 
-	if (!assigned.ok) {
-		return { ok: false, error: assigned.error };
-	}
-
-	const replaced = await storage.project.replace(
-		{
-			...assigned.value.project,
-			editorData: copyProjectEditorData(assigned.value.editorData),
-			isElementNameImportOpen: true
-		},
-		assigned.value.imageAssets
+	yield* history.settleEffect;
+	yield* applyInternalEditorMutationEffect(
+		Effect.sync(() => {
+			updateProjectState((state) => ({ ...state, initialized: false }), "preserve");
+		})
+	);
+	yield* withEditorWriteGate(
+		replaceProjectEffect(
+			{
+				...assigned.project,
+				editorData: copyProjectEditorData(assigned.editorData),
+				isElementNameImportOpen: true
+			},
+			assigned.imageAssets
+		)
 	);
 
-	if (!replaced.ok) {
-		return { ok: false, error: replaced.error };
-	}
-
-	await loadEditorSession(projectId);
-	return { ok: true };
-}
+	yield* loadEditorSessionEffect(projectId).pipe(Effect.catchTag("SessionSuperseded", () => Effect.void));
+});

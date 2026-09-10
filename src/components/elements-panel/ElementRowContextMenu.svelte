@@ -1,5 +1,6 @@
 <script lang="ts">
 	import * as ContextMenu from "$lib/components/ui/context-menu";
+	import { toast } from "@components/core/toast";
 	import type { Element } from "@maply/model/types";
 	import { Editor } from "editor";
 	import type { SelectionOrder } from "editor/types";
@@ -136,8 +137,8 @@
 				const ids = $project.selectedElementIds.includes(element.id)
 					? $project.selectedElementIds
 					: [element.id];
-				void Editor.element.delete(ids);
-				close();
+				if (Editor.element.delete(ids)) close();
+				else toast.info("The editor is finishing another action. Try again in a moment.");
 			}}>Delete</ContextMenu.Item
 		>
 	</ContextMenu.Group>
