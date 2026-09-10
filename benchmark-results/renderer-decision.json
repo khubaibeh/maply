@@ -1,0 +1,30 @@
+{
+	"measurement": "deterministic indexed candidate gate",
+	"threshold": 2000,
+	"results": [
+		{
+			"name": "50k-typical",
+			"seed": 1011703407,
+			"fingerprint": "7b8f4dee",
+			"documentSize": 50000,
+			"viewport": {
+				"width": 1200,
+				"height": 800
+			},
+			"candidateElements": 5,
+			"renderer": "svg"
+		},
+		{
+			"name": "50k-all-visible",
+			"seed": 1298034544,
+			"fingerprint": "bb0cb771",
+			"documentSize": 50000,
+			"viewport": {
+				"width": 1200,
+				"height": 800
+			},
+			"candidateElements": 50000,
+			"renderer": "canvas"
+		}
+	]
+}

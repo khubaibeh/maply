@@ -1,0 +1,9 @@
+{
+	"fixture": "50k-typical",
+	"fingerprint": "7b8f4dee",
+	"cycles": 1000,
+	"durationMs": 12.798,
+	"finalElementCount": 50000,
+	"uniqueElementCount": 50000,
+	"memoryMeasurement": "not exposed by the Node benchmark runner"
+}

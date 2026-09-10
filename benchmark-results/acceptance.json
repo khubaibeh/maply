@@ -1,0 +1,33 @@
+{
+	"scope": "50k improvement-plan release hardening",
+	"fixtureManifest": "benchmark-results/fixtures.json",
+	"rendererDecision": "benchmark-results/renderer-decision.json",
+	"indexedMutation": "benchmark-results/indexed-mutation.json",
+	"indexedSoak": "benchmark-results/indexed-soak.json",
+	"automatedChecks": {
+		"repositoryTests": "pass",
+		"productionBuild": "pass",
+		"typeChecks": "pass",
+		"dependencyValidation": "pass",
+		"storageMigration": "pass",
+		"telemetryContract": "pass",
+		"rendererGate": "pass"
+	},
+	"compatibility": {
+		"modelAndSvgExport": "covered by repository test suites",
+		"indexedDbMigration": "covered by @maply/storage tests",
+		"undoRedoAndAssetRollback": "covered by editor history tests",
+		"accessibilityRepresentation": "virtualized logical elements list and active SVG controls retained"
+	},
+	"soak": {
+		"status": "automated bounded-cycle pass",
+		"cycles": 1000,
+		"browserHeapMeasurement": "not exposed by the Node benchmark runner"
+	},
+	"browserLab": {
+		"status": "requires documented browser runner",
+		"reason": "No browser executable is present in this workspace; the available Playwright package does not support Chromium on Ubuntu 26.04.",
+		"owner": "Maply performance lab",
+		"followUp": "Run /benchmark in a supported production browser before changing the 2,000-candidate renderer threshold."
+	}
+}

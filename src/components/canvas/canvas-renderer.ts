@@ -1,8 +1,6 @@
 import { getImageRenderRect, getPathRenderTransform } from "@maply/model";
 import type { Camera, Element, ImageElement, StoredImageAsset, TextElement } from "@maply/model/types";
 
-import { getWrappedTextLineHeight, getWrappedTextLines, getWrappedTextMetrics } from "../../../editor/elements/text";
-
 const CANVAS_RENDERER_VISIBLE_LIMIT = 2_000;
 const MAX_CACHED_PATHS = 2_048;
 const MAX_CACHED_IMAGES = 128;
@@ -25,6 +23,13 @@ export type CanvasSceneSurface = {
 	color: string;
 };
 
+/** Public text-layout operations needed to match the SVG renderer. */
+export type CanvasTextLayout = {
+	readonly wrappedLines: (element: TextElement) => readonly string[];
+	readonly wrappedLineHeight: (element: TextElement) => number;
+	readonly wrappedMetrics: (element: TextElement) => { left: number; ascent: number };
+};
+
 /** Inputs required to paint one Canvas2D scene. */
 export type CanvasSceneOptions = {
 	width: number;
@@ -34,6 +39,7 @@ export type CanvasSceneOptions = {
 	surface: CanvasSceneSurface;
 	elements: readonly Element[];
 	assets: Readonly<Record<string, StoredImageAsset>>;
+	text: CanvasTextLayout;
 	onImageReady?: () => void;
 };
 
@@ -133,10 +139,10 @@ function drawCircle(context: CanvasRenderingContext2D, element: Extract<Element,
 	});
 }
 
-function drawText(context: CanvasRenderingContext2D, element: TextElement): void {
-	const lines = getWrappedTextLines(element);
-	const lineHeight = getWrappedTextLineHeight(element);
-	const metrics = getWrappedTextMetrics(element);
+function drawText(context: CanvasRenderingContext2D, element: TextElement, text: CanvasTextLayout): void {
+	const lines = text.wrappedLines(element);
+	const lineHeight = text.wrappedLineHeight(element);
+	const metrics = text.wrappedMetrics(element);
 
 	context.save();
 	context.beginPath();
@@ -295,7 +301,7 @@ export function createCanvasScene(): CanvasScene {
 						drawPath(context, element, pathFor(element.d));
 						break;
 					case "text":
-						drawText(context, element);
+						drawText(context, element, options.text);
 						break;
 					case "image": {
 						imageElements += 1;

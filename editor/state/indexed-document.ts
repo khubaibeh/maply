@@ -3,6 +3,7 @@ import type { Element, Point } from "@maply/model/types";
 import { getElementBounds } from "../elements/geometry";
 import type { ElementNameValidation } from "../elements/naming";
 import { clearTextLayoutCache, invalidateTextLayout } from "../elements/text";
+import { recordSpatialQuery } from "../telemetry";
 import { createDerivedIndexes, type DerivedIndexes } from "./derived-indexes";
 import type {
 	DocumentChangeListener,
@@ -113,10 +114,12 @@ export function createIndexedDocument(elements: readonly Element[] = []): Indexe
 		order.forEach((id, index) => orderIndexes.set(id, index));
 	}
 
-	function removeElement(id: string): void {
+	function removeElement(id: string, removeFromOrder = true): void {
 		const removed = byId.get(id);
-		const index = order.indexOf(id);
-		if (index >= 0) order.splice(index, 1);
+		if (removeFromOrder) {
+			const index = order.indexOf(id);
+			if (index >= 0) order.splice(index, 1);
+		}
 		byId.delete(id);
 		spatial.delete(id);
 		orderIndexes.delete(id);
@@ -163,14 +166,18 @@ export function createIndexedDocument(elements: readonly Element[] = []): Indexe
 			return element ? copyElement(element) : undefined;
 		},
 		query: (bounds, includeIds = []) => {
-			const ids = new Set([...spatial.query(bounds), ...includeIds.filter((id) => byId.has(id))]);
+			const spatialIds = spatial.query(bounds);
+			recordSpatialQuery("bounds", spatialIds.length);
+			const ids = new Set([...spatialIds, ...includeIds.filter((id) => byId.has(id))]);
 			return [...ids].sort((left, right) => (orderIndexes.get(left) ?? 0) - (orderIndexes.get(right) ?? 0));
 		},
-		queryPoint: (point) =>
-			spatial
-				.queryPoint(point)
+		queryPoint: (point) => {
+			const spatialIds = spatial.queryPoint(point);
+			recordSpatialQuery("point", spatialIds.length);
+			return spatialIds
 				.filter((id) => byId.has(id))
-				.sort((left, right) => (orderIndexes.get(left) ?? 0) - (orderIndexes.get(right) ?? 0)),
+				.sort((left, right) => (orderIndexes.get(left) ?? 0) - (orderIndexes.get(right) ?? 0));
+		},
 		bounds: (id) => {
 			const bounds = boundsById.get(id);
 			return bounds ? { ...bounds } : undefined;
@@ -193,10 +200,10 @@ export function createIndexedDocument(elements: readonly Element[] = []): Indexe
 		add: (elementsToAdd, index = order.length) => {
 			if (elementsToAdd.length === 0) return null;
 			const insertionIndex = clampIndex(index, order.length);
+			assertUniqueElementIds(elementsToAdd);
 			const ids = elementsToAdd.map((element) => element.id);
 			for (const element of elementsToAdd) {
-				if (byId.has(element.id) || ids.indexOf(element.id) !== ids.lastIndexOf(element.id))
-					throw new Error(`Duplicate element ID: ${element.id}`);
+				if (byId.has(element.id)) throw new Error(`Duplicate element ID: ${element.id}`);
 			}
 			for (const element of elementsToAdd) {
 				setElement(element);
@@ -253,11 +260,9 @@ export function createIndexedDocument(elements: readonly Element[] = []): Indexe
 				return element ? [{ id, before: copyElement(element), after: null }] : [];
 			});
 			for (const id of removedIds) {
-				removeElement(id);
+				removeElement(id, false);
 			}
-			for (let index = order.length - 1; index >= 0; index -= 1) {
-				if (requested.has(order[index] ?? "")) order.splice(index, 1);
-			}
+			order.splice(0, order.length, ...order.filter((id) => !requested.has(id)));
 			refreshOrderIndexes();
 			return publish({
 				tag: "delete",

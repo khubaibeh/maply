@@ -16,6 +16,9 @@ export type BenchmarkEnvironment = BenchmarkDisplay & {
 export type BenchmarkResourceMetrics = {
 	mountedNodes: number;
 	svgNodes: number;
+	renderer: "svg" | "canvas" | null;
+	spatialCandidates: number | null;
+	renderedElements: number | null;
 	heapGrowthBytes: number | null;
 	persistedBytes: number | null;
 };
@@ -43,9 +46,14 @@ export type BenchmarkCounters = {
 
 /** Returns an error when one measured frame publishes more than one document change. */
 export function frameInvariantViolation(before: BenchmarkCounters, after: BenchmarkCounters): string | null {
+	const documentRevisions = after.documentRevisions - before.documentRevisions;
+	const changePublications = after.changePublications - before.changePublications;
 	if (
-		after.documentRevisions - before.documentRevisions > 1 ||
-		after.changePublications - before.changePublications > 1
+		documentRevisions < 0 ||
+		changePublications < 0 ||
+		documentRevisions > 1 ||
+		changePublications > 1 ||
+		documentRevisions !== changePublications
 	) {
 		return "one-mutation/one-publication-per-frame invariant violated";
 	}
@@ -113,10 +121,29 @@ export function readLongTasks(startTime: number): { duration: number; count: num
 }
 
 /** Counts all mounted descendants and SVG descendants below a benchmark root. */
-export function readMountedNodes(root: ParentNode): { mountedNodes: number; svgNodes: number } {
+export function readMountedNodes(root: ParentNode): {
+	mountedNodes: number;
+	svgNodes: number;
+	renderer: "svg" | "canvas" | null;
+	spatialCandidates: number | null;
+	renderedElements: number | null;
+} {
+	const rendererNode = root.querySelector<HTMLElement>("[data-renderer]");
+	const canvasNode = root.querySelector<HTMLElement>("[data-canvas-renderer]");
+	const candidateValue = canvasNode?.dataset.candidateElements;
+	const renderedNode = root.querySelector<HTMLElement>("[data-rendered-elements]");
+	const renderedValue = renderedNode?.dataset.renderedElements;
+	const readCount = (value: string | undefined): number | null => {
+		if (value === undefined) return null;
+		const count = Number(value);
+		return Number.isFinite(count) && count >= 0 ? count : null;
+	};
 	return {
 		mountedNodes: root.querySelectorAll("*").length,
-		svgNodes: root.querySelectorAll("svg *").length
+		svgNodes: root.querySelectorAll("svg *").length,
+		renderer: rendererNode?.dataset.renderer === "canvas" || canvasNode ? "canvas" : rendererNode ? "svg" : null,
+		spatialCandidates: readCount(candidateValue),
+		renderedElements: readCount(renderedValue)
 	};
 }
 

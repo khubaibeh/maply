@@ -17,6 +17,7 @@ import { applyInternalEditorMutation, withEditorMutationBlockEffect } from "./st
 import type { DocumentChangeSet, DocumentOrderChange } from "./state/indexed-document";
 import { updateInteractionState } from "./state/interaction";
 import { canvasState } from "./state/workspace";
+import { recordEditorFailure } from "./telemetry";
 
 const defaultLimit = 100;
 
@@ -354,6 +355,7 @@ export function createHistory(limit = defaultLimit) {
 			withEditorWriteGate(
 				Effect.match(deleteImageAssetEffect(assetId), {
 					onFailure: (error) => {
+						recordEditorFailure("history.asset-delete", error._tag);
 						console.warn("Failed to delete image asset:", error.cause);
 					},
 					onSuccess: () => {}
@@ -454,6 +456,7 @@ export function createHistory(limit = defaultLimit) {
 				: persistPendingEditorChangesEffect(),
 			{
 				onFailure: (error) => {
+					recordEditorFailure("history.move", error._tag);
 					console.warn("Failed to persist history state:", error);
 					discardPendingEditorChanges();
 					return false;

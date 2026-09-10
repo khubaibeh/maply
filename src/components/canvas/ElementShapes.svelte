@@ -35,7 +35,7 @@
 	}
 </script>
 
-<g class="canvas-elements">
+<g class="canvas-elements" data-rendered-elements={elements.length}>
 	{#each elements as element (element.id)}
 		{#if element.visible !== false}
 			<g

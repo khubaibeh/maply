@@ -63,6 +63,21 @@ import { interactionRevisionState, interactionState } from "./state/interaction"
 import { toolState, canvasState, zoomLimits } from "./state/workspace";
 import type { SelectionOrder } from "./types";
 
+export {
+	flushEditorTelemetry,
+	recordEditorCommand,
+	recordEditorFailure,
+	recordEditorFrame,
+	recordEditorRender,
+	recordSaveBatch,
+	recordSpatialQuery,
+	setEditorTelemetrySink,
+	type EditorRendererKind,
+	type EditorTelemetrySink,
+	type EditorTelemetrySnapshot,
+	type SpatialQueryKind
+} from "./telemetry";
+
 function setFill(fill: string): void {
 	fillState.set(fill);
 }

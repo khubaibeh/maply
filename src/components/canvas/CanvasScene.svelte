@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Editor } from "editor";
+	import { Editor, recordEditorFrame, recordEditorRender } from "editor";
 
 	import type { CanvasSceneMetrics } from "./canvas-renderer";
 	import { createCanvasScene } from "./canvas-renderer";
@@ -35,7 +35,8 @@
 			const element = Editor.document.get(id);
 			return element ? [element] : [];
 		});
-		metrics = scene.render(canvasElement, {
+		const startedAt = typeof performance === "undefined" ? 0 : performance.now();
+		const nextMetrics = scene.render(canvasElement, {
 			width,
 			height,
 			pixelRatio: typeof window === "undefined" ? 1 : window.devicePixelRatio,
@@ -49,10 +50,19 @@
 			},
 			elements,
 			assets,
+			text: {
+				wrappedLines: Editor.text.wrappedLines,
+				wrappedLineHeight: Editor.text.wrappedLineHeight,
+				wrappedMetrics: Editor.text.wrappedMetrics
+			},
 			onImageReady: () => {
 				imageRevision += 1;
 			}
 		});
+		metrics = nextMetrics;
+		const durationMs = typeof performance === "undefined" ? 0 : performance.now() - startedAt;
+		recordEditorRender("canvas", durationMs, nextMetrics.candidateElements, nextMetrics.renderedElements);
+		recordEditorFrame(durationMs, nextMetrics.renderedElements);
 	});
 
 	$effect(() => {

@@ -160,6 +160,9 @@ async function runScenario(
 		resources: {
 			mountedNodes: nodes.mountedNodes,
 			svgNodes: nodes.svgNodes,
+			renderer: nodes.renderer,
+			spatialCandidates: nodes.spatialCandidates,
+			renderedElements: nodes.renderedElements,
 			heapGrowthBytes: heapBefore !== null && heapAfter !== null ? heapAfter - heapBefore : null,
 			persistedBytes: payloadBytes
 		},

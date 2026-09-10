@@ -55,8 +55,8 @@
 			<p class="benchmark-kicker">Maply / performance lab</p>
 			<h1>50k element baseline</h1>
 			<p class="benchmark-intro">
-				The harness measures the current editor before performance changes. Each run uses a seeded fixture and
-				keeps the raw sample data in the report.
+				The harness measures the indexed editor and hybrid renderer against a seeded fixture, keeping raw sample
+				data in the report for comparison.
 			</p>
 		</div>
 		<div class="benchmark-controls" aria-label="Benchmark controls">

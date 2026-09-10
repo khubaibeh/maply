@@ -4,6 +4,7 @@ import { writable } from "svelte/store";
 
 import { recordChangePublication, recordDocumentRevision } from "../benchmark-counters";
 import { getElementBounds } from "../elements/geometry";
+import { recordEditorCommand } from "../telemetry";
 import type { ProjectState } from "../types";
 import { isEditorMutationBlocked } from "./editing";
 import { createIndexedDocument, type DocumentChangeSet, type IndexedDocument } from "./indexed-document";
@@ -311,6 +312,7 @@ export function updateIndexedProject(
 	hint?: MinimumCanvasSizeHint
 ): DocumentChangeSet | null {
 	if (isEditorMutationBlocked()) return null;
+	const startedAt = typeof performance === "undefined" ? 0 : performance.now();
 	const change = mutation(indexedDocument);
 	if (!change) return null;
 
@@ -321,6 +323,11 @@ export function updateIndexedProject(
 	} finally {
 		applyingIndexedMutation = false;
 	}
+	recordEditorCommand(
+		change.tag,
+		typeof performance === "undefined" ? 0 : performance.now() - startedAt,
+		change.changes.length
+	);
 	return change;
 }
 
@@ -331,6 +338,7 @@ export function replayIndexedDocument(
 	direction: "before" | "after",
 	options?: { persist?: boolean }
 ): DocumentChangeSet | null {
+	const startedAt = typeof performance === "undefined" ? 0 : performance.now();
 	const change = indexedDocument.replay(changes, orders, direction, options);
 	if (!change) return null;
 	applyingIndexedMutation = true;
@@ -340,6 +348,11 @@ export function replayIndexedDocument(
 	} finally {
 		applyingIndexedMutation = false;
 	}
+	recordEditorCommand(
+		change.tag,
+		typeof performance === "undefined" ? 0 : performance.now() - startedAt,
+		change.changes.length
+	);
 	return change;
 }
 

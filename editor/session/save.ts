@@ -7,6 +7,7 @@ import { recordSaveRequest } from "../benchmark-counters";
 import { documentIndex, projectState } from "../state/document";
 import type { DocumentChangeSet } from "../state/indexed-document";
 import { canvasState } from "../state/workspace";
+import { recordEditorFailure, recordSaveBatch } from "../telemetry";
 import { forkStorageEffect, runStorageEffect, saveIncrementalProjectEffect, settleEditorWrites } from "./coordinator";
 
 const saveGeneration = MutableRef.make(0);
@@ -55,6 +56,11 @@ documentIndex.subscribe((change) => {
 const saveCurrentProjectEffect = Effect.fn("editor.session.saveCurrent")(function* () {
 	const batch = pendingDocumentChanges.splice(0);
 	const metadata = currentMetadata();
+	if (batch.length > 0)
+		recordSaveBatch(
+			batch.length,
+			batch.reduce((total, change) => total + change.changes.length, 0)
+		);
 	yield* Effect.suspend(() =>
 		Effect.match(
 			saveIncrementalProjectEffect(
@@ -64,6 +70,7 @@ const saveCurrentProjectEffect = Effect.fn("editor.session.saveCurrent")(functio
 			{
 				onFailure: (error) => {
 					pendingDocumentChanges.unshift(...batch);
+					recordEditorFailure("save", error._tag);
 					console.warn("Failed to save project:", error.cause);
 				},
 				onSuccess: () => {}

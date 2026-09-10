@@ -9,7 +9,9 @@ fixtures, records raw samples, and reports medians and p95 values.
 pnpm benchmark:fixtures
 ```
 
-This writes `benchmark-results/fixtures.json`. The fixture generator does not write the 50k-element
+This writes `benchmark-results/fixtures.json` and runs the deterministic indexed-engine gates,
+which write `benchmark-results/indexed-mutation.json`, `benchmark-results/indexed-soak.json`, and
+`benchmark-results/renderer-decision.json`. The fixture generator does not write the 50k-element
 projects to source control. The manifest records each seed, count, viewport, selection sizes, and
 content fingerprint.
 
@@ -23,8 +25,9 @@ content fingerprint.
 
 The page measures load, pan, zoom, hover, drag, resize, marquee, sidebar scroll, search, select-all,
 undo, redo, autosave, and zoom-to-fit. It also records application time, frame time, long tasks,
-mounted nodes, SVG nodes, heap growth when available, serialized persistence payload size, document
-revisions, change publications, history records, and save requests.
+mounted nodes, SVG nodes, selected renderer, spatial candidates, rendered elements, heap growth when
+available, serialized persistence payload size, document revisions, change publications, history
+records, and save requests.
 
 Run the suite in a production build. Record the browser user agent, hardware, fixture fingerprint,
 viewport, and zoom from the report. Do not compare reports made with different fixture or environment

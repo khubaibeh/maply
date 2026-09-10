@@ -1,0 +1,9 @@
+{
+	"fixture": "50k-typical",
+	"fingerprint": "7b8f4dee",
+	"sampleCount": 40,
+	"medianMs": 0.008,
+	"p95Ms": 0.026,
+	"budgetMs": 8,
+	"measurement": "indexed mutation only; excludes browser paint"
+}
