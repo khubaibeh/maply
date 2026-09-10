@@ -431,7 +431,7 @@ large traces into this document.
 | 1 | 05cd914 | — | — | `pnpm check`, focused interaction tests, existing editor tests | Selection, hover, and crop now use an independent interaction revision and subscription path. |
 | 2 | af9c1ce, dc8fd1a, e484ee7, 833767e | — | — | `pnpm check`, `pnpm test:editor`, indexed-document contract and replay tests | Indexed seam now covers ordinary, path, image-crop, asset-replacement, and ordering mutations; the 50k browser timing gate remains to be measured before marking the chunk complete. |
 | 3 | 5c97861, edeabbc, 3975c9d, a211a41 | — | — | `pnpm check`, `pnpm test`, pointer-drag coalescing, mutation-counter, cancellation, and projection tests | Pointer drags now publish one mutation per animation frame, flush pointer-up synchronously, restore canceled transactions, and drive canvas consumers through a metadata-free elements projection. |
-| 4 | pending | — | — | `pnpm check`, `pnpm test:editor`, virtual-window and elements-panel tests | Sidebar mounts a fixed overscanned window, pins active rows, preserves logical indexes for reorder, and exposes virtual list semantics and keyboard navigation. Browser timing evidence remains to be captured in the benchmark lab. |
+| 4 | 02aab02 | — | — | `pnpm check`, `pnpm test:editor`, virtual-window and elements-panel tests | Sidebar mounts a fixed overscanned window, pins active rows, preserves logical indexes for reorder, and exposes virtual list semantics and keyboard navigation. Browser timing evidence remains to be captured in the benchmark lab. |
 | 5 | — | — | — | — | Not started |
 | 6 | — | — | — | — | Not started |
 | 7 | — | — | — | — | Not started |
