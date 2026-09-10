@@ -63,7 +63,6 @@ export function createDerivedIndexes(elements: readonly Element[] = []): Derived
 	}
 
 	function refreshValidations(affectedNames: ReadonlySet<string>) {
-		const usedNames = new Set(nameCountsMap.keys());
 		const affectedIds = new Set<string>();
 		for (const name of affectedNames) {
 			for (const id of nameMembers.get(name) ?? []) affectedIds.add(id);
@@ -75,7 +74,7 @@ export function createDerivedIndexes(elements: readonly Element[] = []): Derived
 				validationsMap.delete(id);
 				continue;
 			}
-			validationsMap.set(id, createElementNameValidation({ id, name }, nameCountsMap, usedNames));
+			validationsMap.set(id, createElementNameValidation({ id, name }, nameCountsMap, nameCountsMap));
 		}
 	}
 
