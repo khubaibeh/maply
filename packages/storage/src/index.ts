@@ -2,6 +2,7 @@ import {
 	deleteImageAsset,
 	fetchImageAssets,
 	fetchProject,
+	saveIncrementalProject,
 	replaceProject,
 	resetProject,
 	saveImageAsset,
@@ -12,6 +13,7 @@ export const storage = {
 	project: {
 		fetch: fetchProject,
 		save: saveProject,
+		saveIncremental: saveIncrementalProject,
 		replace: replaceProject,
 		reset: resetProject
 	},

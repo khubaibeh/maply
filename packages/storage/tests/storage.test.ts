@@ -77,13 +77,65 @@ describe("@maply/storage", () => {
 		});
 	});
 
+	it("persists one element through the incremental representation", async () => {
+		const project = await value(storage.project.fetch("prod"));
+		const element = {
+			id: "incremental-rect",
+			name: "incremental-rect",
+			type: "rect" as const,
+			locked: false,
+			visible: true,
+			bindable: true,
+			x: 10,
+			y: 10,
+			width: 20,
+			height: 20,
+			fill: "#000",
+			stroke: "#000",
+			strokeWidth: 1
+		};
+
+		await value(
+			storage.project.saveIncremental(
+				{
+					id: project.id,
+					name: project.name,
+					canvas: project.canvas,
+					camera: project.camera,
+					editorData: project.editorData,
+					isElementNameImportOpen: project.isElementNameImportOpen,
+					order: [element.id],
+					schemaVersion: 1
+				},
+				[
+					{
+						changes: [{ id: element.id, before: null, after: element }],
+						order: { tag: "insert", ids: [element.id], index: 0 }
+					}
+				]
+			)
+		);
+
+		expect((await value(storage.project.fetch("prod"))).elements).toEqual([element]);
+	});
+
 	it("rejects malformed stored editor data without replacing it", async () => {
 		const project = await value(storage.project.fetch("prod"));
 		const db = await openDatabase();
-		const transaction = db.transaction("projects", "readwrite");
+		const transaction = db.transaction(["projects", "project-meta"], "readwrite");
 		transaction.objectStore("projects").put({
 			...project,
 			editorData: { elementNameGrid: { headers: ["Other"], rows: [[""]] } }
+		});
+		transaction.objectStore("project-meta").put({
+			id: project.id,
+			name: project.name,
+			canvas: project.canvas,
+			camera: project.camera,
+			editorData: { elementNameGrid: { headers: ["Other"], rows: [[""]] } },
+			isElementNameImportOpen: project.isElementNameImportOpen,
+			order: [],
+			schemaVersion: 1
 		});
 		await new Promise<void>((resolve, reject) => {
 			transaction.oncomplete = () => resolve();
@@ -160,7 +212,7 @@ async function createVersion3Fixture(): Promise<void> {
 
 function openDatabase(): Promise<IDBDatabase> {
 	return new Promise((resolve, reject) => {
-		const request = indexedDB.open("maply", 4);
+		const request = indexedDB.open("maply", 5);
 		request.onsuccess = () => resolve(request.result);
 		request.onerror = () => reject(request.error);
 	});

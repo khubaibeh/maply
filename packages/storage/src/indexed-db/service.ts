@@ -4,13 +4,19 @@ import { IndexedDbOpenError, IndexedDbStoreError, type IndexedDbOperation } from
 
 const dbDefinition = {
 	name: "maply",
-	version: 4,
+	version: 5,
 	projects: "projects",
 	imageAssets: "image-assets",
+	projectMetadata: "project-meta",
+	projectElements: "project-elements",
 	projectIdIndex: "projectId"
 } as const;
 
-export type IndexedDbStoreName = (typeof dbDefinition)["projects"] | (typeof dbDefinition)["imageAssets"];
+export type IndexedDbStoreName =
+	| (typeof dbDefinition)["projects"]
+	| (typeof dbDefinition)["imageAssets"]
+	| (typeof dbDefinition)["projectMetadata"]
+	| (typeof dbDefinition)["projectElements"];
 
 function open(): Effect.Effect<IDBDatabase, IndexedDbOpenError> {
 	return Effect.tryPromise({
@@ -24,6 +30,13 @@ function open(): Effect.Effect<IDBDatabase, IndexedDbOpenError> {
 
 					if (!db.objectStoreNames.contains(dbDefinition.projects)) {
 						db.createObjectStore(dbDefinition.projects, { keyPath: "id" });
+					}
+					if (!db.objectStoreNames.contains(dbDefinition.projectMetadata)) {
+						db.createObjectStore(dbDefinition.projectMetadata, { keyPath: "id" });
+					}
+					if (!db.objectStoreNames.contains(dbDefinition.projectElements)) {
+						const store = db.createObjectStore(dbDefinition.projectElements, { keyPath: "id" });
+						store.createIndex(dbDefinition.projectIdIndex, "projectId", { unique: false });
 					}
 
 					if (!db.objectStoreNames.contains(dbDefinition.imageAssets)) {
@@ -75,6 +88,7 @@ export class IndexedDb extends Context.Service<
 			store: IndexedDbStoreName,
 			ids: readonly string[]
 		) => Effect.Effect<Array<A>, IndexedDbOpenError | IndexedDbStoreError>;
+		getAll: <A>(store: IndexedDbStoreName) => Effect.Effect<Array<A>, IndexedDbOpenError | IndexedDbStoreError>;
 		withTransaction: (
 			stores: readonly IndexedDbStoreName[],
 			mode: IDBTransactionMode,
@@ -201,6 +215,22 @@ export class IndexedDb extends Context.Service<
 					})
 				);
 
+			const getAll = <A>(store: IndexedDbStoreName) =>
+				Effect.flatMap(getDb, (db) =>
+					Effect.tryPromise({
+						try: () =>
+							new Promise<Array<A>>((resolve, reject) => {
+								const txn = db.transaction(store, "readonly");
+								const req = txn.objectStore(store).getAll();
+								req.onsuccess = () => resolve(req.result as Array<A>);
+								req.onerror = () => reject(req.error);
+								txn.onerror = () => reject(txn.error);
+								txn.onabort = () => reject(txn.error);
+							}),
+						catch: (error) => storeError(store, "getAll", error)
+					})
+				);
+
 			const withTransaction = (
 				stores: readonly IndexedDbStoreName[],
 				mode: IDBTransactionMode,
@@ -227,7 +257,7 @@ export class IndexedDb extends Context.Service<
 					})
 				);
 
-			return IndexedDb.of({ get, put, delete: remove, getMany, withTransaction });
+			return IndexedDb.of({ get, put, delete: remove, getMany, getAll, withTransaction });
 		})
 	);
 }

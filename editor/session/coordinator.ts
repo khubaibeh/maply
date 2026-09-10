@@ -1,6 +1,11 @@
 import type { StoredImageAsset } from "@maply/model/types";
 import { imageAsset, project as projectStorage, ProjectRepository, storageRuntime } from "@maply/storage/effect";
-import type { ResetProjectOptions, StoredEditorProject } from "@maply/storage/types";
+import type {
+	PersistedDocumentChange,
+	ResetProjectOptions,
+	StoredEditorProject,
+	StoredProjectMetadata
+} from "@maply/storage/types";
 import { Deferred, Effect, MutableRef, Semaphore, type Fiber } from "effect";
 
 import { PersistenceFailed } from "./errors";
@@ -85,6 +90,17 @@ export const saveProjectEffect = Effect.fn("editor.coordinator.saveProject")(fun
 		editorWriteGate,
 		1
 	)(mapPersistenceCause(projectStorage.save(project), "saveProject"));
+});
+
+/** Persists metadata and document deltas through the shared editor write gate. */
+export const saveIncrementalProjectEffect = Effect.fn("editor.coordinator.saveIncrementalProject")(function* (
+	metadata: StoredProjectMetadata,
+	changes: readonly PersistedDocumentChange[]
+): Effect.fn.Return<void, PersistenceFailed, ProjectRepository> {
+	return yield* Semaphore.withPermits(
+		editorWriteGate,
+		1
+	)(mapPersistenceCause(projectStorage.saveIncremental(metadata, changes), "saveProject"));
 });
 
 /** Fetches a project while the caller owns the editor write gate. */

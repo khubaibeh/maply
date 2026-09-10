@@ -1,7 +1,12 @@
 import type { StoredImageAsset } from "@maply/model/types";
 import { Effect } from "effect";
 
-import type { ResetProjectOptions, StoredEditorProject } from "../project/repository";
+import type {
+	PersistedDocumentChange,
+	ResetProjectOptions,
+	StoredEditorProject,
+	StoredProjectMetadata
+} from "../project/repository";
 import { ProjectRepository } from "../project/repository";
 import { storageRuntime } from "./runtime";
 
@@ -24,6 +29,10 @@ export function fetchProject(id: string) {
 
 export function saveProject(project: StoredEditorProject) {
 	return handled(Effect.flatMap(ProjectRepository, (repo) => repo.save(project)));
+}
+
+export function saveIncrementalProject(metadata: StoredProjectMetadata, changes: readonly PersistedDocumentChange[]) {
+	return handled(Effect.flatMap(ProjectRepository, (repo) => repo.saveIncremental(metadata, changes)));
 }
 
 export function fetchImageAssets(ids: readonly string[]) {

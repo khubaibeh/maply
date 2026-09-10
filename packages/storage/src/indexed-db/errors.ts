@@ -5,6 +5,7 @@ export const IndexedDbOperationSchema = Schema.Union([
 	Schema.Literal("put"),
 	Schema.Literal("delete"),
 	Schema.Literal("getMany"),
+	Schema.Literal("getAll"),
 	Schema.Literal("transaction")
 ]);
 

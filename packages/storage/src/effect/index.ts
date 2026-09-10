@@ -6,7 +6,13 @@ export { StorageLayer, storageRuntime } from "./runtime";
 import type { StoredImageAsset } from "@maply/model/types";
 import { Effect } from "effect";
 
-import { ProjectRepository, type ResetProjectOptions, type StoredEditorProject } from "../project/repository";
+import {
+	ProjectRepository,
+	type PersistedDocumentChange,
+	type ResetProjectOptions,
+	type StoredEditorProject,
+	type StoredProjectMetadata
+} from "../project/repository";
 
 export type { ResetProjectOptions } from "../project/repository";
 
@@ -14,6 +20,9 @@ export const project = {
 	fetch: (id: string) => Effect.flatMap(ProjectRepository, (repo) => repo.fetch(id)),
 
 	save: (value: StoredEditorProject) => Effect.flatMap(ProjectRepository, (repo) => repo.save(value)),
+
+	saveIncremental: (metadata: StoredProjectMetadata, changes: readonly PersistedDocumentChange[]) =>
+		Effect.flatMap(ProjectRepository, (repo) => repo.saveIncremental(metadata, changes)),
 
 	replace: (value: StoredEditorProject, imageAssets: readonly StoredImageAsset[]) =>
 		Effect.flatMap(ProjectRepository, (repo) => repo.replace(value, imageAssets)),

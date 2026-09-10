@@ -1,12 +1,13 @@
 import { copyProjectEditorData } from "@maply/model";
-import type { StoredEditorProject } from "@maply/storage/types";
+import type { StoredProjectMetadata } from "@maply/storage/types";
 import { Effect, Fiber, MutableRef } from "effect";
 import { get } from "svelte/store";
 
 import { recordSaveRequest } from "../benchmark-counters";
-import { projectState } from "../state/document";
+import { documentIndex, projectState } from "../state/document";
+import type { DocumentChangeSet } from "../state/indexed-document";
 import { canvasState } from "../state/workspace";
-import { forkStorageEffect, runStorageEffect, saveProjectEffect, settleEditorWrites } from "./coordinator";
+import { forkStorageEffect, runStorageEffect, saveIncrementalProjectEffect, settleEditorWrites } from "./coordinator";
 
 const saveGeneration = MutableRef.make(0);
 const savePending = MutableRef.make(false);
@@ -23,7 +24,7 @@ function cancelPendingSave(): void {
 	MutableRef.set(savePending, false);
 }
 
-function currentProject(): StoredEditorProject {
+function currentMetadata(): StoredProjectMetadata {
 	const project = get(projectState);
 	const canvas = get(canvasState);
 
@@ -38,20 +39,36 @@ function currentProject(): StoredEditorProject {
 			y: canvas.y
 		},
 		camera: { ...canvas.camera },
-		elements: project.elements.map((element) => ({ ...element })),
 		editorData: copyProjectEditorData({ elementNameGrid: project.elementNameGrid }),
-		isElementNameImportOpen: project.isElementNameImportOpen
+		isElementNameImportOpen: project.isElementNameImportOpen,
+		order: [],
+		schemaVersion: 1
 	};
 }
 
+const pendingDocumentChanges: DocumentChangeSet[] = [];
+
+documentIndex.subscribe((change) => {
+	if (get(projectState).initialized) pendingDocumentChanges.push(change);
+});
+
 const saveCurrentProjectEffect = Effect.fn("editor.session.saveCurrent")(function* () {
+	const batch = pendingDocumentChanges.splice(0);
+	const metadata = currentMetadata();
 	yield* Effect.suspend(() =>
-		Effect.match(saveProjectEffect(currentProject()), {
-			onFailure: (error) => {
-				console.warn("Failed to save project:", error.cause);
-			},
-			onSuccess: () => {}
-		})
+		Effect.match(
+			saveIncrementalProjectEffect(
+				metadata,
+				batch.map(({ changes, order }) => ({ changes, order }))
+			),
+			{
+				onFailure: (error) => {
+					pendingDocumentChanges.unshift(...batch);
+					console.warn("Failed to save project:", error.cause);
+				},
+				onSuccess: () => {}
+			}
+		)
 	);
 });
 
