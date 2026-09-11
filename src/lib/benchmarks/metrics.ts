@@ -4,11 +4,15 @@ export type BenchmarkDisplay = {
 	zoom: number;
 };
 
+/** Identifies whether a report was captured before or after the performance changes. */
+export type BenchmarkMeasurement = "baseline" | "after";
+
 /** Browser and build details recorded with every benchmark report. */
 export type BenchmarkEnvironment = BenchmarkDisplay & {
 	browser: string;
 	hardwareConcurrency: number | null;
 	deviceMemoryGb: number | null;
+	devicePixelRatio: number;
 	buildMode: "development" | "production";
 };
 
@@ -19,6 +23,8 @@ export type BenchmarkResourceMetrics = {
 	renderer: "svg" | "canvas" | null;
 	spatialCandidates: number | null;
 	renderedElements: number | null;
+	pathCacheSize: number | null;
+	imageCacheSize: number | null;
 	heapGrowthBytes: number | null;
 	persistedBytes: number | null;
 };
@@ -28,8 +34,9 @@ export type BenchmarkSample = {
 	scenario: string;
 	fixture: string;
 	run: number;
-	applicationMs: number;
-	frameMs: number;
+	scenarioDurationMs: number;
+	applicationSamplesMs: readonly number[];
+	frameSamplesMs: readonly number[];
 	longTaskMs: number;
 	longTaskCount: number;
 	resources: BenchmarkResourceMetrics;
@@ -63,6 +70,8 @@ export function frameInvariantViolation(before: BenchmarkCounters, after: Benchm
 /** Median and p95 values for a set of benchmark samples. */
 export type BenchmarkSummary = {
 	runs: number;
+	applicationSamples: number;
+	frameSamples: number;
 	applicationMs: { median: number; p95: number };
 	frameMs: { median: number; p95: number };
 	longTaskMs: { median: number; p95: number };
@@ -80,6 +89,7 @@ export function getBenchmarkEnvironment(
 		browser: navigator.userAgent,
 		hardwareConcurrency: navigator.hardwareConcurrency ?? null,
 		deviceMemoryGb: browserNavigator.deviceMemory ?? null,
+		devicePixelRatio: typeof window === "undefined" ? 1 : window.devicePixelRatio,
 		buildMode
 	};
 }
@@ -127,12 +137,16 @@ export function readMountedNodes(root: ParentNode): {
 	renderer: "svg" | "canvas" | null;
 	spatialCandidates: number | null;
 	renderedElements: number | null;
+	pathCacheSize: number | null;
+	imageCacheSize: number | null;
 } {
 	const rendererNode = root.querySelector<HTMLElement>("[data-renderer]");
 	const canvasNode = root.querySelector<HTMLElement>("[data-canvas-renderer]");
 	const candidateValue = canvasNode?.dataset.candidateElements;
 	const renderedNode = root.querySelector<HTMLElement>("[data-rendered-elements]");
 	const renderedValue = renderedNode?.dataset.renderedElements;
+	const pathCacheValue = canvasNode?.dataset.pathCacheSize;
+	const imageCacheValue = canvasNode?.dataset.imageCacheSize;
 	const readCount = (value: string | undefined): number | null => {
 		if (value === undefined) return null;
 		const count = Number(value);
@@ -143,7 +157,9 @@ export function readMountedNodes(root: ParentNode): {
 		svgNodes: root.querySelectorAll("svg *").length,
 		renderer: rendererNode?.dataset.renderer === "canvas" || canvasNode ? "canvas" : rendererNode ? "svg" : null,
 		spatialCandidates: readCount(candidateValue),
-		renderedElements: readCount(renderedValue)
+		renderedElements: readCount(renderedValue),
+		pathCacheSize: readCount(pathCacheValue),
+		imageCacheSize: readCount(imageCacheValue)
 	};
 }
 
@@ -171,10 +187,14 @@ export function p95(values: readonly number[]): number {
 /** Summarizes the timing fields of repeated benchmark samples. */
 export function summarizeBenchmarkSamples(samples: readonly BenchmarkSample[]): BenchmarkSummary {
 	const values = (select: (sample: BenchmarkSample) => number) => samples.map(select);
+	const applicationSamples = samples.flatMap((sample) => sample.applicationSamplesMs);
+	const frameSamples = samples.flatMap((sample) => sample.frameSamplesMs);
 	return {
 		runs: samples.length,
-		applicationMs: summarize(values((sample) => sample.applicationMs)),
-		frameMs: summarize(values((sample) => sample.frameMs)),
+		applicationSamples: applicationSamples.length,
+		frameSamples: frameSamples.length,
+		applicationMs: summarize(applicationSamples),
+		frameMs: summarize(frameSamples),
 		longTaskMs: summarize(values((sample) => sample.longTaskMs)),
 		longTaskCount: summarize(values((sample) => sample.longTaskCount))
 	};

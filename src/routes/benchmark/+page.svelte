@@ -1,6 +1,14 @@
 <script lang="ts">
 	import { benchmarkFixtureNames, createBenchmarkFixture, type BenchmarkFixtureName } from "$lib/benchmarks/fixtures";
-	import { benchmarkScenarioNames, runBenchmarkSuite, type BenchmarkReport } from "$lib/benchmarks/runner";
+	import type { BenchmarkMeasurement } from "$lib/benchmarks/metrics";
+	import {
+		BROWSER_SOAK_DURATION_MS,
+		benchmarkScenarioNames,
+		runBenchmarkSuite,
+		runBrowserSoak,
+		type BenchmarkReport,
+		type BrowserSoakReport
+	} from "$lib/benchmarks/runner";
 	import { Button } from "$lib/components/ui/button";
 	import CanvasArea from "@components/CanvasArea.svelte";
 	import ElementsPanel from "@components/elements-panel/ElementsPanel.svelte";
@@ -9,8 +17,10 @@
 	let benchmarkRoot = $state<HTMLElement>();
 	let fixtureName = $state<BenchmarkFixtureName>("1k-simple");
 	let report = $state<BenchmarkReport>();
+	let soakReport = $state<BrowserSoakReport>();
 	let error = $state<string>();
 	let running = $state(false);
+	let measurement = $state<BenchmarkMeasurement>("after");
 	let viewport = $state({ width: 1_200, height: 800 });
 
 	const fixtureNames = benchmarkFixtureNames();
@@ -24,6 +34,7 @@
 		running = true;
 		error = undefined;
 		report = undefined;
+		soakReport = undefined;
 
 		try {
 			const fixture = createBenchmarkFixture(fixtureName);
@@ -31,7 +42,31 @@
 				fixture,
 				root: benchmarkRoot,
 				display: { viewport: { width: viewport.width, height: viewport.height }, zoom: fixture.zoom },
+				measurement,
 				repetitions: 3
+			});
+		} catch (cause) {
+			error = cause instanceof Error ? cause.message : String(cause);
+		} finally {
+			running = false;
+		}
+	}
+
+	async function runSoak() {
+		if (!benchmarkRoot) return;
+		running = true;
+		error = undefined;
+		report = undefined;
+		soakReport = undefined;
+
+		try {
+			const fixture = createBenchmarkFixture(fixtureName);
+			soakReport = await runBrowserSoak({
+				fixture,
+				root: benchmarkRoot,
+				display: { viewport: { width: viewport.width, height: viewport.height }, zoom: fixture.zoom },
+				measurement,
+				durationMs: BROWSER_SOAK_DURATION_MS
 			});
 		} catch (cause) {
 			error = cause instanceof Error ? cause.message : String(cause);
@@ -61,6 +96,13 @@
 		</div>
 		<div class="benchmark-controls" aria-label="Benchmark controls">
 			<label>
+				<span>Measurement</span>
+				<select bind:value={measurement} disabled={running}>
+					<option value="baseline">baseline</option>
+					<option value="after">after</option>
+				</select>
+			</label>
+			<label>
 				<span>Fixture</span>
 				<select bind:value={fixtureName} disabled={running}>
 					{#each fixtureNames as name (name)}
@@ -69,7 +111,10 @@
 				</select>
 			</label>
 			<Button class="run-button" disabled={running} onclick={runBenchmarks}>
-				{running ? "Running suite..." : "Run baseline"}
+				{running ? "Running suite..." : `Run ${measurement} suite`}
+			</Button>
+			<Button class="soak-button" variant="outline" disabled={running} onclick={runSoak}>
+				{running ? "Running..." : "Run 30-minute soak"}
 			</Button>
 		</div>
 	</header>
@@ -98,8 +143,9 @@
 					<h2>{report.fixture.name}</h2>
 				</div>
 				<p class="report-meta">
-					{report.fixture.elementCount.toLocaleString()} elements · seed {report.fixture.seed} · {report
-						.fixture.fingerprint}
+					{report.measurement} · {report.fixture.elementCount.toLocaleString()} elements · seed {report
+						.fixture.seed} ·
+					{report.fixture.fingerprint}
 				</p>
 			</div>
 			<div class="summary-table-wrap">
@@ -107,6 +153,7 @@
 					<thead>
 						<tr>
 							<th>Scenario</th>
+							<th>Samples (app / frame)</th>
 							<th>Application median / p95</th>
 							<th>Frame median / p95</th>
 							<th>Long tasks</th>
@@ -117,6 +164,7 @@
 							{@const summary = report.summaries[scenario]}
 							<tr>
 								<td>{scenario}</td>
+								<td>{summary.applicationSamples} / {summary.frameSamples}</td>
 								<td
 									>{summary.applicationMs.median.toFixed(2)} / {summary.applicationMs.p95.toFixed(2)} ms</td
 								>
@@ -130,6 +178,30 @@
 			<details>
 				<summary>Raw report JSON</summary>
 				<pre>{JSON.stringify(report, null, 2)}</pre>
+			</details>
+		</section>
+	{/if}
+
+	{#if soakReport}
+		<section class="benchmark-report soak-report" aria-live="polite">
+			<div class="report-heading">
+				<div>
+					<p class="benchmark-kicker">Soak evidence captured</p>
+					<h2>{soakReport.fixture.name}</h2>
+				</div>
+				<p class="report-meta">
+					{soakReport.measurement} · {soakReport.cycleCount.toLocaleString()} edit / undo / redo cycles ·
+					{soakReport.samples.length} observations
+				</p>
+			</div>
+			<p class="soak-summary">
+				Requested {Math.round(soakReport.requestedDurationMs / 60_000)} minutes; ran
+				{(soakReport.actualDurationMs / 60_000).toFixed(2)} minutes. Heap and renderer cache values are retained in
+				the raw artifact.
+			</p>
+			<details>
+				<summary>Raw soak report JSON</summary>
+				<pre>{JSON.stringify(soakReport, null, 2)}</pre>
 			</details>
 		</section>
 	{/if}
@@ -225,6 +297,11 @@
 		background: var(--lab-accent);
 	}
 
+	:global(.soak-button) {
+		border-color: var(--lab-line);
+		color: var(--lab-ink);
+	}
+
 	.benchmark-stage {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr) minmax(15rem, 20rem);
@@ -276,6 +353,13 @@
 		color: var(--lab-muted);
 		font-family: "Geist Mono", monospace;
 		font-size: 0.72rem;
+	}
+
+	.soak-summary {
+		max-width: 48rem;
+		margin: 1.25rem 0 0;
+		color: var(--lab-muted);
+		line-height: 1.55;
 	}
 
 	.summary-table-wrap {

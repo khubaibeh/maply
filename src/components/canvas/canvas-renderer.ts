@@ -49,6 +49,8 @@ export type CanvasSceneMetrics = {
 	renderedElements: number;
 	imageElements: number;
 	loadedImages: number;
+	pathCacheSize: number;
+	imageCacheSize: number;
 };
 
 /** A retained Canvas2D scene with bounded path and image caches. */
@@ -259,7 +261,15 @@ export function createCanvasScene(): CanvasScene {
 	return {
 		render: (canvas, options) => {
 			const context = canvas.getContext("2d");
-			if (!context) return { candidateElements: 0, renderedElements: 0, imageElements: 0, loadedImages: 0 };
+			if (!context)
+				return {
+					candidateElements: 0,
+					renderedElements: 0,
+					imageElements: 0,
+					loadedImages: 0,
+					pathCacheSize: pathCache.size,
+					imageCacheSize: imageCache.size
+				};
 
 			const requestedPixelRatio =
 				Number.isFinite(options.pixelRatio) && options.pixelRatio > 0 ? options.pixelRatio : 1;
@@ -315,7 +325,14 @@ export function createCanvasScene(): CanvasScene {
 			}
 
 			context.setTransform(1, 0, 0, 1, 0, 0);
-			return { candidateElements: options.elements.length, renderedElements, imageElements, loadedImages };
+			return {
+				candidateElements: options.elements.length,
+				renderedElements,
+				imageElements,
+				loadedImages,
+				pathCacheSize: pathCache.size,
+				imageCacheSize: imageCache.size
+			};
 		},
 		dispose: () => {
 			disposed = true;

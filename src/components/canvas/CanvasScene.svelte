@@ -17,7 +17,9 @@
 		candidateElements: 0,
 		renderedElements: 0,
 		imageElements: 0,
-		loadedImages: 0
+		loadedImages: 0,
+		pathCacheSize: 0,
+		imageCacheSize: 0
 	});
 
 	const canvas = Editor.state.canvas;
@@ -76,5 +78,7 @@
 	data-canvas-renderer="canvas"
 	data-candidate-elements={metrics.candidateElements}
 	data-rendered-elements={metrics.renderedElements}
+	data-path-cache-size={metrics.pathCacheSize}
+	data-image-cache-size={metrics.imageCacheSize}
 	aria-hidden="true"
 ></canvas>

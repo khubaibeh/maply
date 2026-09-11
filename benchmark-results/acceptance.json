@@ -1,5 +1,7 @@
 {
 	"scope": "50k improvement-plan release hardening",
+	"status": "incomplete",
+	"incompleteReason": "The repository has the measurement harness, but the required production-browser baseline/after reports and 30-minute heap/cache soak artifacts have not been captured.",
 	"fixtureManifest": "benchmark-results/fixtures.json",
 	"rendererDecision": "benchmark-results/renderer-decision.json",
 	"indexedMutation": "benchmark-results/indexed-mutation.json",
@@ -11,7 +13,8 @@
 		"dependencyValidation": "pass",
 		"storageMigration": "pass",
 		"telemetryContract": "pass",
-		"rendererGate": "pass"
+		"rendererGate": "deterministic candidate gate pass; browser performance gate pending",
+		"browserInteractionTests": "pass (pnpm test:browser; Playwright Chromium)"
 	},
 	"compatibility": {
 		"modelAndSvgExport": "covered by repository test suites",
@@ -20,14 +23,23 @@
 		"accessibilityRepresentation": "virtualized logical elements list and active SVG controls retained"
 	},
 	"soak": {
-		"status": "automated bounded-cycle pass",
-		"cycles": 1000,
-		"browserHeapMeasurement": "not exposed by the Node benchmark runner"
+		"status": "pending production-browser run",
+		"requiredDurationMinutes": 30,
+		"runner": "/benchmark → Run 30-minute soak",
+		"browserHeapMeasurement": "captured when performance.memory is exposed",
+		"cacheMeasurement": "path and image cache sizes are captured at each observation",
+		"nodeSmokeTest": "1,000-cycle indexed soak remains covered by benchmarks/soak.test.ts"
 	},
 	"browserLab": {
-		"status": "requires documented browser runner",
-		"reason": "No browser executable is present in this workspace; the available Playwright package does not support Chromium on Ubuntu 26.04.",
-		"owner": "Maply performance lab",
-		"followUp": "Run /benchmark in a supported production browser before changing the 2,000-candidate renderer threshold."
+		"status": "incomplete",
+		"reason": "The focused browser interaction suite passes locally, but the required paired reports and 30-minute soak have not been captured on the documented production browser and hardware profile.",
+		"requiredReports": [
+			"baseline and after reports for 50k-typical",
+			"baseline and after reports for 50k-all-visible",
+			"after 30-minute edit/undo/redo/save soak for both 50k fixtures"
+		],
+		"interactionTestCommand": "pnpm test:browser",
+		"procedure": "Use the measurement selector and fixture selector on /benchmark in the same documented production browser and hardware profile; retain raw JSON reports.",
+		"mergePolicy": "Do not mark Chunk 10 or the final acceptance matrix complete until these artifacts meet the gates."
 	}
 }

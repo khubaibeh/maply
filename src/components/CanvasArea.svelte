@@ -57,6 +57,7 @@
 						aria-label="Canvas workspace"
 						onpointerdown={(event) => canvasArea.handleSvgPointerDown(event, rendererKind === "canvas")}
 						onpointermove={canvasArea.handleSvgPointerMove}
+						ondblclick={canvasArea.handleSvgDoubleClick}
 					>
 						{#if rendererKind === "svg"}
 							<Background

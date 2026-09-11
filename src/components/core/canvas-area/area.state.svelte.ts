@@ -1,5 +1,11 @@
+import {
+	createElementHitTester,
+	getPathHitTolerance,
+	topmostHitElement
+} from "@components/canvas/interaction/element-hit-test";
 import { createElementMove } from "@components/canvas/interaction/element-move.svelte";
 import { canSelectOnCanvas } from "@components/canvas/interaction/element-selection";
+import { insertPathVertexAtPointer } from "@components/canvas/interaction/path-vertex";
 import { clientToSvgPoint } from "@components/canvas/interaction/svg";
 import { canvasCursor } from "@components/core/cursors";
 import { importNamesOverlayOpen } from "@components/elements-panel/import-names-overlay";
@@ -31,6 +37,7 @@ export function createCanvasAreaState() {
 	const elementMove = createElementMove();
 	const marquee = createMarqueeSelection();
 	const path = createPathSession();
+	const hitTester = createElementHitTester();
 
 	const state = $state({
 		container: null as HTMLDivElement | null,
@@ -259,6 +266,7 @@ export function createCanvasAreaState() {
 		window.addEventListener("keyup", handleKeyUp);
 
 		return () => {
+			hitTester.dispose();
 			resizeObserver.disconnect();
 			viewport.removeEventListener("wheel", handleWheel);
 			viewport.removeEventListener("mousedown", startPan);
@@ -281,11 +289,18 @@ export function createCanvasAreaState() {
 	}
 
 	function topmostElementAt(point: Point) {
-		for (const id of Editor.document.queryPoint(point).reverse()) {
+		const tolerance = getPathHitTolerance(canvas.current.camera.zoom);
+		const candidateIds = Editor.document.query({
+			x: point.x - tolerance,
+			y: point.y - tolerance,
+			width: tolerance * 2,
+			height: tolerance * 2
+		});
+		const candidates = candidateIds.flatMap((id) => {
 			const element = Editor.document.get(id);
-			if (element && element.visible !== false) return element;
-		}
-		return null;
+			return element ? [element] : [];
+		});
+		return topmostHitElement(candidates, point, canvas.current.camera.zoom, hitTester);
 	}
 
 	function handleSvgPointerMove(event: PointerEvent) {
@@ -368,6 +383,14 @@ export function createCanvasAreaState() {
 		drawing.start(tool.current.activeTool, drawPoint, event.shiftKey);
 	}
 
+	function handleSvgDoubleClick(event: MouseEvent) {
+		if (get(importNamesOverlayOpen) || tool.current.activeTool !== "select" || isHandActive) return;
+		const point = projectPoint(event.clientX, event.clientY);
+		const hit = point ? topmostElementAt(point) : null;
+		if (!hit || hit.type !== "path" || !canSelectOnCanvas(hit)) return;
+		insertPathVertexAtPointer(event, hit, state.svgRef, canvas.current.camera.zoom);
+	}
+
 	function handleContextMenu(event: MouseEvent) {
 		if (get(importNamesOverlayOpen)) return;
 		contextMenu.handle(event, projectPoint(event.clientX, event.clientY));
@@ -399,6 +422,7 @@ export function createCanvasAreaState() {
 		closePath: path.close,
 		handleSvgPointerDown,
 		handleSvgPointerMove,
+		handleSvgDoubleClick,
 		handleContextMenu
 	};
 }

@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { clientToSvgPoint, getSvgRoot } from "@components/canvas/interaction/svg";
+	import { insertPathVertexAtPointer } from "@components/canvas/interaction/path-vertex";
+	import { getSvgRoot } from "@components/canvas/interaction/svg";
 	import CircleShape from "@components/canvas/shapes/CircleShape.svelte";
 	import ImageShape from "@components/canvas/shapes/ImageShape.svelte";
 	import PathShape from "@components/canvas/shapes/PathShape.svelte";
@@ -17,21 +18,12 @@
 	} = $props();
 
 	const imageAssets = Editor.state.imageAssets;
+	const canvas = Editor.state.canvas;
 	const tool = Editor.state.tool;
 
 	function insertPathVertex(event: MouseEvent, element: PathElement) {
 		if ($tool.activeTool !== "select" || element.locked) return;
-		const svg = getSvgRoot(event.target);
-		const position = svg ? clientToSvgPoint(svg, event.clientX, event.clientY) : null;
-		if (!position) return;
-
-		event.preventDefault();
-		event.stopPropagation();
-		const transform = Editor.geometry.pathRenderTransform(element);
-		Editor.element.insertPathVertex(element.id, {
-			x: position.x - transform.x,
-			y: position.y - transform.y
-		});
+		insertPathVertexAtPointer(event, element, getSvgRoot(event.target), $canvas.camera.zoom);
 	}
 </script>
 
